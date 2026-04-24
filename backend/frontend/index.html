@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StudyForge - Knowledge Workspace</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA0MCA0MCI+CiAgPHJlY3QgeD0iMCIgeT0iMCIgd2lkdGg9IjQwIiBoZWlnaHQ9IjQwIiByeD0iOCIgZmlsbD0iIzhCNUNGNiIvPgogIDxnIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS13aWR0aD0iMiI+CiAgICA8cmVjdCB4PSI4IiB5PSI4IiB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHJ4PSIyIi8+CiAgICA8bGluZSB4MT0iMTIiIHkxPSIxNCIgeDI9IjI4IiB5Mj0iMTQiLz4KICAgIDxsaW5lIHgxPSIxMiIgeTE9IjIwIiB4Mj0iMjQiIHkyPSIyMCIvPgogICAgPGxpbmUgeDE9IjEyIiB5MT0iMjYiIHgyPSIyMCIgeTI9IjI2Ii8+CiAgPC9nPgo8L3N2Zz4=">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css?v=32">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/16.3.0/lib/marked.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.4.0/mermaid.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
+    <!-- PDF.js for PDF preview -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf_viewer.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true,
+                processEnvironments: true
+            },
+            options: {
+                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+            },
+            startup: {
+                pageReady: () => {
+                    return MathJax.startup.defaultPageReady().then(() => {
+                        console.log('MathJax initial complete');
+                    });
+                }
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header hidden">
+            <div class="header-brand">
+                <div class="logo-mark">
+                    <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="4" y="4" width="32" height="32" rx="2"/>
+                        <line x1="12" y1="12" x2="28" y2="12"/>
+                        <line x1="12" y1="18" x2="24" y2="18"/>
+                        <line x1="12" y1="24" x2="20" y2="24"/>
+                    </svg>
+                </div>
+                <div class="logo-type">
+                    <span class="logo-name">StudyForge</span>
+                    <span class="logo-tagline">Knowledge Archive</span>
+                </div>
+            </div>
+            <div class="header-actions">
+
+                <div id="authContainer" class="auth-container">
+                    <button id="btnLogin" class="btn-primary btn-sm">Login</button>
+                    <div id="userProfile" class="user-profile hidden">
+                        <img id="userAvatar" src="" alt="Avatar" class="user-avatar">
+                        <span id="userName" class="user-name"></span>
+                        <button id="btnLogout" class="btn-text btn-sm">Logout</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Landing Page: Notebook List -->
+        <section class="landing-page hidden" id="landingPage">
+            <div class="landing-header">
+                <div class="landing-brand">
+                    <h1>My Notebooks</h1>
+                    <p>Manage and explore your knowledge archive</p>
+                </div>
+                <button class="btn-primary btn-large" id="btnNewNotebookLanding">
+                    <svg width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="8" y1="2" x2="8" y2="14"/>
+                        <line x1="2" y1="8" x2="14" y2="8"/>
+                    </svg>
+                    New Notebook
+                </button>
+            </div>
+
+            <!-- Public Notebooks Showcase -->
+            <div class="public-showcase" id="publicShowcase">
+                <div class="public-showcase-header">
+                    <h2 class="public-showcase-title">Featured Public Notebooks</h2>
+                    <p class="public-showcase-subtitle">Explore knowledge shared by the community</p>
+                </div>
+                <div class="public-showcase-scroll">
+                    <div class="public-showcase-grid" id="publicShowcaseGrid">
+                        <!-- Public notebook cards will be rendered here -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="notebook-grid" id="notebookGridLanding">
+                <!-- Notebook cards will be rendered here -->
+            </div>
+        </section>
+
+        <!-- Workspace (Hidden by default) -->
+        <div class="workspace-container hidden" id="workspaceContainer">
+            <nav class="workspace-nav">
+                <button class="btn-back" id="btnBackToList">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="15" y1="9" x2="3" y2="9"/>
+                        <polyline points="9,15 3,9 9,3"/>
+                    </svg>
+                    Back to List
+                </button>
+                <div class="current-notebook-info" id="notebookNameContainer">
+                    <h2 id="currentNotebookName" class="notebook-name-display">Notebook Name</h2>
+                    <div id="notebookNameEditor" class="notebook-name-editor hidden">
+                        <input type="text" id="notebookNameInput" class="notebook-name-input" maxlength="50" />
+                        <div class="notebook-name-actions">
+                            <button id="btnSaveNotebookName" class="btn-icon btn-save" title="Save">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="13,4 6,11 3,8"/>
+                                </svg>
+                            </button>
+                            <button id="btnCancelNotebookName" class="btn-icon btn-cancel" title="Cancel">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="4" y1="4" x2="12" y2="12"/>
+                                    <line x1="12" y1="4" x2="4" y2="12"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="workspace-actions">
+                    <button class="btn-share" id="btnShareNotebook" title="Share notebook">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="4" r="2"/>
+                            <circle cx="5" cy="11" r="2"/>
+                            <circle cx="11" cy="11" r="2"/>
+                            <line x1="6.5" y1="10" x2="9.5" y2="5"/>
+                            <line x1="6.5" y1="12" x2="9.5" y2="12"/>
+                        </svg>
+                        <span id="shareButtonText">Share</span>
+                    </button>
+                    <button class="btn-new-notebook" id="btnNewNotebook">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="8" y1="2" x2="8" y2="14"/>
+                            <line x1="2" y1="8" x2="14" y2="8"/>
+                        </svg>
+                        New Notebook
+                    </button>
+
+                    <div id="workspaceAuthContainer" class="auth-container">
+                        <button id="btnLoginWorkspace" class="btn-primary btn-sm hidden">Login</button>
+                        <div id="userProfileWorkspace" class="user-profile hidden">
+                            <img id="userAvatarWorkspace" src="" alt="Avatar" class="user-avatar">
+                            <span id="userNameWorkspace" class="user-name"></span>
+                            <button id="btnLogoutWorkspace" class="btn-text btn-sm">Logout</button>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+
+            <main class="main-grid">
+                <!-- Left Panel: Sources -->
+                <aside class="panel panel-left">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Sources</h2>
+                        <div class="panel-actions">
+                            <button class="btn-icon" id="btnAddSource" title="Add source">
+                                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="9" y1="2" x2="9" y2="16"/>
+                                    <line x1="2" y1="9" x2="16" y2="9"/>
+                                </svg>
+                            </button>
+                            <button class="btn-toggle-side" id="btnToggleLeft" title="Toggle sidebar">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M10 3L5 8L10 13" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="sources-list-container" id="sourcesGrid">
+                        <!-- Sources rendered here -->
+                    </div>
+                </aside>
+
+                <div class="resizer" id="resizerLeft"></div>
+
+                <!-- Center Panel: Chat -->
+                <section class="panel panel-center">
+                    <div class="panel-header">
+                        <div class="panel-tabs" id="centerPanelTabs">
+                            <button class="tab-btn active" data-tab="chat">Chat</button>
+                            <button class="tab-btn" data-tab="sessions" id="tabBtnSessions">
+                                Session History
+                            </button>
+                            <button class="tab-btn" data-tab="notes_list" id="tabBtnNotesList">
+                                Notes List
+                            </button>
+                            <button class="tab-btn" data-tab="note" id="tabBtnNote">
+                                Note
+                                <span class="tab-close" id="btnCloseNote">×</span>
+                            </button>
+                        </div>
+                        <div class="panel-header-actions">
+                            <button class="btn-icon" id="btnSaveChatSession" title="Save session">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M8 2L3 7l5 5 5-5"/>
+                                </svg>
+                            </button>
+                            <button class="btn-icon" id="btnNewChatSession" title="New chat">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="8" y1="2" x2="8" y2="14"/>
+                                    <line x1="2" y1="8" x2="14" y2="8"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chat-messages-wrapper">
+                        <div class="chat-messages" id="chatMessages">
+                            <!-- Chat messages -->
+                        </div>
+                        <!-- Chat Sessions Panel (as tab content) -->
+                        <div class="chat-sessions-panel hidden" id="chatSessionsPanel">
+                            <div class="sessions-header">
+                                <div class="sessions-header-left">
+                                    <h3>Session History</h3>
+                                    <p class="sessions-subtitle">Select a session to continue</p>
+                                </div>
+                                <button class="btn-clear-sessions" id="btnClearSessions" title="Clear history">
+                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M3 6h10M8 6v7M5 6l-2 6M11 6l2 6"/>
+                                    </svg>
+                                    Clear
+                                </button>
+                            </div>
+                            <div class="sessions-list" id="chatSessionList">
+                                <!-- Sessions will be rendered here -->
+                            </div>
+                        </div>
+                        <!-- Prompt Scenarios Panel -->
+                        <div class="prompt-scenarios-panel collapsed">
+                            <div class="prompt-scenarios-header">
+                                <span class="prompt-scenarios-title">Quick Prompts</span>
+                                <svg class="chevron-icon rotated" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </div>
+                            <div class="prompt-scenarios-container">
+                                <!-- Prompt scenario buttons will be rendered here -->
+                            </div>
+                        </div>
+                        <div class="chat-input-wrapper">
+                            <form class="chat-form" id="chatForm">
+                                <input
+                                    type="text"
+                                    class="chat-input"
+                                    id="chatInput"
+                                    placeholder="Ask a question..."
+                                    autocomplete="off"
+                                >
+                                <button type="submit" class="btn-send" id="btnSend">
+                                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="2" y1="16" x2="16" y2="2"/>
+                                        <polyline points="2,2 2,16 16,16"/>
+                                    </svg>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </section>
+
+                <div class="resizer" id="resizerRight"></div>
+
+                <!-- Right Panel: Transform & Notes Stack -->
+                <aside class="panel panel-right">
+                    <!-- Transform Section -->
+                    <div class="workspace-section section-transform">
+                        <div class="panel-header studio-header">
+                            <button class="btn-toggle-side" id="btnToggleRight" title="Toggle sidebar">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M6 3L11 8L6 13" />
+                                </svg>
+                            </button>
+                            <h2 class="panel-title">STUDIO</h2>
+                        </div>
+                        <div class="transform-options">
+                            <div class="transform-grid">
+                                <button class="transform-card" data-type="summary">
+                                    <div class="transform-icon">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                                    </div>
+                                    <span class="transform-name">Summary</span>
+                                </button>
+                                <button class="transform-card" data-type="faq">
+                                    <div class="transform-icon">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                                    </div>
+                                    <span class="transform-name">FAQ</span>
+                                </button>
+                                <button class="transform-card" data-type="study_guide">
+                                    <div class="transform-icon">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                                    </div>
+                                    <span class="transform-name">Study Guide</span>
+                                </button>
+                                <button class="transform-card" data-type="outline">
+                                    <div class="transform-icon">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                                    </div>
+                                    <span class="transform-name">Outline</span>
+                                </button>
+                                <button class="transform-card" data-type="podcast">
+                                    <div class="transform-icon">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                                    </div>
+                                    <span class="transform-name">Podcast</span>
+                                </button>
+                                <button class="transform-card" data-type="timeline">
+                                    <div class="transform-icon">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                                    </div>
+                                    <span class="transform-name">Timeline</span>
+                                </button>
+                                <button class="transform-card" data-type="glossary">
+                                    <div class="transform-icon">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+                                    </div>
+                                    <span class="transform-name">Glossary</span>
+                                </button>
+                                <button class="transform-card" data-type="quiz">
+                                    <div class="transform-icon">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+                                    </div>
+                                    <span class="transform-name">Quiz</span>
+                                </button>
+                                <button class="transform-card" data-type="exam_notes">
+                                    <div class="transform-icon">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                                    </div>
+                                    <span class="transform-name">Exam Notes</span>
+                                </button>
+                                <button class="transform-card" data-type="mindmap">
+                                    <div class="transform-icon">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+                                    </div>
+                                    <span class="transform-name">Mindmap</span>
+                                </button>
+                                <button class="transform-card" data-type="infograph">
+                                    <div class="transform-icon">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M21 12H3"/><path d="M12 3v18"/><path d="M16 8l-8 8"/><path d="M8 8l8 8"/></svg>
+                                    </div>
+                                    <div class="transform-name-row">
+                                        <span class="transform-name">Infographic</span>
+                                        <span class="style-picker-btn" title="Select style"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg></span>
+                                    </div>
+                                </button>
+                                <button class="transform-card" data-type="ppt">
+                                    <div class="transform-icon">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+                                    </div>
+                                    <span class="transform-name">Slides</span>
+                                </button>
+                                <button class="transform-card" data-type="insight">
+                                    <div class="transform-icon">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line><path d="M12 2L12 12"></path><path d="M12 12L16 16"></path></svg>
+                                    </div>
+                                    <span class="transform-name">Insight</span>
+                                </button>
+                                <button class="transform-card" data-type="data_table">
+                                    <div class="transform-icon">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+                                    </div>
+                                    <span class="transform-name">Data Table</span>
+                                </button>
+                                <button class="transform-card" data-type="data_chart">
+                                    <div class="transform-icon">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                                    </div>
+                                    <span class="transform-name">Data Chart</span>
+                                </button>
+                            </div>
+                            <!-- Infograph Style Picker Dropdown -->
+                            <div id="infographStyleDropdown" class="style-dropdown" style="display: none;">
+                                <div class="style-dropdown-header">
+                                    <span>Select infographic style</span>
+                                    <button class="style-dropdown-close">&times;</button>
+                                </div>
+                                <div class="style-dropdown-list" id="infographStyleList">
+                                    <!-- Styles will be loaded dynamically -->
+                                </div>
+                            </div>
+                            <div class="transform-custom-pill">
+                                <input type="text" id="customPrompt" placeholder="Custom prompt..." autocomplete="off">
+                                <button id="btnCustomTransform">Generate</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notes Section -->
+                    <div class="workspace-section section-notes">
+                        <div class="panel-header">
+                            <h2 class="panel-title">Notes (0)</h2>
+                            <button class="btn-text" id="btnShowNotesDetails">Details</button>
+                        </div>
+                        <div class="notes-list" id="notesList">
+                            <!-- Notes rendered here -->
+                        </div>
+                    </div>
+                </aside>
+            </main>
+        </div>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <div class="footer-info">
+                <span class="footer-status" id="footerStatus">Ready</span>
+                <span class="footer-divider">|</span>
+                <span class="footer-stats" id="footerStats">0 sources · 0 notes</span>
+            </div>
+            <div class="footer-credit">
+                Powered by StudyForge
+            </div>
+        </footer>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="modalOverlay">
+        <!-- New Notebook Modal -->
+        <div class="modal" id="newNotebookModal">
+            <div class="modal-header">
+                <h3>New Notebook</h3>
+                <button class="btn-close" id="btnCloseNotebookModal">×</button>
+            </div>
+            <form class="modal-body" id="newNotebookForm">
+                <div class="form-group">
+                    <label class="input-label">Name</label>
+                    <input
+                        type="text"
+                        class="input-field"
+                        name="name"
+                        placeholder="Research Notes"
+                        required
+                        autofocus
+                    >
+                </div>
+                <div class="form-group">
+                    <label class="input-label">Description (optional)</label>
+                    <textarea
+                        class="input-field"
+                        name="description"
+                        placeholder="Brief description..."
+                        rows="2"
+                    ></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-secondary" id="btnCancelNotebook">Cancel</button>
+                    <button type="submit" class="btn-primary">Create Notebook</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Add Source Modal -->
+        <div class="modal" id="addSourceModal">
+            <div class="modal-header">
+                <h3>Add Source</h3>
+                <button class="btn-close" id="btnCloseSourceModal">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="source-tabs">
+                    <button class="source-tab active" data-source="file">Upload File</button>
+                    <button class="source-tab" data-source="text">Paste Text</button>
+                    <button class="source-tab" data-source="url">URL</button>
+                </div>
+
+                <!-- File Upload -->
+                <div class="source-content active" id="sourceFile">
+                    <div class="drop-zone" id="dropZone">
+                        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M20 8 L28 8 L28 20 L40 20 L40 40 L8 40 L8 8 L20 8 Z"/>
+                            <polyline points="28,8 28,20 40,20"/>
+                        </svg>
+                        <p>Drag and drop files here or click to browse</p>
+                        <span class="drop-hint">Supports PDF, images, audio, video, Office documents (PDF, DOCX, XLSX, PPTX, TXT, MD, etc.)</span>
+                        <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.xlsx,.xls,.pptx,.ppt,.txt,.md,.csv,.json,.xml,.html,.htm,.jpg,.jpeg,.png,.gif,.webp,.bmp,.svg,.mp3,.wav,.ogg,.m4a,.aac,.flac,.mp4,.avi,.mov,.mkv,.zip,.rar" multiple hidden>
+                    </div>
+                </div>
+
+                <!-- Text Input -->
+                <div class="source-content" id="sourceText">
+                    <form id="textSourceForm">
+                        <div class="form-group">
+                            <label class="input-label">Name</label>
+                            <input type="text" class="input-field" name="name" placeholder="Note title" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="input-label">Content</label>
+                            <textarea
+                                class="input-field font-mono"
+                                name="content"
+                                placeholder="Paste or type content here..."
+                                rows="10"
+                                required
+                            ></textarea>
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" class="btn-secondary" id="btnCancelText">Cancel</button>
+                            <button type="submit" class="btn-primary">Add Source</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- URL Input -->
+                <div class="source-content" id="sourceUrl">
+                    <form id="urlSourceForm">
+                        <div class="form-group">
+                            <label class="input-label">URL</label>
+                            <input
+                                type="url"
+                                class="input-field font-mono"
+                                name="url"
+                                placeholder="https://example.com/article"
+                                required
+                            >
+                        </div>
+                        <div class="form-group">
+                            <label class="input-label">Name (optional)</label>
+                            <input type="text" class="input-field" name="name" placeholder="Article title">
+                        </div>
+                        <div class="modal-actions">
+                            <button type="button" class="btn-secondary" id="btnCancelURL">Cancel</button>
+                            <button type="submit" class="btn-primary">Add Source</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Share Notebook Modal -->
+        <div class="modal" id="shareModal">
+            <div class="modal-header">
+                <h3>Share Notebook</h3>
+                <button class="btn-close" id="btnCloseShareModal">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="share-content">
+                    <p id="shareNotebookName" class="share-notebook-name"></p>
+
+                    <div class="share-status" id="shareStatus">
+                        <div class="status-icon" id="shareStatusIcon"></div>
+                        <span id="shareStatusText"></span>
+                    </div>
+
+                    <div class="share-link-section" id="shareLinkSection">
+                        <label class="input-label">Public Link</label>
+                        <div class="share-link-wrapper">
+                            <input type="text" class="input-field font-mono share-link-input" id="shareLinkInput" readonly>
+                            <button class="btn-copy-link" id="btnCopyLink" title="Copy link">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="7" width="10" height="8" rx="1"/>
+                                    <path d="M7 7V5a3 3 0 0 1 6 0v2"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="share-actions">
+                        <button type="button" class="btn-secondary" id="btnCancelShare">Close</button>
+                        <button type="button" class="btn-primary" id="btnToggleShare">Make Public</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner"></div>
+        <p class="loading-text" id="loadingText">Processing...</p>
+    </div>
+
+    <!-- Templates -->
+    <template id="notebookCardTemplate">
+        <div class="notebook-card" data-id="">
+            <div class="notebook-card-content">
+                <div class="notebook-card-icon">
+                    <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="8" y="8" width="24" height="24" rx="2"/>
+                        <line x1="14" y1="16" x2="26" y2="16"/>
+                        <line x1="14" y1="22" x2="22" y2="22"/>
+                    </svg>
+                </div>
+                <h3 class="notebook-card-name"></h3>
+                <p class="notebook-card-desc"></p>
+                <div class="notebook-card-stats">
+                    <span class="stat-sources">0 sources</span>
+                    <span class="stat-notes">0 notes</span>
+                    <span class="stat-date"></span>
+                    <button class="btn-share-card" title="Share">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <circle cx="10" cy="4" r="2"/>
+                            <circle cx="4" cy="10" r="2"/>
+                            <circle cx="10" cy="10" r="2"/>
+                            <line x1="5.5" y1="9" x2="8.5" y2="5"/>
+                            <line x1="5.5" y1="11" x2="8.5" y2="11"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <button class="btn-delete-card" title="Delete">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M5.5 5.5L10.5 10.5M10.5 5.5L5.5 10.5"/>
+                </svg>
+            </button>
+        </div>
+    </template>
+
+    <template id="notebookTemplate">
+        <div class="notebook-item" data-id="">
+            <div class="notebook-header">
+                <svg class="notebook-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <rect x="2" y="2" width="12" height="12" rx="1"/>
+                    <line x1="5" y1="5" x2="11" y2="5"/>
+                    <line x1="5" y1="7" x2="9" y2="7"/>
+                </svg>
+                <span class="notebook-name"></span>
+            </div>
+            <div class="notebook-meta">
+                <span class="notebook-sources">0 sources</span>
+                <span class="notebook-notes">0 notes</span>
+            </div>
+            <button class="btn-delete-notebook" title="Delete notebook">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M4.5 4.5L9.5 9.5M9.5 4.5L4.5 9.5"/>
+                </svg>
+            </button>
+        </div>
+    </template>
+
+    <template id="sourceTemplate">
+        <div class="source-card" data-id="">
+            <div class="source-type-badge"></div>
+            <div class="source-icon"></div>
+            <h4 class="source-name"></h4>
+            <div class="source-details-row">
+                <p class="source-meta"></p>
+                <div class="source-chunks">
+                    <span class="chunk-count"></span>
+                    <span> chunks</span>
+                </div>
+            </div>
+            <button class="btn-remove-source" title="Remove source">×</button>
+        </div>
+    </template>
+
+    <template id="noteTemplate">
+        <div class="note-item" data-id="">
+            <div class="note-type-badge"></div>
+            <h4 class="note-title"></h4>
+            <div class="note-preview"></div>
+            <div class="note-meta">
+                <span class="note-date"></span>
+                <span class="note-sources"></span>
+            </div>
+            <button class="btn-delete-note" title="Delete note">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M4.5 4.5L9.5 9.5M9.5 4.5L4.5 9.5"/>
+                </svg>
+            </button>
+        </div>
+    </template>
+
+    <template id="messageTemplate">
+        <div class="chat-message" data-role="">
+            <div class="message-avatar"></div>
+            <div class="message-content">
+                <p class="message-text"></p>
+                <div class="message-sources"></div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Resource Preview Templates -->
+    <template id="resourcePreviewTemplate">
+        <div class="resource-preview-container">
+            <div class="resource-preview-header">
+                <h3 class="resource-title"></h3>
+                <div class="resource-actions">
+                    <button class="btn-resource-action" data-action="close" title="Close">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="4" y1="4" x2="12" y2="12"/>
+                            <line x1="12" y1="4" x2="4" y2="12"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="resource-preview-content">
+                <div class="resource-loading">
+                    <div class="spinner"></div>
+                    <p>Loading...</p>
+                </div>
+                <div class="resource-error" style="display: none;">
+                    <p class="error-message"></p>
+                    <button class="btn-retry">Retry</button>
+                </div>
+                <div class="resource-body" style="display: none;"></div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Text Preview Template -->
+    <template id="textPreviewTemplate">
+        <div class="text-preview">
+            <div class="text-search-bar">
+                <input type="text" class="text-search-input" placeholder="Search text...">
+                <button class="btn-search-prev" title="Previous">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="10 4 6 8 10 12"/>
+                    </svg>
+                </button>
+                <button class="btn-search-next" title="Next">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="6 4 10 8 6 12"/>
+                    </svg>
+                </button>
+                <span class="search-count"></span>
+                <button class="btn-search-clear" title="Clear">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="4" y1="4" x2="12" y2="12"/>
+                        <line x1="12" y1="4" x2="4" y2="12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="text-content"></div>
+        </div>
+    </template>
+
+    <!-- Image Preview Template -->
+    <template id="imagePreviewTemplate">
+        <div class="image-preview">
+            <div class="image-toolbar">
+                <button class="btn-image-zoom-in" title="Zoom in">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        <line x1="11" y1="8" x2="11" y2="14"/>
+                        <line x1="8" y1="11" x2="14" y2="11"/>
+                    </svg>
+                </button>
+                <button class="btn-image-zoom-out" title="Zoom out">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        <line x1="8" y1="11" x2="14" y2="11"/>
+                    </svg>
+                </button>
+                <button class="btn-image-reset" title="Reset">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                        <path d="M3 3v5h5"/>
+                    </svg>
+                </button>
+                <div class="separator"></div>
+                <button class="btn-image-rotate-left" title="Rotate left">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                        <path d="M3 3v5h5"/>
+                    </svg>
+                </button>
+                <button class="btn-image-rotate-right" title="Rotate right">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12a9 9 0 1 1-9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/>
+                        <path d="M21 3v5h-5"/>
+                    </svg>
+                </button>
+                <span class="zoom-level">100%</span>
+            </div>
+            <div class="image-viewport">
+                <img class="image-preview-img" src="" alt="Preview image" />
+            </div>
+        </div>
+    </template>
+
+    <!-- Audio Preview Template -->
+    <template id="audioPreviewTemplate">
+        <div class="audio-preview">
+            <div class="audio-player-container">
+                <audio class="audio-player" preload="metadata"></audio>
+                <div class="audio-controls">
+                    <button class="btn-audio-play" title="Play/Pause">
+                        <svg class="icon-play" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <polygon points="5,3 19,12 5,21"/>
+                        </svg>
+                        <svg class="icon-pause" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="display: none;">
+                            <rect x="6" y="4" width="4" height="16"/>
+                            <rect x="14" y="4" width="4" height="16"/>
+                        </svg>
+                    </button>
+                    <div class="audio-progress-container">
+                        <div class="audio-progress-bar">
+                            <div class="audio-progress-fill"></div>
+                        </div>
+                        <div class="audio-time">
+                            <span class="current-time">0:00</span>
+                            <span class="separator">/</span>
+                            <span class="duration">0:00</span>
+                        </div>
+                    </div>
+                    <div class="audio-volume-container">
+                        <button class="btn-audio-mute" title="Mute">
+                            <svg class="icon-volume-high" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+                            </svg>
+                            <svg class="icon-volume-low" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+                            </svg>
+                            <svg class="icon-mute" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: none;">
+                                <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+                                <line x1="23" y1="9" x2="17" y2="15"/>
+                                <line x1="17" y1="9" x2="23" y2="15"/>
+                            </svg>
+                        </button>
+                        <input type="range" class="audio-volume-slider" min="0" max="1" step="0.05" value="1" />
+                    </div>
+                </div>
+            </div>
+            <div class="audio-transcript">
+                <div class="transcript-header">
+                    <h4>Transcript</h4>
+                    <button class="btn-transcript-toggle">Expand</button>
+                </div>
+                <div class="transcript-content">
+                    <p class="transcript-text"></p>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- PDF Preview Template -->
+    <template id="pdfPreviewTemplate">
+        <div class="pdf-preview">
+            <div class="pdf-toolbar">
+                <button class="btn-pdf-prev" title="Previous page">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                </button>
+                <span class="pdf-page-info">
+                    <span class="current-page">1</span> / <span class="total-pages">-</span>
+                </span>
+                <button class="btn-pdf-next" title="Next page">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                </button>
+                <div class="separator"></div>
+                <button class="btn-pdf-zoom-out" title="Zoom out">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        <line x1="8" y1="11" x2="14" y2="11"/>
+                    </svg>
+                </button>
+                <span class="pdf-zoom-level">100%</span>
+                <button class="btn-pdf-zoom-in" title="Zoom in">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        <line x1="11" y1="8" x2="11" y2="14"/>
+                        <line x1="8" y1="11" x2="14" y2="11"/>
+                    </svg>
+                </button>
+                <div class="separator"></div>
+                <button class="btn-pdf-fit-width" title="Fit width">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="18" height="18" rx="2"/>
+                        <line x1="9" y1="3" x2="9" y2="21"/>
+                        <line x1="15" y1="3" x2="15" y2="21"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="pdf-viewport">
+                <div class="pdf-page-container">
+                    <canvas class="pdf-canvas"></canvas>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- URL Preview Template -->
+    <template id="urlPreviewTemplate">
+        <div class="url-preview">
+            <div class="url-toolbar">
+                <div class="url-address-bar">
+                    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M8 3a5 5 0 0 0-5 5"/>
+                        <path d="M11 8a5 5 0 0 0-5-5"/>
+                        <path d="M11 8a5 5 0 0 1 5 5"/>
+                        <path d="M8 13a5 5 0 0 1-5-5"/>
+                    </svg>
+                    <input type="text" class="url-input" readonly />
+                </div>
+                <button class="btn-url-back" title="Back">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6"/>
+                    </svg>
+                </button>
+                <button class="btn-url-forward" title="Forward">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                </button>
+                <button class="btn-url-refresh" title="Refresh">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M23 4v6h-6"/>
+                        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                    </svg>
+                </button>
+                <a href="" target="_blank" class="btn-url-external" title="Open in new window">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+                        <polyline points="15 3 21 3 21 9"/>
+                        <line x1="10" y1="14" x2="21" y2="3"/>
+                    </svg>
+                </a>
+            </div>
+            <div class="url-viewport">
+                <iframe class="url-iframe" sandbox="allow-same-origin allow-scripts allow-forms allow-popups"></iframe>
+                <div class="url-blocked" style="display: none;">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                    <p>This website does not allow embedding</p>
+                    <a href="" target="_blank" class="btn-open-external">Open in new window</a>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <script src="/static/app.js?v=30"></script>
+</body>
+</html>
