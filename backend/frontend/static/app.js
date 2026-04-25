@@ -145,6 +145,10 @@ class OpenNotebook {
         // Resource Tab Manager
         this.resourceTabManager = new ResourceTabManager(this);
 
+        // Textbook support
+        this.currentTextbook = null;
+        this.textbookCheckInterval = null;
+
         // Infograph styles
         this.infographStyles = [];
         this.selectedInfographStyle = null; // null means default
@@ -204,13 +208,14 @@ class OpenNotebook {
         this.initResizers();
         this.initNotebookNameEditor();
         this.initPromptScenariosPanel();
+        this.initTextbookEvents();
 
         // Cleanup expired cache
         this.cache.cleanup();
 
-        // Check if URL contains /notes/:id or /public/:token for direct notebook access
-        // Only load notebooks if not accessing a public notebook directly
-        if (!this.checkURLForNotebook() && !this.checkURLForPublicNotebook()) {
+        // Check if URL contains /notes/:id or /public/:token for direct access
+        // Also check for /notebooks/:id/textbook
+        if (!this.checkURLForTextbook() && !this.checkURLForNotebook() && !this.checkURLForPublicNotebook()) {
             await this.loadNotebooks();
             this.applyConfig();
             this.switchView('landing');
@@ -1186,15 +1191,22 @@ class OpenNotebook {
     switchView(view) {
         const landing = document.getElementById('landingPage');
         const workspace = document.getElementById('workspaceContainer');
+        const textbook = document.getElementById('textbookContainer');
         const header = document.querySelector('.app-header');
 
+        // Hide all views first
+        landing.classList.add('hidden');
+        workspace.classList.add('hidden');
+        if (textbook) textbook.classList.add('hidden');
+        header.classList.add('hidden');
+
         if (view === 'workspace') {
-            landing.classList.add('hidden');
             workspace.classList.remove('hidden');
-            header.classList.add('hidden');
+            this.loadTextbookStatus(); // Check textbook status on workspace show
+        } else if (view === 'textbook') {
+            if (textbook) textbook.classList.remove('hidden');
         } else {
             landing.classList.remove('hidden');
-            workspace.classList.add('hidden');
             header.classList.remove('hidden');
             this.currentNotebook = null;
             this.renderNotebookCards();
@@ -3702,6 +3714,312 @@ class OpenNotebook {
             notebookCard.querySelector('.stat-sources').textContent = `${sources.length} sources`;
             notebookCard.querySelector('.stat-notes').textContent = `${notes.length} notes`;
         }
+    }
+
+    // ============================================
+    // Textbook Features
+    // ============================================
+    
+    initTextbookEvents() {
+        const btnViewTextbook = document.getElementById('btnViewTextbook');
+        if (btnViewTextbook) {
+            btnViewTextbook.addEventListener('click', () => {
+                if (btnViewTextbook.classList.contains('active-stale')) {
+                    this.openTextbookView(true); // Open in viewing mode even if stale
+                } else if (btnViewTextbook.querySelector('#viewTextbookLabel').textContent === 'Generate Textbook') {
+                    this.regenerateTextbook();
+                } else {
+                    this.openTextbookView();
+                }
+            });
+        }
+
+        const btnBackToWorkspace = document.getElementById('btnBackToWorkspace');
+        if (btnBackToWorkspace) {
+            btnBackToWorkspace.addEventListener('click', () => {
+                this.switchView('workspace');
+                if (this.currentNotebook) {
+                    this.updateURL(this.currentNotebook.id);
+                }
+            });
+        }
+
+        const btnDownloadTextbook = document.getElementById('btnDownloadTextbook');
+        if (btnDownloadTextbook) {
+            btnDownloadTextbook.addEventListener('click', () => this.downloadTextbook());
+        }
+
+        const btnRegenerateTextbook = document.getElementById('btnRegenerateTextbook');
+        if (btnRegenerateTextbook) {
+            btnRegenerateTextbook.addEventListener('click', () => {
+                if (confirm('Are you sure you want to regenerate the entire textbook? This will replace the current version.')) {
+                    this.regenerateTextbook();
+                }
+            });
+        }
+
+        const btnBannerRegenerate = document.getElementById('btnBannerRegenerate');
+        if (btnBannerRegenerate) {
+            btnBannerRegenerate.addEventListener('click', () => this.regenerateTextbook());
+        }
+
+        const btnBannerDismiss = document.getElementById('btnBannerDismiss');
+        if (btnBannerDismiss) {
+            btnBannerDismiss.addEventListener('click', () => {
+                document.getElementById('staleTextbookBanner')?.classList.add('hidden');
+            });
+        }
+    }
+
+    checkURLForTextbook() {
+        const path = window.location.pathname;
+        const match = path.match(/^\/notebooks\/([a-f0-9-]+)\/textbook$/);
+        if (match) {
+            const notebookId = match[1];
+            // Setup an interval to try to load notebooks if they aren't loaded yet
+            if (this.notebooks.length === 0) {
+                this.loadNotebooks().then(() => {
+                    const notebook = this.notebooks.find(nb => nb.id === notebookId);
+                    if (notebook) {
+                        this.currentNotebook = notebook;
+                        this.openTextbookView();
+                    } else {
+                        this.switchView('landing');
+                    }
+                });
+            } else {
+                const notebook = this.notebooks.find(nb => nb.id === notebookId);
+                if (notebook) {
+                    this.currentNotebook = notebook;
+                    this.openTextbookView();
+                } else {
+                    this.switchView('landing');
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    updateTextbookURL(notebookId) {
+        const newURL = `/notebooks/${notebookId}/textbook`;
+        window.history.pushState({ notebookId, view: 'textbook' }, '', newURL);
+    }
+
+    async loadTextbookStatus() {
+        if (!this.currentNotebook) return;
+        
+        try {
+            const textbook = await this.api(`/notebooks/${this.currentNotebook.id}/textbook`);
+            const btn = document.getElementById('btnViewTextbook');
+            const label = document.getElementById('viewTextbookLabel');
+            
+            if (!btn) return;
+            btn.style.display = 'flex';
+            
+            if (textbook.status === 'regenerating') {
+                label.textContent = 'Generating...';
+                btn.disabled = true;
+                btn.className = 'btn-secondary';
+                // Wait and poll
+                if (!this.textbookCheckInterval) {
+                   this.textbookCheckInterval = setInterval(() => this.loadTextbookStatus(), 5000);
+                }
+            } else if (textbook.status === 'stale') {
+                label.textContent = 'View Textbook (outdated)';
+                btn.disabled = false;
+                btn.className = 'btn-state-stale';
+                btn.classList.add('active-stale');
+                clearInterval(this.textbookCheckInterval);
+                this.textbookCheckInterval = null;
+            } else if (textbook.status === 'current') {
+                label.textContent = 'View Textbook';
+                btn.disabled = false;
+                btn.className = 'btn-secondary';
+                btn.classList.remove('active-stale');
+                clearInterval(this.textbookCheckInterval);
+                this.textbookCheckInterval = null;
+            }
+        } catch (error) {
+            // Not found (404)
+            const btn = document.getElementById('btnViewTextbook');
+            const label = document.getElementById('viewTextbookLabel');
+            if (btn) {
+                btn.style.display = 'flex';
+                label.textContent = 'Generate Textbook';
+                btn.disabled = false;
+                btn.className = 'btn-primary';
+                btn.classList.remove('active-stale');
+            }
+            clearInterval(this.textbookCheckInterval);
+            this.textbookCheckInterval = null;
+        }
+    }
+
+    async openTextbookView(ignoreStaleWarning = false) {
+        if (!this.currentNotebook) return;
+        
+        this.switchView('textbook');
+        this.updateTextbookURL(this.currentNotebook.id);
+        
+        const titleEl = document.getElementById('textbookNotebookName');
+        if (titleEl) titleEl.textContent = `${this.currentNotebook.name} — Textbook`;
+        
+        const contentEl = document.getElementById('textbookRendered');
+        const tocEl = document.getElementById('textbookTOC');
+        const indicatorEl = document.getElementById('regeneratingIndicator');
+        const bannerEl = document.getElementById('staleTextbookBanner');
+        
+        contentEl.innerHTML = '<p>Loading textbook...</p>';
+        tocEl.innerHTML = '';
+        indicatorEl.classList.add('hidden');
+        bannerEl.classList.add('hidden');
+        
+        try {
+            const textbook = await this.api(`/notebooks/${this.currentNotebook.id}/textbook`);
+            this.currentTextbook = textbook;
+            
+            if (textbook.status === 'regenerating') {
+                indicatorEl.classList.remove('hidden');
+                // Don't show content
+            } else {
+                if (textbook.status === 'stale' && !ignoreStaleWarning) {
+                    bannerEl.classList.remove('hidden');
+                }
+                this.renderTextbook(textbook.content_markdown);
+            }
+            
+            if (textbook.status === 'regenerating' && !this.textbookCheckInterval) {
+                this.textbookCheckInterval = setInterval(async () => {
+                    const latest = await this.api(`/notebooks/${this.currentNotebook.id}/textbook`);
+                    if (latest.status !== 'regenerating') {
+                        clearInterval(this.textbookCheckInterval);
+                        this.textbookCheckInterval = null;
+                        this.openTextbookView(); // Reload view
+                    }
+                }, 5000);
+            }
+        } catch (error) {
+            contentEl.innerHTML = '<p>No textbook found. Use the Generate button to create one.</p>';
+        }
+    }
+
+    async regenerateTextbook() {
+        if (!this.currentNotebook) return;
+        
+        try {
+            this.setStatus('Starting textbook generation...');
+            // Immediately switch to regenerating UI if on textbook view
+            if (document.getElementById('textbookContainer').classList.contains('hidden') === false) {
+                document.getElementById('regeneratingIndicator')?.classList.remove('hidden');
+                document.getElementById('staleTextbookBanner')?.classList.add('hidden');
+            }
+            
+            const btn = document.getElementById('btnViewTextbook');
+            if (btn) {
+                btn.disabled = true;
+                btn.className = 'btn-secondary';
+                document.getElementById('viewTextbookLabel').textContent = 'Generating...';
+            }
+            
+            // This starts the asynchronous generation
+            await this.api(`/notebooks/${this.currentNotebook.id}/textbook/generate`, {
+                method: 'POST'
+            });
+            
+            this.setStatus('Textbook generation in progress...');
+            
+            // Start polling
+            if (!this.textbookCheckInterval) {
+               this.textbookCheckInterval = setInterval(async () => {
+                   if (document.getElementById('textbookContainer').classList.contains('hidden') === false) {
+                       const latest = await this.api(`/notebooks/${this.currentNotebook.id}/textbook`);
+                       if (latest.status !== 'regenerating') {
+                           clearInterval(this.textbookCheckInterval);
+                           this.textbookCheckInterval = null;
+                           this.openTextbookView(); // Reload view
+                       }
+                   } else {
+                       this.loadTextbookStatus();
+                   }
+               }, 5000);
+            }
+        } catch (error) {
+            console.error('Failed to trigger generation', error);
+            this.showError('Failed to start textbook generation: ' + error.message);
+            document.getElementById('regeneratingIndicator')?.classList.add('hidden');
+        }
+    }
+
+    renderTextbook(markdown) {
+        const contentEl = document.getElementById('textbookRendered');
+        const tocEl = document.getElementById('textbookTOC');
+        
+        // Parse markdown using marked
+        if (typeof marked !== 'undefined') {
+            marked.setOptions({
+                breaks: true,
+                gfm: true
+            });
+            const html = marked.parse(markdown || '');
+            contentEl.innerHTML = html;
+        } else {
+            contentEl.textContent = markdown;
+        }
+        
+        // Render MathJax if present
+        if (window.MathJax && window.MathJax.typesetPromise) {
+            window.MathJax.typesetPromise([contentEl]).catch(err => {
+                console.error('MathJax error:', err);
+            });
+        }
+        
+        // Extract headers for TOC
+        tocEl.innerHTML = '';
+        const headers = contentEl.querySelectorAll('h1, h2, h3');
+        headers.forEach((h, index) => {
+            const id = `heading-${index}`;
+            h.id = id;
+            
+            const li = document.createElement('li');
+            li.style.marginLeft = h.tagName === 'H3' ? '16px' : (h.tagName === 'H2' ? '8px' : '0');
+            
+            const a = document.createElement('a');
+            a.href = `#${id}`;
+            a.textContent = h.textContent;
+            a.addEventListener('click', (e) => {
+                e.preventDefault();
+                h.scrollIntoView({ behavior: 'smooth' });
+                // Update active state
+                tocEl.querySelectorAll('a').forEach(link => link.classList.remove('active'));
+                a.classList.add('active');
+            });
+            
+            li.appendChild(a);
+            tocEl.appendChild(li);
+        });
+    }
+
+    downloadTextbook() {
+        if (!this.currentTextbook || !this.currentTextbook.content_markdown) return;
+        
+        const blob = new Blob([this.currentTextbook.content_markdown], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        
+        // Clean filename safely
+        const safeName = (this.currentNotebook?.name || 'Textbook').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        
+        a.href = url;
+        a.download = `${safeName}.md`;
+        document.body.appendChild(a);
+        a.click();
+        
+        // Cleanup
+        setTimeout(() => {
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }, 100);
     }
 }
 

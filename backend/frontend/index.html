@@ -135,6 +135,13 @@
                     </div>
                 </div>
                 <div class="workspace-actions">
+                    <button class="btn-primary" id="btnViewTextbook" style="display: none;">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                        </svg>
+                        <span id="viewTextbookLabel">Generate Textbook</span>
+                    </button>
                     <button class="btn-share" id="btnShareNotebook" title="Share notebook">
                         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="11" cy="4" r="2"/>
@@ -412,6 +419,77 @@
                         </div>
                     </div>
                 </aside>
+            </main>
+        </div>
+
+        <!-- Textbook Page (Hidden by default) -->
+        <div class="textbook-container hidden" id="textbookContainer">
+            <nav class="workspace-nav">
+                <button class="btn-back" id="btnBackToWorkspace">
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="15" y1="9" x2="3" y2="9"/>
+                        <polyline points="9,15 3,9 9,3"/>
+                    </svg>
+                    Back to Workspace
+                </button>
+                <div class="current-notebook-info">
+                    <h2 id="textbookNotebookName" class="notebook-name-display">Notebook Textbook</h2>
+                </div>
+                <div class="workspace-actions">
+                    <button class="btn-secondary" id="btnDownloadTextbook" title="Download as Markdown">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                            <polyline points="7 10 12 15 17 10"></polyline>
+                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        Download
+                    </button>
+                    <button class="btn-primary" id="btnRegenerateTextbook">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <polyline points="1 20 1 14 7 14"></polyline>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                        </svg>
+                        Regenerate
+                    </button>
+                </div>
+            </nav>
+
+            <!-- Stale Textbook Banner -->
+            <div id="staleTextbookBanner" class="stale-banner hidden">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span>New sources added — your textbook is out of date.</span>
+                <div class="banner-actions">
+                    <button class="btn-banner-primary" id="btnBannerRegenerate">Regenerate Now</button>
+                    <button class="btn-banner-dismiss" id="btnBannerDismiss">Dismiss</button>
+                </div>
+            </div>
+
+            <!-- Regenerating Progress -->
+            <div id="regeneratingIndicator" class="regenerating-overlay hidden">
+                <div class="loading-spinner"></div>
+                <p>Generating your textbook... This may take a few minutes depending on your sources.</p>
+            </div>
+
+            <main class="textbook-main">
+                <!-- Table of Contents Sidebar -->
+                <aside class="toc-sidebar">
+                    <h3>Table of Contents</h3>
+                    <ul id="textbookTOC" class="toc-list">
+                        <!-- TOC links populated via JS -->
+                    </ul>
+                </aside>
+
+                <!-- Rendered Markdown Area -->
+                <section class="textbook-content">
+                    <div id="textbookRendered" class="markdown-body">
+                        <!-- Markdown populated via JS -->
+                    </div>
+                </section>
             </main>
         </div>
 
