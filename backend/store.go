@@ -209,6 +209,17 @@ func (s *Store) initSchema() error {
 	CREATE INDEX IF NOT EXISTS idx_chat_messages_session ON chat_messages(session_id);
 	CREATE INDEX IF NOT EXISTS idx_podcasts_notebook ON podcasts(notebook_id);
 
+	CREATE TABLE IF NOT EXISTS textbooks (
+		id TEXT PRIMARY KEY,
+		notebook_id TEXT NOT NULL UNIQUE,
+		content_markdown TEXT NOT NULL,
+		status TEXT NOT NULL,
+		version INTEGER NOT NULL DEFAULT 1,
+		created_at INTEGER NOT NULL,
+		updated_at INTEGER NOT NULL,
+		FOREIGN KEY (notebook_id) REFERENCES notebooks(id) ON DELETE CASCADE
+	);
+
 	CREATE TABLE IF NOT EXISTS activity_logs (
 		id TEXT PRIMARY KEY,
 		user_id TEXT NOT NULL,
@@ -1739,4 +1750,67 @@ func (s *Store) UpdateSourceContent(ctx context.Context, id string, content stri
 		WHERE id = ?
 	`, content, chunkCount, now, id)
 	return err
+}
+
+// GetTextbookByNotebookID retrieves a textbook by its notebook ID
+func (s *Store) GetTextbookByNotebookID(ctx context.Context, notebookID string) (*Textbook, error) {
+	row := s.db.QueryRowContext(ctx, `
+		SELECT id, notebook_id, content_markdown, status, version, created_at, updated_at
+		FROM textbooks
+		WHERE notebook_id = ?
+	`, notebookID)
+
+	var t Textbook
+	var createdAt, updatedAt int64
+	err := row.Scan(&t.ID, &t.NotebookID, &t.ContentMarkdown, &t.Status, &t.Version, &createdAt, &updatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // Not found is not an error here, just return nil
+		}
+		return nil, fmt.Errorf("failed to get textbook: %w", err)
+	}
+
+	t.CreatedAt = time.Unix(createdAt, 0)
+	t.UpdatedAt = time.Unix(updatedAt, 0)
+	return &t, nil
+}
+
+// SaveTextbook creates or updates a textbook
+func (s *Store) SaveTextbook(ctx context.Context, textbook *Textbook) error {
+	now := time.Now().Unix()
+	
+	if textbook.CreatedAt.IsZero() {
+		textbook.CreatedAt = time.Unix(now, 0)
+	}
+	textbook.UpdatedAt = time.Unix(now, 0)
+
+	_, err := s.db.ExecContext(ctx, `
+		INSERT INTO textbooks (id, notebook_id, content_markdown, status, version, created_at, updated_at)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(notebook_id) DO UPDATE SET
+			content_markdown = excluded.content_markdown,
+			status = excluded.status,
+			version = excluded.version,
+			updated_at = excluded.updated_at
+	`, textbook.ID, textbook.NotebookID, textbook.ContentMarkdown, textbook.Status, textbook.Version, textbook.CreatedAt.Unix(), textbook.UpdatedAt.Unix())
+
+	if err != nil {
+		return fmt.Errorf("failed to save textbook: %w", err)
+	}
+	return nil
+}
+
+// UpdateTextbookStatus updates the status of a textbook by notebook ID
+func (s *Store) UpdateTextbookStatus(ctx context.Context, notebookID string, status string) error {
+	now := time.Now().Unix()
+	_, err := s.db.ExecContext(ctx, `
+		UPDATE textbooks 
+		SET status = ?, updated_at = ?
+		WHERE notebook_id = ?
+	`, status, now, notebookID)
+	
+	if err != nil {
+		return fmt.Errorf("failed to update textbook status: %w", err)
+	}
+	return nil
 }

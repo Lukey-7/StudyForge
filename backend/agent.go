@@ -489,6 +489,23 @@ func (a *Agent) GenerateExamNotes(ctx context.Context, sources []Source) (string
 	return resp.Content, nil
 }
 
+// GenerateTextbook generates a textbook logically structured with exactly 5 chapters, formatting in Markdown, cross-referencing chapters, and ending Chapter 5 with exactly 10 revision questions based ONLY on the combinedText.
+func (a *Agent) GenerateTextbook(ctx context.Context, notebookName string, combinedText string) (string, error) {
+	prompt := fmt.Sprintf(`You are an expert academic author. Create a comprehensive textbook based ONLY on the following source material.
+The textbook must be for the notebook named "%s".
+
+Requirements:
+- Exactly 5 chapters.
+- Format using Markdown.
+- Cross-reference chapters where appropriate.
+- End Chapter 5 with exactly 10 revision questions based ONLY on the provided text.
+
+Source Material:
+%s`, notebookName, combinedText)
+
+	return a.provider.GenerateTextWithModel(ctx, prompt, a.cfg.OpenAIModel)
+}
+
 // GenerateSummary generates a summary from sources
 func (a *Agent) GenerateSummary(ctx context.Context, sources []Source, length string) (string, error) {
 	req := &TransformationRequest{

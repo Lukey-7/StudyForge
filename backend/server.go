@@ -34,7 +34,7 @@ type Server struct {
 	// Track which notebooks have been loaded into vector store
 	loadedNotebooks map[string]bool
 	vectorMutex     sync.RWMutex
-	memoryManager *MemoryManager
+	memoryManager   *MemoryManager
 }
 
 // NewServer creates a new server
@@ -249,6 +249,10 @@ func (s *Server) setupRoutes() {
 
 			// Notebook overview
 			notebooks.GET("/:id/overview", s.handleNotebookOverview)
+
+			// Textbook
+			notebooks.GET("/:id/textbook", s.handleGetTextbook)
+			notebooks.POST("/:id/textbook/generate", s.handleGenerateTextbook)
 		}
 
 		// Upload endpoint
@@ -828,7 +832,6 @@ func (s *Server) handleUpload(c *gin.Context) {
 	c.JSON(201, source)
 }
 
-
 // Note handlers
 
 func (s *Server) handleListNotes(c *gin.Context) {
@@ -1389,6 +1392,119 @@ func (s *Server) handleNotebookOverview(c *gin.Context) {
 
 // Utility functions
 
+// handleGetTextbook gets the textbook for a notebook
+func (s *Server) handleGetTextbook(c *gin.Context) {
+	ctx := context.Background()
+	notebookID := c.Param("id")
+	userID := c.GetString("user_id")
+
+	if err := s.checkNotebookAccess(ctx, notebookID, userID); err != nil {
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	textbook, err := s.store.GetTextbookByNotebookID(ctx, notebookID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to get textbook"})
+		return
+	}
+
+	if textbook == nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "Textbook not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, textbook)
+}
+
+// handleGenerateTextbook triggers textbook generation from sources
+func (s *Server) handleGenerateTextbook(c *gin.Context) {
+	ctx := context.Background()
+	notebookID := c.Param("id")
+	userID := c.GetString("user_id")
+
+	if err := s.checkNotebookAccess(ctx, notebookID, userID); err != nil {
+		c.JSON(http.StatusForbidden, ErrorResponse{Error: err.Error()})
+		return
+	}
+
+	notebook, err := s.store.GetNotebook(ctx, notebookID)
+	if err != nil {
+		c.JSON(http.StatusNotFound, ErrorResponse{Error: "Notebook not found"})
+		return
+	}
+
+	sources, err := s.store.ListSources(ctx, notebookID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to list sources"})
+		return
+	}
+
+	if len(sources) == 0 {
+		c.JSON(http.StatusBadRequest, ErrorResponse{Error: "No sources found in notebook"})
+		return
+	}
+
+	// 1. Mark existing or newly created as regenerating
+	existingTB, err := s.store.GetTextbookByNotebookID(ctx, notebookID)
+	version := 1
+	var tbID string
+	if existingTB != nil {
+		version = existingTB.Version + 1
+		tbID = existingTB.ID
+	} else {
+		tbID = uuid.New().String()
+	}
+
+	tempTB := &Textbook{
+		ID:              tbID,
+		NotebookID:      notebookID,
+		ContentMarkdown: "Generating textbook...",
+		Status:          "regenerating",
+		Version:         version,
+	}
+
+	if existingTB != nil {
+		tempTB.ContentMarkdown = existingTB.ContentMarkdown
+	}
+
+	if err := s.store.SaveTextbook(ctx, tempTB); err != nil {
+		c.JSON(http.StatusInternalServerError, ErrorResponse{Error: "Failed to initialize textbook state"})
+		return
+	}
+
+	// 2. Do the long running process in background
+	go func() {
+		bgCtx := context.Background()
+		var combinedTextBuilder strings.Builder
+		for idx, src := range sources {
+			if src.Content != "" {
+				combinedTextBuilder.WriteString(fmt.Sprintf("--- Source %d: %s ---\n%s\n\n", idx+1, src.Name, src.Content))
+			}
+		}
+
+		result, err := s.agent.GenerateTextbook(bgCtx, notebook.Name, combinedTextBuilder.String())
+		if err != nil {
+			golog.Errorf("Failed to generate textbook: %v", err)
+			s.store.UpdateTextbookStatus(bgCtx, notebookID, "error")
+			return
+		}
+
+		finalTB := &Textbook{
+			ID:              tbID,
+			NotebookID:      notebookID,
+			ContentMarkdown: result,
+			Status:          "current",
+			Version:         version,
+		}
+		if err := s.store.SaveTextbook(bgCtx, finalTB); err != nil {
+			golog.Errorf("Failed to save generated textbook: %v", err)
+		}
+	}()
+
+	c.JSON(http.StatusAccepted, tempTB)
+}
+
 // handleServeFile serves uploaded files with proper access control
 // Rules:
 // 1. If notebook is public -> allow access
@@ -1743,7 +1859,7 @@ var processingQueueMutex sync.Mutex
 func GetProcessingQueue() *ProcessingQueue {
 	processingQueueMutex.Lock()
 	defer processingQueueMutex.Unlock()
-	
+
 	if processingQueue == nil {
 		processingQueue = &ProcessingQueue{
 			tasks: make(chan ProcessingTask, 100),
@@ -1863,6 +1979,14 @@ func (pq *ProcessingQueue) processTask(task ProcessingTask) {
 	done <- true
 	time.Sleep(100 * time.Millisecond) // Give one last update time
 	pq.store.UpdateSourceStatus(ctx, task.SourceID, "completed", 100, "")
+
+	// Check if its linked notebook has a textbook. If so, mark as stale.
+	if textbook, err := pq.store.GetTextbookByNotebookID(ctx, task.NotebookID); err == nil && textbook != nil {
+		if err := pq.store.UpdateTextbookStatus(ctx, task.NotebookID, "stale"); err != nil {
+			golog.Errorf("failed to mark textbook as stale: %v", err)
+		}
+	}
+
 	fmt.Printf("[Processing] Completed processing file: %s\n", task.FileName)
 }
 

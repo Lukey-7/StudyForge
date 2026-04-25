@@ -796,23 +796,27 @@ class OpenNotebook {
             const hashIdDisplay = this.currentUser.hash_id ? `User ID: ${this.currentUser.hash_id}\n` : '';
             const tooltipText = `Login via: ${providerName}\n${hashIdDisplay}Account: ${this.currentUser.email}`;
 
+            // Handle fallback avatar
+            const fallbackInitial = this.currentUser.name ? this.currentUser.name.charAt(0) : this.currentUser.email.charAt(0);
+            const avatarUrl = this.currentUser.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(fallbackInitial)}&background=random`;
+
             // Update landing page
             if (btnLogin) btnLogin.classList.add('hidden');
             if (userProfile) userProfile.classList.remove('hidden');
             if (userAvatar) {
-                userAvatar.src = this.currentUser.avatar_url;
+                userAvatar.src = avatarUrl;
                 userAvatar.title = tooltipText;
             }
-            if (userName) userName.textContent = this.currentUser.name;
+            if (userName) userName.textContent = this.currentUser.name || this.currentUser.email.split('@')[0];
 
             // Update workspace
             if (btnLoginWorkspace) btnLoginWorkspace.classList.add('hidden');
             if (userProfileWorkspace) userProfileWorkspace.classList.remove('hidden');
             if (userAvatarWorkspace) {
-                userAvatarWorkspace.src = this.currentUser.avatar_url;
+                userAvatarWorkspace.src = avatarUrl;
                 userAvatarWorkspace.title = tooltipText;
             }
-            if (userNameWorkspace) userNameWorkspace.textContent = this.currentUser.name;
+            if (userNameWorkspace) userNameWorkspace.textContent = this.currentUser.name || this.currentUser.email.split('@')[0];
         } else {
             // Update landing page
             if (btnLogin) btnLogin.classList.remove('hidden');
@@ -1769,6 +1773,8 @@ class OpenNotebook {
                 body: JSON.stringify({
                     name: data.get('name'),
                     description: data.get('description') || undefined,
+                    icon: data.get('icon') || '📓',
+                    color: data.get('color') || '#8B5CF6',
                 }),
             });
 
