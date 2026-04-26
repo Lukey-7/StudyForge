@@ -6,7 +6,7 @@ StudyForge is an end-to-end AI-powered study knowledge pipeline that transforms 
 
 ## Original Base
 
-This project is built on top of [notex](https://github.com/smallnest/notex), an open-source NotebookLM alternative by smallnest. The following modifications were made to transform it into StudyForge.
+StudyForge is a fork of an open-source NotebookLM alternative, extended into a full-featured study knowledge pipeline. The following modifications were applied.
 
 ---
 
@@ -70,10 +70,10 @@ This project is built on top of [notex](https://github.com/smallnest/notex), an 
 
 ## What We Changed From the Original
 
-| Feature | Original notex | StudyForge |
+| Feature | Original Codebase | StudyForge |
 |---|---|---|
 | LLM Provider | OpenAI / Ollama multi-provider | Google Gemini only (via OpenAI-compatible endpoint) |
-| App name | NoteX / 笔记本 | StudyForge |
+| App name | NoteX | StudyForge |
 | Language | Chinese UI + English | Fully English |
 | Ollama support | Present (optional local provider) | Removed entirely — Gemini only |
 | Transformation modes | summary, faq, study_guide, outline, podcast, timeline, glossary, quiz, mindmap, infograph, ppt, custom, insight, data_table, data_chart | All original modes preserved + added: **Exam Notes** |
@@ -376,7 +376,7 @@ StudyForge/
 
 ## Acknowledgements
 
-- **Original project**: [notex](https://github.com/smallnest/notex) by smallnest
+- **Original project**: Open-source NotebookLM alternative
 - **AI Engine**: Google Gemini via [AI Studio](https://aistudio.google.com)
 - **Design Tool**: [Google Stitch](https://stitch.withgoogle.com)
 - **LLM Framework**: [LangChainGo](https://github.com/tmc/langchaingo)

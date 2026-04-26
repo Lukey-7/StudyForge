@@ -105,7 +105,7 @@ func NewServer(cfg Config) (*Server, error) {
 		memoryManager:   memoryManager,
 	}
 
-	// 延迟加载向量索引，不在启动时加载
+	// Lazy-load vector index — do not load at startup
 	golog.Infof("✅ server initialized (vector index will load on demand)")
 
 	s.setupRoutes()
@@ -844,9 +844,9 @@ func (s *Server) handleListNotes(c *gin.Context) {
 		return
 	}
 
-	// Fix titles for notes that have default "笔记" title
+	// Fix titles for notes that have default "Note" title
 	for i := range notes {
-		if notes[i].Title == "笔记" {
+		if notes[i].Title == "笔记" || notes[i].Title == "Note" {
 			notes[i].Title = getTitleForType(notes[i].Type)
 		}
 	}
@@ -920,7 +920,7 @@ func (s *Server) handleTransform(c *gin.Context) {
 	notebookID := c.Param("id")
 	userID := c.GetString("user_id")
 
-	// 按需加载向量索引
+	// Load vector index on demand
 	if err := s.loadNotebookVectorIndex(ctx, notebookID); err != nil {
 		golog.Errorf("failed to load vector index: %v", err)
 	}
@@ -1012,7 +1012,7 @@ func (s *Server) handleTransform(c *gin.Context) {
 		slides := s.agent.ParsePPTSlides(response.Content)
 		if len(slides) > 10 {
 			golog.Errorf("ppt contains too many slides (%d), maximum allowed is 20. skipping image generation.", len(slides))
-			metadata["image_error"] = "PPT页数超过20页上限，已停止生成图片"
+			metadata["image_error"] = "Slide count exceeds 20-page limit, image generation stopped"
 		} else {
 			var slideURLs []string
 			golog.Infof("generating %d slides for ppt...", len(slides))
@@ -1021,7 +1021,7 @@ func (s *Server) handleTransform(c *gin.Context) {
 				golog.Infof("generating image for slide %d/%d...", i+1, len(slides))
 				// Combine style and slide content for the image generator
 				prompt := fmt.Sprintf("Style: %s\n\nSlide Content: %s", slides[0].Style, slide.Content)
-				prompt += "\n\n**注意：无论来源是什么语言，请务必使用中文**\n"
+				prompt += "\n\n**Note: Regardless of the source language, please reply in English**\n"
 				imageModel := s.getImageModelForProvider()
 				imagePath, err := s.agent.provider.GenerateImage(ctx, imageModel, prompt, userID, fmt.Sprintf("ppt_slide_%d", i+1))
 				if err != nil {
@@ -1079,7 +1079,7 @@ func (s *Server) handleTransform(c *gin.Context) {
 	if req.Type == "insight" {
 		insightSource := &Source{
 			NotebookID: notebookID,
-			Name:       "洞察报告",
+			Name:       "Insight Report",
 			Type:       "insight",
 			Content:    response.Content,
 			Metadata: map[string]interface{}{
@@ -1124,7 +1124,7 @@ func getTitleForType(t string) string {
 	if title, ok := titles[t]; ok {
 		return title
 	}
-	return "笔记"
+	return "Note"
 }
 
 // Chat handlers
@@ -1195,7 +1195,7 @@ func (s *Server) handleSendMessage(c *gin.Context) {
 	notebookID := c.Param("id")
 	sessionID := c.Param("sessionId")
 
-	// 按需加载向量索引
+	// Load vector index on demand
 	if err := s.loadNotebookVectorIndex(ctx, notebookID); err != nil {
 		golog.Errorf("failed to load vector index: %v", err)
 	}
@@ -1245,7 +1245,7 @@ func (s *Server) handleChat(c *gin.Context) {
 	ctx := context.Background()
 	notebookID := c.Param("id")
 
-	// 按需加载向量索引
+	// Load vector index on demand
 	if err := s.loadNotebookVectorIndex(ctx, notebookID); err != nil {
 		golog.Errorf("failed to load vector index: %v", err)
 	}
@@ -1350,7 +1350,7 @@ func (s *Server) handleNotebookOverview(c *gin.Context) {
 	ctx := context.Background()
 	notebookID := c.Param("id")
 
-	// 按需加载向量索引
+	// Load vector index on demand
 	if err := s.loadNotebookVectorIndex(ctx, notebookID); err != nil {
 		golog.Errorf("failed to load vector index: %v", err)
 	}
@@ -1365,7 +1365,7 @@ func (s *Server) handleNotebookOverview(c *gin.Context) {
 
 	if len(sources) == 0 {
 		c.JSON(http.StatusOK, NotebookOverviewResponse{
-			Summary:   "请先为笔记本添加一些来源。",
+			Summary:   "Please add some sources to this notebook first.",
 			Questions: []string{},
 		})
 		return
@@ -1808,9 +1808,9 @@ func (s *Server) handleListPublicNotes(c *gin.Context) {
 		return
 	}
 
-	// Fix titles for notes that have default "笔记" title
+	// Fix titles for notes that have default "Note" title
 	for i := range notes {
-		if notes[i].Title == "笔记" {
+		if notes[i].Title == "笔记" || notes[i].Title == "Note" {
 			notes[i].Title = getTitleForType(notes[i].Type)
 		}
 	}
@@ -1930,7 +1930,7 @@ func (pq *ProcessingQueue) processTask(task ProcessingTask) {
 			llm := pq.agent.GetLLM()
 
 			// Use LLM to format the text
-			prompt := fmt.Sprintf("请为以下文字添加标点符号和分段：\n\n%s\n\n只输出添加标点符号后的文字，不要添加任何说明、前言或格式。", content)
+			prompt := fmt.Sprintf("Please add punctuation and paragraph breaks to the following text:\n\n%s\n\nOutput only the punctuated text. Do not add any explanations, preambles, or formatting.", content)
 
 			formattedContent, err := llms.GenerateFromSinglePrompt(ctx, llm, prompt)
 			if err != nil {
@@ -2018,11 +2018,11 @@ func (pq *ProcessingQueue) updateFakeProgress(ctx context.Context, sourceID, fil
 			// Update status message based on progress
 			var statusMsg string
 			if progress < 30 {
-				statusMsg = "正在处理音频..."
+				statusMsg = "Processing audio..."
 			} else if progress < 80 {
-				statusMsg = "正在整理文字..."
+				statusMsg = "Formatting text..."
 			} else {
-				statusMsg = "正在建立索引..."
+				statusMsg = "Building index..."
 			}
 
 			golog.Infof("[Processing] Updating source %s progress to %d%% (%s)", sourceID, progress, statusMsg)

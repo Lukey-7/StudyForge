@@ -209,6 +209,7 @@ class OpenNotebook {
         this.initNotebookNameEditor();
         this.initPromptScenariosPanel();
         this.initTextbookEvents();
+        this.initSidebarNav();
 
         // Cleanup expired cache
         this.cache.cleanup();
@@ -218,10 +219,162 @@ class OpenNotebook {
         if (!this.checkURLForTextbook() && !this.checkURLForNotebook() && !this.checkURLForPublicNotebook()) {
             await this.loadNotebooks();
             this.applyConfig();
-            this.switchView('landing');
+            this.switchView('dashboard');
         } else {
             this.applyConfig();
         }
+    }
+
+    // Initialize Stitch sidebar navigation
+    initSidebarNav() {
+        // Sidebar nav item clicks
+        document.querySelectorAll('.sf-nav-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                const view = item.dataset.view;
+                if (view === 'landing') {
+                    this.switchView('dashboard');
+                } else if (view === 'notebooks') {
+                    this.switchView('landing');
+                } else if (view === 'documents') {
+                    this.switchView('documents');
+                } else if (view === 'chat') {
+                    if (this.currentNotebook) {
+                        this.switchView('workspace');
+                    } else {
+                        this.switchView('landing');
+                        this.setStatus('Select a notebook to start chatting');
+                    }
+                } else if (view === 'settings') {
+                    this.switchView('settings');
+                } else {
+                    this.switchView(view);
+                }
+            });
+        });
+
+        // Sidebar new notebook button
+        const btnNewNbSidebar = document.getElementById('btnNewNotebookSidebar');
+        if (btnNewNbSidebar) {
+            btnNewNbSidebar.addEventListener('click', () => this.showNewNotebookModal());
+        }
+
+        // Sidebar login button
+        const btnLoginSidebar = document.getElementById('btnLoginSidebar');
+        if (btnLoginSidebar) {
+            btnLoginSidebar.addEventListener('click', () => this.handleLogin());
+        }
+
+        // Sidebar toggle (mobile)
+        const btnToggle = document.getElementById('btnToggleSidebar');
+        if (btnToggle) {
+            btnToggle.addEventListener('click', () => {
+                const sidebar = document.getElementById('sfSidebar');
+                if (sidebar) sidebar.classList.toggle('open');
+            });
+        }
+
+        // Settings login button
+        const btnLoginSettings = document.getElementById('btnLoginSettings');
+        if (btnLoginSettings) {
+            btnLoginSettings.addEventListener('click', () => this.handleLogin());
+        }
+
+        // Dashboard "View All" links
+        const viewAllDocs = document.getElementById('dashboardViewAllDocs');
+        if (viewAllDocs) viewAllDocs.addEventListener('click', () => this.switchView('documents'));
+        const viewAllNbs = document.getElementById('dashboardViewAllNotebooks');
+        if (viewAllNbs) viewAllNbs.addEventListener('click', () => this.switchView('landing'));
+
+        // Documents view upload button
+        const btnUploadDoc = document.getElementById('btnUploadDocument');
+        if (btnUploadDoc) {
+            btnUploadDoc.addEventListener('click', () => {
+                if (this.notebooks.length > 0) {
+                    this.selectNotebook(this.notebooks[0].id).then(() => this.showAddSourceModal());
+                } else {
+                    this.showNewNotebookModal();
+                }
+            });
+        }
+
+        // Documents filter tabs
+        document.querySelectorAll('#docsFilterBar .sf-filter-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('#docsFilterBar .sf-filter-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                this.filterDocuments(tab.dataset.filter);
+            });
+        });
+
+        // Document Detail back button
+        const btnBackDocs = document.getElementById('btnBackToDocs');
+        if (btnBackDocs) btnBackDocs.addEventListener('click', () => this.switchView('documents'));
+
+        // Document Detail "Open Notebook" button
+        const btnDetailNb = document.getElementById('btnDetailAddToNotebook');
+        if (btnDetailNb) {
+            btnDetailNb.addEventListener('click', () => {
+                if (this._detailSource && this._detailSource.notebook_id) {
+                    this.selectNotebook(this._detailSource.notebook_id);
+                }
+            });
+        }
+
+        // Insight tabs
+        document.querySelectorAll('#insightTabs .sf-insight-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('#insightTabs .sf-insight-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                this.loadInsightForDetail(tab.dataset.mode);
+            });
+        });
+
+        // Dashboard drop zone
+        const dashDrop = document.getElementById('dashboardDropZone');
+        if (dashDrop) {
+            dashDrop.addEventListener('click', () => {
+                if (this.notebooks.length > 0) {
+                    this.selectNotebook(this.notebooks[0].id).then(() => this.showAddSourceModal());
+                } else {
+                    this.showNewNotebookModal();
+                }
+            });
+            dashDrop.addEventListener('dragover', (e) => { e.preventDefault(); dashDrop.classList.add('drag-over'); });
+            dashDrop.addEventListener('dragleave', () => dashDrop.classList.remove('drag-over'));
+            dashDrop.addEventListener('drop', (e) => {
+                e.preventDefault();
+                dashDrop.classList.remove('drag-over');
+                if (this.notebooks.length > 0) {
+                    this.selectNotebook(this.notebooks[0].id).then(() => {
+                        const dt = e.dataTransfer;
+                        if (dt.files && dt.files.length > 0) {
+                            this.handleFileUpload({ target: { files: dt.files } });
+                        }
+                    });
+                } else {
+                    this.showNewNotebookModal();
+                }
+            });
+        }
+    }
+
+    // Update sidebar active state
+    updateSidebarActive(view) {
+        document.querySelectorAll('.sf-nav-item').forEach(item => {
+            item.classList.toggle('active', item.dataset.view === view);
+        });
+        // Update breadcrumb
+        const breadcrumb = document.getElementById('sfBreadcrumb');
+        if (breadcrumb) {
+            const names = { landing: 'Dashboard', documents: 'Documents', notebooks: 'Notebooks', chat: 'AI Chat', settings: 'Settings', workspace: 'Workspace', textbook: 'Textbook' };
+            breadcrumb.innerHTML = `<span>${names[view] || 'Dashboard'}</span>`;
+        }
+    }
+
+    // Show settings view (now handled by switchView)
+    showSettingsView() {
+        this.switchView('settings');
     }
 
     // Check if URL contains /public/:token and load the public notebook
@@ -822,6 +975,24 @@ class OpenNotebook {
                 userAvatarWorkspace.title = tooltipText;
             }
             if (userNameWorkspace) userNameWorkspace.textContent = this.currentUser.name || this.currentUser.email.split('@')[0];
+
+            // Update sidebar
+            const btnLoginSidebar = document.getElementById('btnLoginSidebar');
+            const sidebarProfile = document.getElementById('sidebarUserProfile');
+            const sidebarAvatar = document.getElementById('sidebarUserAvatar');
+            const sidebarName = document.getElementById('sidebarUserName');
+            if (btnLoginSidebar) btnLoginSidebar.classList.add('hidden');
+            if (sidebarProfile) sidebarProfile.classList.remove('hidden');
+            if (sidebarAvatar) { sidebarAvatar.src = avatarUrl; sidebarAvatar.title = tooltipText; }
+            if (sidebarName) sidebarName.textContent = this.currentUser.name || this.currentUser.email.split('@')[0];
+
+            // Update topbar
+            const btnLoginTopbar = document.getElementById('btnLoginTopbar');
+            const topbarProfile = document.getElementById('topbarUserProfile');
+            const topbarAvatar = document.getElementById('topbarUserAvatar');
+            if (btnLoginTopbar) btnLoginTopbar.classList.add('hidden');
+            if (topbarProfile) topbarProfile.classList.remove('hidden');
+            if (topbarAvatar) { topbarAvatar.src = avatarUrl; topbarAvatar.title = tooltipText; }
         } else {
             // Update landing page
             if (btnLogin) btnLogin.classList.remove('hidden');
@@ -830,6 +1001,18 @@ class OpenNotebook {
             // Update workspace
             if (btnLoginWorkspace) btnLoginWorkspace.classList.remove('hidden');
             if (userProfileWorkspace) userProfileWorkspace.classList.add('hidden');
+
+            // Update sidebar
+            const btnLoginSidebar = document.getElementById('btnLoginSidebar');
+            const sidebarProfile = document.getElementById('sidebarUserProfile');
+            if (btnLoginSidebar) btnLoginSidebar.classList.remove('hidden');
+            if (sidebarProfile) sidebarProfile.classList.add('hidden');
+
+            // Update topbar
+            const btnLoginTopbar = document.getElementById('btnLoginTopbar');
+            const topbarProfile = document.getElementById('topbarUserProfile');
+            if (btnLoginTopbar) btnLoginTopbar.classList.remove('hidden');
+            if (topbarProfile) topbarProfile.classList.add('hidden');
         }
     }
 
@@ -1189,30 +1372,60 @@ class OpenNotebook {
     }
 
     switchView(view) {
-        const landing = document.getElementById('landingPage');
-        const workspace = document.getElementById('workspaceContainer');
-        const textbook = document.getElementById('textbookContainer');
+        // All view containers
+        const views = {
+            dashboard: document.getElementById('dashboardView'),
+            documents: document.getElementById('documentsView'),
+            documentDetail: document.getElementById('documentDetailView'),
+            landing: document.getElementById('landingPage'),
+            workspace: document.getElementById('workspaceContainer'),
+            textbook: document.getElementById('textbookContainer'),
+            settings: document.getElementById('settingsView'),
+        };
         const header = document.querySelector('.app-header');
+        const appContainer = document.querySelector('.app-container');
 
         // Hide all views first
-        landing.classList.add('hidden');
-        workspace.classList.add('hidden');
-        if (textbook) textbook.classList.add('hidden');
-        header.classList.add('hidden');
+        Object.values(views).forEach(el => { if (el) el.classList.add('hidden'); });
+        if (header) header.classList.add('hidden');
+        if (appContainer) appContainer.classList.add('hidden');
 
-        if (view === 'workspace') {
-            workspace.classList.remove('hidden');
-            this.loadTextbookStatus(); // Check textbook status on workspace show
+        // Show the requested view
+        if (view === 'dashboard') {
+            if (views.dashboard) views.dashboard.classList.remove('hidden');
+            this.loadDashboardData();
+            this.updateSidebarActive('landing');
+        } else if (view === 'documents') {
+            if (views.documents) views.documents.classList.remove('hidden');
+            this.loadDocumentsView();
+            this.updateSidebarActive('documents');
+        } else if (view === 'documentDetail') {
+            if (views.documentDetail) views.documentDetail.classList.remove('hidden');
+            this.updateSidebarActive('documents');
+        } else if (view === 'workspace') {
+            if (appContainer) appContainer.classList.remove('hidden');
+            if (views.workspace) views.workspace.classList.remove('hidden');
+            this.loadTextbookStatus();
+            this.updateSidebarActive('chat');
         } else if (view === 'textbook') {
-            if (textbook) textbook.classList.remove('hidden');
+            if (appContainer) appContainer.classList.remove('hidden');
+            if (views.textbook) views.textbook.classList.remove('hidden');
+            this.updateSidebarActive('chat');
+        } else if (view === 'settings') {
+            if (views.settings) views.settings.classList.remove('hidden');
+            this.updateSidebarActive('settings');
         } else {
-            landing.classList.remove('hidden');
-            header.classList.remove('hidden');
+            // 'landing' = notebooks view
+            if (appContainer) appContainer.classList.remove('hidden');
+            if (views.landing) views.landing.classList.remove('hidden');
             this.currentNotebook = null;
             this.renderNotebookCards();
-            // Update URL to root when returning to landing page
             window.history.pushState({}, '', '/');
+            this.updateSidebarActive('notebooks');
         }
+
+        // Update breadcrumb
+        this.updateSidebarActive(view === 'landing' ? 'notebooks' : (view === 'dashboard' ? 'landing' : view));
     }
 
     toggleRightPanel() {
@@ -3613,6 +3826,280 @@ class OpenNotebook {
         }
 
         container.scrollTop = container.scrollHeight;
+    }
+
+    // =============================================
+    // STITCH VIEW DATA METHODS
+    // =============================================
+
+    async loadDashboardData() {
+        try {
+            // Load notebooks if not cached
+            if (!this.notebooks || this.notebooks.length === 0) {
+                try {
+                    this.notebooks = await this.api('/notebooks/stats');
+                } catch (e) { this.notebooks = []; }
+            }
+
+            // Collect all sources across notebooks
+            let allSources = [];
+            let totalNotes = 0;
+            for (const nb of this.notebooks) {
+                totalNotes += (nb.note_count || 0);
+                try {
+                    const sources = await this.api(`/notebooks/${nb.id}/sources`);
+                    sources.forEach(s => { s.notebook_id = nb.id; s.notebook_name = nb.name; });
+                    allSources = allSources.concat(sources);
+                } catch (e) { /* skip */ }
+            }
+
+            // Update stat cards
+            const elNb = document.getElementById('statNotebooks');
+            const elDoc = document.getElementById('statDocuments');
+            const elNotes = document.getElementById('statNotes');
+            const elHours = document.getElementById('statHoursSaved');
+            if (elNb) elNb.textContent = this.notebooks.length;
+            if (elDoc) elDoc.textContent = allSources.length;
+            if (elNotes) elNotes.textContent = totalNotes;
+            if (elHours) elHours.textContent = Math.max(1, Math.round((allSources.length * 0.5 + totalNotes * 0.3) * 10) / 10);
+
+            // Recent documents (latest 5)
+            this._allSources = allSources;
+            const recentDocs = [...allSources].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)).slice(0, 5);
+            const recentContainer = document.getElementById('dashboardRecentDocs');
+            if (recentContainer) {
+                if (recentDocs.length === 0) {
+                    recentContainer.innerHTML = `<div class="sf-empty-state"><span class="material-symbols-outlined">folder_open</span><p>No documents yet. Upload your first file!</p></div>`;
+                } else {
+                    recentContainer.innerHTML = recentDocs.map(s => `
+                        <div class="sf-recent-item" data-source-id="${s.id}" data-notebook-id="${s.notebook_id}">
+                            <div class="sf-recent-item-icon" style="background:${this._getTypeColor(s.type, 0.12)};color:${this._getTypeColor(s.type, 1)};">
+                                <span class="material-symbols-outlined">${this._getTypeIcon(s.type)}</span>
+                            </div>
+                            <div class="sf-recent-item-info">
+                                <div class="sf-recent-item-name">${this._escHtml(s.name)}</div>
+                                <div class="sf-recent-item-meta">${s.notebook_name || 'Unknown'} · ${s.chunk_count || 0} chunks</div>
+                            </div>
+                        </div>
+                    `).join('');
+                    recentContainer.querySelectorAll('.sf-recent-item').forEach(item => {
+                        item.addEventListener('click', () => {
+                            const src = allSources.find(s => s.id == item.dataset.sourceId);
+                            if (src) this.openDocumentDetail(src);
+                        });
+                    });
+                }
+            }
+
+            // Recent notebooks (latest 4)
+            const recentNbs = [...this.notebooks].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)).slice(0, 4);
+            const nbContainer = document.getElementById('dashboardRecentNotebooks');
+            if (nbContainer) {
+                if (recentNbs.length === 0) {
+                    nbContainer.innerHTML = `<div class="sf-empty-state"><span class="material-symbols-outlined">auto_stories</span><p>No notebooks yet. Create your first one!</p></div>`;
+                } else {
+                    nbContainer.innerHTML = recentNbs.map(nb => `
+                        <div class="sf-notebook-mini-card" data-nb-id="${nb.id}">
+                            <div class="sf-notebook-mini-icon" style="background:${nb.color ? nb.color + '22' : 'rgba(139,92,246,0.12)'};color:${nb.color || '#8B5CF6'};">
+                                ${nb.icon || '📓'}
+                            </div>
+                            <div class="sf-notebook-mini-info">
+                                <div class="sf-notebook-mini-name">${this._escHtml(nb.name)}</div>
+                                <div class="sf-notebook-mini-meta">${nb.source_count || 0} sources · ${nb.note_count || 0} notes</div>
+                            </div>
+                        </div>
+                    `).join('');
+                    nbContainer.querySelectorAll('.sf-notebook-mini-card').forEach(card => {
+                        card.addEventListener('click', () => this.selectNotebook(card.dataset.nbId));
+                    });
+                }
+            }
+        } catch (e) {
+            console.error('Dashboard load error:', e);
+        }
+    }
+
+    async loadDocumentsView() {
+        try {
+            if (!this.notebooks || this.notebooks.length === 0) {
+                try { this.notebooks = await this.api('/notebooks/stats'); } catch (e) { this.notebooks = []; }
+            }
+
+            let allSources = [];
+            for (const nb of this.notebooks) {
+                try {
+                    const sources = await this.api(`/notebooks/${nb.id}/sources`);
+                    sources.forEach(s => { s.notebook_id = nb.id; s.notebook_name = nb.name; });
+                    allSources = allSources.concat(sources);
+                } catch (e) { /* skip */ }
+            }
+            this._allSources = allSources;
+
+            // Reset filter
+            document.querySelectorAll('#docsFilterBar .sf-filter-tab').forEach(t => t.classList.remove('active'));
+            const allTab = document.querySelector('#docsFilterBar .sf-filter-tab[data-filter="all"]');
+            if (allTab) allTab.classList.add('active');
+
+            this.renderDocumentsGrid(allSources);
+        } catch (e) {
+            console.error('Documents load error:', e);
+        }
+    }
+
+    renderDocumentsGrid(sources) {
+        const grid = document.getElementById('docsGrid');
+        if (!grid) return;
+
+        if (!sources || sources.length === 0) {
+            grid.innerHTML = `<div class="sf-empty-state sf-empty-state-large"><span class="material-symbols-outlined">description</span><h3>No documents found</h3><p>Upload your first document to get started</p></div>`;
+            return;
+        }
+
+        grid.innerHTML = sources.map(s => `
+            <div class="sf-doc-card" data-source-id="${s.id}" data-notebook-id="${s.notebook_id}" data-type="${this._normalizeType(s.type)}">
+                <div class="sf-doc-card-top">
+                    <div class="sf-doc-icon-wrap" style="background:${this._getTypeColor(s.type, 0.12)};color:${this._getTypeColor(s.type, 1)};">
+                        <span class="material-symbols-outlined">${this._getTypeIcon(s.type)}</span>
+                    </div>
+                    <div class="sf-doc-card-info">
+                        <div class="sf-doc-card-name">${this._escHtml(s.name)}</div>
+                        <div class="sf-doc-card-notebook">
+                            <span class="material-symbols-outlined">menu_book</span>
+                            ${this._escHtml(s.notebook_name || 'Unknown')}
+                        </div>
+                    </div>
+                </div>
+                <div class="sf-doc-card-bottom">
+                    <span class="sf-doc-card-badge" data-type="${this._normalizeType(s.type)}">${s.type || 'file'}</span>
+                    <span class="sf-doc-card-date">${s.chunk_count || 0} chunks</span>
+                </div>
+            </div>
+        `).join('');
+
+        grid.querySelectorAll('.sf-doc-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const src = (this._allSources || []).find(s => s.id == card.dataset.sourceId);
+                if (src) this.openDocumentDetail(src);
+            });
+        });
+    }
+
+    filterDocuments(filterType) {
+        if (!this._allSources) return;
+        if (filterType === 'all') {
+            this.renderDocumentsGrid(this._allSources);
+        } else {
+            const filtered = this._allSources.filter(s => this._normalizeType(s.type) === filterType);
+            this.renderDocumentsGrid(filtered);
+        }
+    }
+
+    openDocumentDetail(source) {
+        this._detailSource = source;
+        const nameEl = document.getElementById('detailDocName');
+        const badgeEl = document.getElementById('detailTypeBadge');
+        const chunkEl = document.getElementById('detailChunkCount');
+        const contentEl = document.getElementById('detailTextContent');
+        const insightEl = document.getElementById('insightContent');
+
+        if (nameEl) nameEl.textContent = source.name;
+        if (badgeEl) badgeEl.textContent = source.type || 'file';
+        if (chunkEl) chunkEl.textContent = `${source.chunk_count || 0} chunks`;
+
+        // Load extracted content
+        if (contentEl) {
+            contentEl.innerHTML = '<div class="sf-empty-state"><div class="loading-spinner"></div><p>Loading content...</p></div>';
+            this.loadDocumentContent(source, contentEl);
+        }
+
+        // Reset insight tabs
+        document.querySelectorAll('#insightTabs .sf-insight-tab').forEach(t => t.classList.remove('active'));
+        const firstTab = document.querySelector('#insightTabs .sf-insight-tab');
+        if (firstTab) firstTab.classList.add('active');
+        if (insightEl) {
+            insightEl.innerHTML = '<div class="sf-empty-state"><span class="material-symbols-outlined">psychology</span><p>Select a mode to generate AI insights</p></div>';
+        }
+
+        this.switchView('documentDetail');
+    }
+
+    async loadDocumentContent(source, container) {
+        try {
+            const data = await this.api(`/notebooks/${source.notebook_id}/sources/${source.id}/content`);
+            if (data && data.content) {
+                container.innerHTML = `<div style="white-space:pre-wrap;word-break:break-word;">${this._escHtml(data.content)}</div>`;
+            } else if (data && data.chunks) {
+                container.innerHTML = data.chunks.map((chunk, i) =>
+                    `<div style="margin-bottom:16px;padding:12px;border:1px solid rgba(255,255,255,0.06);border-radius:8px;">
+                        <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:4px;">Chunk ${i + 1}</div>
+                        <div style="white-space:pre-wrap;word-break:break-word;">${this._escHtml(chunk.text || chunk.content || '')}</div>
+                    </div>`
+                ).join('');
+            } else {
+                container.innerHTML = '<div class="sf-empty-state"><span class="material-symbols-outlined">text_snippet</span><p>No extracted content available</p></div>';
+            }
+        } catch (e) {
+            container.innerHTML = `<div class="sf-empty-state"><span class="material-symbols-outlined">text_snippet</span><p>Content preview not available for this source type</p></div>`;
+        }
+    }
+
+    async loadInsightForDetail(mode) {
+        const container = document.getElementById('insightContent');
+        if (!container || !this._detailSource) return;
+
+        container.innerHTML = `<div class="sf-insight-loading"><div class="loading-spinner"></div><p>Generating ${mode}...</p></div>`;
+
+        try {
+            const nbId = this._detailSource.notebook_id;
+            const result = await this.api(`/notebooks/${nbId}/transform`, {
+                method: 'POST',
+                body: JSON.stringify({ type: mode, source_ids: [this._detailSource.id] })
+            });
+            if (result && result.content) {
+                container.innerHTML = `<div class="sf-insight-result">${this.renderMarkdown ? this.renderMarkdown(result.content) : result.content.replace(/\n/g, '<br>')}</div>`;
+            } else {
+                container.innerHTML = '<div class="sf-empty-state"><span class="material-symbols-outlined">psychology</span><p>No insights generated</p></div>';
+            }
+        } catch (e) {
+            container.innerHTML = `<div class="sf-empty-state"><span class="material-symbols-outlined">error</span><p>Failed to generate insights: ${this._escHtml(e.message)}</p></div>`;
+        }
+    }
+
+    // Helper: normalize source type for filtering
+    _normalizeType(type) {
+        if (!type) return 'file';
+        const t = type.toLowerCase();
+        if (t.includes('pdf')) return 'pdf';
+        if (t.includes('image') || t.includes('png') || t.includes('jpg') || t.includes('jpeg')) return 'image';
+        if (t.includes('audio') || t.includes('mp3') || t.includes('wav')) return 'audio';
+        if (t.includes('video') || t.includes('mp4')) return 'video';
+        if (t.includes('url') || t.includes('link')) return 'url';
+        if (t.includes('text') || t.includes('txt')) return 'text';
+        if (t.includes('doc') || t.includes('ppt') || t.includes('xls') || t.includes('office')) return 'office';
+        return 'text';
+    }
+
+    // Helper: get Material icon for source type
+    _getTypeIcon(type) {
+        const t = this._normalizeType(type);
+        const icons = { pdf: 'picture_as_pdf', image: 'image', audio: 'audiotrack', video: 'videocam', url: 'link', text: 'article', office: 'description' };
+        return icons[t] || 'description';
+    }
+
+    // Helper: get color for source type
+    _getTypeColor(type, alpha) {
+        const t = this._normalizeType(type);
+        const colors = { pdf: '239,68,68', image: '96,165,250', audio: '251,191,36', video: '236,72,153', url: '139,92,246', text: '52,211,153', office: '59,130,246' };
+        const c = colors[t] || '161,161,170';
+        return alpha === 1 ? `rgb(${c})` : `rgba(${c},${alpha})`;
+    }
+
+    // Helper: escape HTML
+    _escHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
     }
 
     // UI methods

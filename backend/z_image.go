@@ -15,7 +15,7 @@ import (
 	"github.com/tmc/langchaingo/llms"
 )
 
-// ZImageClient is a client for Alibaba Z-Image (通义万相) image generation
+// ZImageClient is a client for Alibaba Z-Image (Tongyi Wanxiang) image generation
 type ZImageClient struct {
 	apiKey     string
 	baseURL    string

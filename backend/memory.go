@@ -33,12 +33,12 @@ func DefaultMemoryConfig() MemoryConfig {
 		SummaryThreshold:    20, // Generate summary when messages exceed 2x maxHistory (fallback)
 		SummaryTokenLimit:   2000,
 		ImportantKeywords: []string{
-			"重要", "关键", "重点", "必须", "记住", "note", "important", "key", "critical",
-			"总结", "conclusion", "summary", "result", "outcome",
-			"决定", "decision", "choose", "选择", "确定",
-			"问题", "problem", "issue", "question", "疑问",
-			"需要", "need", "require", "want", "想要",
-			"目标", "goal", "objective", "target", "aim",
+			"note", "important", "key", "critical", "essential", "remember",
+			"conclusion", "summary", "result", "outcome",
+			"decision", "choose", "select", "determine",
+			"problem", "issue", "question", "concern",
+			"need", "require", "want", "must",
+			"goal", "objective", "target", "aim",
 		},
 		RecencyDecay:        0.1, // Exponential decay
 		KeywordMatchWeight:  5.0,
@@ -59,10 +59,10 @@ type MemoryManager struct {
 // ConversationState represents the state of a conversation
 type ConversationState struct {
 	SessionID    string
-	Summary      string           // 对话摘要
-	History      []ChatMessage    // 原始历史
-	MemoryBuffer []ChatMessage    // 精选重要消息
-	ContextDocs  []DocumentRef    // 当前上下文文档
+	Summary      string           // Conversation summary
+	History      []ChatMessage    // Raw history
+	MemoryBuffer []ChatMessage    // Selected important messages
+	ContextDocs  []DocumentRef    // Current context documents
 }
 
 // DocumentRef represents a reference to a document
@@ -359,7 +359,7 @@ func (m *MemoryManager) updateSessionSummary(ctx context.Context, sessionID, sum
 
 // ClearMemory clears the memory buffer for a session (useful for resetting context)
 func (m *MemoryManager) ClearMemory(ctx context.Context, sessionID string) error {
-	// 清除摘要
+	// Clear summary
 	session, err := m.store.GetChatSession(ctx, sessionID)
 	if err != nil {
 		return err
@@ -517,7 +517,7 @@ func (m *MemoryManager) calculateMessagesBytes(messages []ChatMessage, summary s
 		totalBytes += len(msg.Role)
 		totalBytes += len(msg.Content)
 		// Account for role prefix and formatting overhead
-		totalBytes += 20 // Approximate overhead for role formatting (e.g., "用户: \n助手: ")
+		totalBytes += 20 // Approximate overhead for role formatting (e.g., "User: \nAssistant: ")
 	}
 
 	return totalBytes

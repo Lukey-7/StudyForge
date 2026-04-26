@@ -231,14 +231,14 @@ func (a *Agent) Chat(ctx context.Context, store *Store, notebookID, sessionID, m
 	// Build context from retrieved documents
 	var contextBuilder strings.Builder
 	if len(docs) > 0 {
-		contextBuilder.WriteString("来源中的相关信息：\n\n")
+		contextBuilder.WriteString("Relevant information from sources:\n\n")
 		for i, doc := range docs {
-			contextBuilder.WriteString(fmt.Sprintf("[来源 %d] %s\n", i+1, doc.PageContent))
+			contextBuilder.WriteString(fmt.Sprintf("[Source %d] %s\n", i+1, doc.PageContent))
 			// Use source_name from metadata for context display
 			if sourceName, ok := doc.Metadata["source_name"].(string); ok {
-				contextBuilder.WriteString(fmt.Sprintf("来源: %s\n\n", sourceName))
+				contextBuilder.WriteString(fmt.Sprintf("Source: %s\n\n", sourceName))
 			} else if sourceName, ok := doc.Metadata["source"].(string); ok {
-				contextBuilder.WriteString(fmt.Sprintf("来源: %s\n\n", sourceName))
+				contextBuilder.WriteString(fmt.Sprintf("Source: %s\n\n", sourceName))
 			}
 		}
 	}
@@ -253,9 +253,9 @@ func (a *Agent) Chat(ctx context.Context, store *Store, notebookID, sessionID, m
 		if i >= maxHistory {
 			break
 		}
-		role := "用户"
+		role := "User"
 		if msg.Role == "assistant" {
-			role = "助手"
+			role = "Assistant"
 		}
 		historyBuilder.WriteString(fmt.Sprintf("%s: %s\n", role, msg.Content))
 	}
@@ -356,8 +356,8 @@ func (a *Agent) ParsePPTSlides(content string) []Slide {
 	}
 
 	// 2. Split by Slide markers.
-	// We look for "Slide X" or "幻灯片 X" with optional Markdown headers
-	re := regexp.MustCompile(`(?m)^(?:\s*#{1,6}\s*)?(?:Slide|幻灯片|第\d+张幻灯片|##)\s*\d+[:\s]*.*$`)
+	// We look for "Slide X" with optional Markdown headers
+	re := regexp.MustCompile(`(?m)^(?:\s*#{1,6}\s*)?(?:Slide|##)\s*\d+[:\s]*.*$`)
 	indices := re.FindAllStringIndex(content, -1)
 
 	if len(indices) > 0 {
@@ -371,9 +371,7 @@ func (a *Agent) ParsePPTSlides(content string) []Slide {
 			slideContent := content[start:end]
 			// Validation: Must contain at least one of the section markers
 			lower := strings.ToLower(slideContent)
-			if strings.Contains(lower, "叙事目标") ||
-				strings.Contains(lower, "narrative goal") ||
-				strings.Contains(lower, "关键内容") {
+			if strings.Contains(lower, "narrative goal") {
 				slides = append(slides, Slide{
 					Style:   style,
 					Content: slideContent,
@@ -382,10 +380,10 @@ func (a *Agent) ParsePPTSlides(content string) []Slide {
 		}
 	}
 
-	// 3. If still nothing, try splitting by the required // NARRATIVE GOAL / // 叙事目标
+	// 3. If still nothing, try splitting by the required // NARRATIVE GOAL
 	if len(slides) == 0 {
 		// Use a more specific marker for splitting if Slide headers are missing
-		marker := "// 叙事目标"
+		marker := "// NARRATIVE GOAL"
 		if !strings.Contains(content, marker) {
 			marker = "// NARRATIVE GOAL"
 		}

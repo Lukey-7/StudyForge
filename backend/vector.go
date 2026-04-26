@@ -254,8 +254,8 @@ func (vs *VectorStore) SimilaritySearch(ctx context.Context, notebookID, query s
 			}
 		}
 
-		// 4. Check for common question keywords in Chinese
-		questionKeywords := []string{"介绍", "什么", "啥", "内容", "文档", "说"}
+		// 4. Check for common question keywords
+		questionKeywords := []string{"introduce", "what", "about", "content", "document", "explain"}
 		for _, keyword := range questionKeywords {
 			if strings.Contains(queryLower, keyword) {
 				// If query asks about the document, boost all documents

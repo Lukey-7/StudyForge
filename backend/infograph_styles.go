@@ -15,8 +15,8 @@ const DefaultInfographStyle = "craft-handmade"
 var InfographStyles = map[string]InfographStyle{
 	"craft-handmade": {
 		ID:          "craft-handmade",
-		Name:        "手绘纸艺风格",
-		Description: "手绘和纸艺美学，温暖有机的感觉",
+		Name:        "Handmade Paper Craft",
+		Description: "Hand-drawn and paper craft aesthetic with warm, organic feel",
 		Prompt: `Hand-drawn and paper craft aesthetic with warm, organic feel.
 
 ## Color Palette
@@ -45,8 +45,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"claymation": {
 		ID:          "claymation",
-		Name:        "黏土动画风格",
-		Description: "3D黏土人物美学，定格动画魅力",
+		Name:        "Claymation",
+		Description: "3D clay figure aesthetic with stop-motion charm",
 		Prompt: `3D clay figure aesthetic with stop-motion charm.
 
 ## Color Palette
@@ -74,8 +74,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"kawaii": {
 		ID:          "kawaii",
-		Name:        "日系可爱风格",
-		Description: "日式可爱风格，大眼睛和柔和色调",
+		Name:        "Kawaii Cute",
+		Description: "Japanese cute style with big eyes and pastel tones",
 		Prompt: `Japanese cute style with big eyes and pastel colors.
 
 ## Color Palette
@@ -103,8 +103,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"storybook-watercolor": {
 		ID:          "storybook-watercolor",
-		Name:        "水彩绘本风格",
-		Description: "柔和的手绘插画，童话般的魅力",
+		Name:        "Storybook Watercolor",
+		Description: "Soft hand-painted illustrations with fairy-tale charm",
 		Prompt: `Soft hand-painted illustration with whimsical charm.
 
 ## Color Palette
@@ -132,8 +132,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"chalkboard": {
 		ID:          "chalkboard",
-		Name:        "黑板粉笔风格",
-		Description: "黑板背景配彩色粉笔手绘风格",
+		Name:        "Chalkboard",
+		Description: "Dark chalkboard background with colorful chalk-drawn style",
 		Prompt: `Black chalkboard background with colorful chalk drawing style.
 
 ## Color Palette
@@ -161,8 +161,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"cyberpunk-neon": {
 		ID:          "cyberpunk-neon",
-		Name:        "赛博朋克霓虹风格",
-		Description: "深色背景上的霓虹发光效果，未来主义美学",
+		Name:        "Cyberpunk Neon",
+		Description: "Neon glow effects on dark backgrounds with futuristic aesthetic",
 		Prompt: `Neon glow on dark backgrounds, futuristic aesthetic.
 
 ## Color Palette
@@ -190,8 +190,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"bold-graphic": {
 		ID:          "bold-graphic",
-		Name:        "粗线条漫画风格",
-		Description: "高对比度漫画风格，大胆轮廓和戏剧性视觉效果",
+		Name:        "Bold Graphic Comics",
+		Description: "High-contrast comic style with bold outlines and dramatic visuals",
 		Prompt: `High-contrast comic style with bold outlines and dramatic visuals.
 
 ## Color Palette
@@ -219,8 +219,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"aged-academia": {
 		ID:          "aged-academia",
-		Name:        "复古学院风格",
-		Description: "历史科学插图风格，仿古纸张美学",
+		Name:        "Aged Academia",
+		Description: "Historical scientific illustration with antique paper aesthetic",
 		Prompt: `Historical scientific illustration with aged paper aesthetic.
 
 ## Color Palette
@@ -248,8 +248,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"corporate-memphis": {
 		ID:          "corporate-memphis",
-		Name:        "企业扁平插画风格",
-		Description: "扁平矢量人物，鲜艳几何填充",
+		Name:        "Corporate Memphis",
+		Description: "Flat vector people with vibrant geometric fills",
 		Prompt: `Flat vector people with vibrant geometric fills.
 
 ## Color Palette
@@ -277,8 +277,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"technical-schematic": {
 		ID:          "technical-schematic",
-		Name:        "工程蓝图风格",
-		Description: "工程技术图纸，精确的几何线条",
+		Name:        "Technical Schematic",
+		Description: "Engineering-style technical diagrams with precise geometric lines",
 		Prompt: `Technical diagrams with engineering precision and clean geometry.
 
 ## Color Palette
@@ -306,8 +306,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"origami": {
 		ID:          "origami",
-		Name:        "折纸风格",
-		Description: "折叠纸形态，几何精确",
+		Name:        "Origami",
+		Description: "Folded paper forms with geometric precision",
 		Prompt: `Folded paper forms with geometric precision.
 
 ## Color Palette
@@ -335,8 +335,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"pixel-art": {
 		ID:          "pixel-art",
-		Name:        "像素艺术风格",
-		Description: "复古8位游戏美学",
+		Name:        "Pixel Art",
+		Description: "Retro 8-bit gaming aesthetic",
 		Prompt: `Retro 8-bit gaming aesthetic.
 
 ## Color Palette
@@ -364,8 +364,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"ui-wireframe": {
 		ID:          "ui-wireframe",
-		Name:        "UI线框图风格",
-		Description: "灰度界面模型风格",
+		Name:        "UI Wireframe",
+		Description: "Grayscale interface mockup style",
 		Prompt: `Grayscale interface mockup style.
 
 ## Color Palette
@@ -393,8 +393,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"subway-map": {
 		ID:          "subway-map",
-		Name:        "地铁线路图风格",
-		Description: "交通图风格，彩色线路和站点",
+		Name:        "Subway Map",
+		Description: "Transit diagram style with colored lines and stations",
 		Prompt: `Transit diagram style with colored lines and stations.
 
 ## Color Palette
@@ -422,8 +422,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"ikea-manual": {
 		ID:          "ikea-manual",
-		Name:        "宜家说明书风格",
-		Description: "极简线条艺术组装说明风格",
+		Name:        "IKEA Manual",
+		Description: "Minimal line art assembly instruction style",
 		Prompt: `Minimal line art assembly instruction style.
 
 ## Color Palette
@@ -451,8 +451,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"knolling": {
 		ID:          "knolling",
-		Name:        "平铺陈列风格",
-		Description: "俯视角度整齐排列的物品",
+		Name:        "Knolling Flat Lay",
+		Description: "Top-down neatly arranged objects",
 		Prompt: `Organized flat-lay with top-down arrangement.
 
 ## Color Palette
@@ -480,8 +480,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"lego-brick": {
 		ID:          "lego-brick",
-		Name:        "乐高积木风格",
-		Description: "玩具积木构造风格",
+		Name:        "LEGO Brick",
+		Description: "Toy brick construction style",
 		Prompt: `Toy brick construction with playful aesthetic.
 
 ## Color Palette
@@ -509,8 +509,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"pop-laboratory": {
 		ID:          "pop-laboratory",
-		Name:        "实验室蓝图风格",
-		Description: "实验室手册精度与流行艺术色彩的结合",
+		Name:        "Pop Laboratory",
+		Description: "Lab manual precision meets pop art color impact",
 		Prompt: `Lab manual precision meets pop art color impact—coordinate systems, technical diagrams, and fluorescent accents on blueprint grid.
 
 ## Color Palette
@@ -538,8 +538,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"morandi-journal": {
 		ID:          "morandi-journal",
-		Name:        "莫兰迪手账风格",
-		Description: "手绘涂鸦插画配温暖的莫兰迪色调",
+		Name:        "Morandi Journal",
+		Description: "Hand-drawn doodle illustrations with warm Morandi tones",
 		Prompt: `Hand-drawn doodle illustration with warm Morandi color tones and cozy bullet journal aesthetic.
 
 ## Color Palette
@@ -569,8 +569,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"retro-pop-grid": {
 		ID:          "retro-pop-grid",
-		Name:        "复古波普网格风格",
-		Description: "1970年代复古波普艺术，瑞士网格和粗黑线",
+		Name:        "Retro Pop Grid",
+		Description: "1970s retro pop art with Swiss grid and thick black lines",
 		Prompt: `1970s retro pop art with strict Swiss international grid, thick black outlines, and flat color blocks.
 
 ## Color Palette
@@ -598,8 +598,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"chinese-guochao": {
 		ID:          "chinese-guochao",
-		Name:        "新中式国潮风格",
-		Description: "现代中式美学，传统元素与现代设计融合",
+		Name:        "Chinese Guochao",
+		Description: "Modern Chinese aesthetic blending traditional and contemporary design",
 		Prompt: `Modern Chinese aesthetic blending traditional elements with contemporary design.
 
 ## Color Palette
@@ -627,8 +627,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"vaporwave": {
 		ID:          "vaporwave",
-		Name:        "蒸汽波风格",
-		Description: "80年代复古未来主义，霓虹渐变和怀旧美学",
+		Name:        "Vaporwave",
+		Description: "80s retro-futuristic with neon gradients and nostalgic aesthetic",
 		Prompt: `80s retro-futuristic aesthetic with neon gradients and nostalgic vibes.
 
 ## Color Palette
@@ -656,8 +656,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"vintage-oil-painting": {
 		ID:          "vintage-oil-painting",
-		Name:        "复古油画风格",
-		Description: "古典油画质感，厚重笔触和温暖色调",
+		Name:        "Vintage Oil Painting",
+		Description: "Classical oil painting texture with rich brushstrokes and warm tones",
 		Prompt: `Classical oil painting texture with rich brushstrokes and warm tones.
 
 ## Color Palette
@@ -685,8 +685,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"fresh-watercolor": {
 		ID:          "fresh-watercolor",
-		Name:        "清新水彩风格",
-		Description: "轻盈透明的水彩效果，清新自然的色调",
+		Name:        "Fresh Watercolor",
+		Description: "Light transparent watercolor effect with fresh natural tones",
 		Prompt: `Light and transparent watercolor effect with fresh natural tones.
 
 ## Color Palette
@@ -714,8 +714,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"minimal-business": {
 		ID:          "minimal-business",
-		Name:        "极简商务风格",
-		Description: "专业简洁的企业风格，清晰的层次结构",
+		Name:        "Minimal Business",
+		Description: "Professional minimalist corporate style with clear hierarchy",
 		Prompt: `Professional minimalist corporate style with clean hierarchy.
 
 ## Color Palette
@@ -743,8 +743,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"fun-cartoon": {
 		ID:          "fun-cartoon",
-		Name:        "趣味卡通风格",
-		Description: "活泼可爱的卡通插画，明快鲜艳的色彩",
+		Name:        "Fun Cartoon",
+		Description: "Playful cartoon illustration with bright vivid colors",
 		Prompt: `Playful cartoon illustration with bright vivid colors.
 
 ## Color Palette
@@ -772,8 +772,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"scifi-future": {
 		ID:          "scifi-future",
-		Name:        "科幻未来风格",
-		Description: "未来科技感，全息效果和电子元素",
+		Name:        "Sci-Fi Future",
+		Description: "Futuristic tech aesthetic with holographic and electronic elements",
 		Prompt: `Futuristic sci-fi aesthetic with holographic effects and electronic elements.
 
 ## Color Palette
@@ -801,8 +801,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"hand-drawn-illustration": {
 		ID:          "hand-drawn-illustration",
-		Name:        "手绘插画风格",
-		Description: "温暖的手绘质感，独特的艺术气息",
+		Name:        "Hand-Drawn Illustration",
+		Description: "Warm hand-drawn texture with unique artistic character",
 		Prompt: `Warm hand-drawn texture with unique artistic character.
 
 ## Color Palette
@@ -830,8 +830,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"chinese-ink-wash": {
 		ID:          "chinese-ink-wash",
-		Name:        "国风水墨风格",
-		Description: "传统水墨画意境，留白与意境之美",
+		Name:        "Chinese Ink Wash",
+		Description: "Traditional ink wash painting aesthetic with elegant simplicity",
 		Prompt: `Traditional Chinese ink wash painting aesthetic with elegant simplicity.
 
 ## Color Palette
@@ -844,7 +844,7 @@ var InfographStyles = map[string]InfographStyle{
 
 - Traditional ink wash brushstrokes
 - Mountains, rivers, bamboo, plum blossoms
-- Heavy use of negative space (留白)
+- Heavy use of negative space (white space)
 - Misty, atmospheric quality
 - Calligraphic elements
 - Red seal stamps
@@ -859,8 +859,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"japanese-wafu": {
 		ID:          "japanese-wafu",
-		Name:        "日式和风风格",
-		Description: "日本传统美学，和风纹样与淡雅色调",
+		Name:        "Japanese Wafu",
+		Description: "Traditional Japanese aesthetic with elegant patterns and subtle colors",
 		Prompt: `Traditional Japanese aesthetic with elegant patterns and subtle colors.
 
 ## Color Palette
@@ -888,8 +888,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"european-vintage": {
 		ID:          "european-vintage",
-		Name:        "欧式复古风格",
-		Description: "欧洲古典装饰风格，华丽优雅的细节",
+		Name:        "European Vintage",
+		Description: "European classical decorative style with ornate elegant details",
 		Prompt: `European classical decorative style with ornate elegant details.
 
 ## Color Palette
@@ -917,8 +917,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"fashion-magazine": {
 		ID:          "fashion-magazine",
-		Name:        "时尚杂志风格",
-		Description: "高端时尚杂志排版，大胆的视觉冲击",
+		Name:        "Fashion Magazine",
+		Description: "High-end fashion magazine layout with bold visual impact",
 		Prompt: `High-end fashion magazine layout with bold visual impact.
 
 ## Color Palette
@@ -946,8 +946,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"childrens-book": {
 		ID:          "childrens-book",
-		Name:        "儿童绘本风格",
-		Description: "童趣可爱的插画风格，温暖明快的色彩",
+		Name:        "Children's Book",
+		Description: "Whimsical children's book illustration with warm bright colors",
 		Prompt: `Whimsical children's book illustration with warm bright colors.
 
 ## Color Palette
@@ -975,8 +975,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"tropical-vacation": {
 		ID:          "tropical-vacation",
-		Name:        "热带度假风格",
-		Description: "阳光沙滩的热带风情，活力四射的色彩",
+		Name:        "Tropical Vacation",
+		Description: "Sunny tropical vacation vibe with vibrant energetic colors",
 		Prompt: `Sunny tropical vacation vibe with vibrant energetic colors.
 
 ## Color Palette
@@ -1004,8 +1004,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"art-deco": {
 		ID:          "art-deco",
-		Name:        "装饰艺术风格",
-		Description: "1920年代Art Deco风格，几何与奢华的融合",
+		Name:        "Art Deco",
+		Description: "1920s Art Deco style with geometric elegance and luxury",
 		Prompt: `1920s Art Deco style with geometric elegance and luxury.
 
 ## Color Palette
@@ -1033,8 +1033,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"gradient-fluid": {
 		ID:          "gradient-fluid",
-		Name:        "渐变流体风格",
-		Description: "现代流体渐变，柔和流动的视觉效果",
+		Name:        "Gradient Fluid",
+		Description: "Modern fluid gradients with soft flowing visual effects",
 		Prompt: `Modern fluid gradients with soft flowing visual effects.
 
 ## Color Palette
@@ -1062,8 +1062,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"paper-cut": {
 		ID:          "paper-cut",
-		Name:        "剪纸艺术风格",
-		Description: "立体剪纸效果，层叠的深度感",
+		Name:        "Paper Cut",
+		Description: "3D paper cut art effect with layered depth and shadows",
 		Prompt: `3D paper cut art effect with layered depth and shadows.
 
 ## Color Palette
@@ -1091,8 +1091,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"memphis-design": {
 		ID:          "memphis-design",
-		Name:        "孟菲斯风格",
-		Description: "80年代孟菲斯设计，大胆几何与撞色",
+		Name:        "Memphis Design",
+		Description: "1980s Memphis Design with bold geometry and clashing colors",
 		Prompt: `1980s Memphis Design style with bold geometry and clashing colors.
 
 ## Color Palette
@@ -1120,8 +1120,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"gradient-mesh": {
 		ID:          "gradient-mesh",
-		Name:        "网格渐变风格",
-		Description: "抽象网格渐变，现代科技感",
+		Name:        "Gradient Mesh",
+		Description: "Abstract mesh gradients with modern tech aesthetic",
 		Prompt: `Abstract mesh gradients with modern tech aesthetic.
 
 ## Color Palette
@@ -1149,8 +1149,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"bauhaus": {
 		ID:          "bauhaus",
-		Name:        "包豪斯风格",
-		Description: "包豪斯设计风格，功能主义与几何美学",
+		Name:        "Bauhaus",
+		Description: "Bauhaus design with functionalism and geometric aesthetic",
 		Prompt: `Bauhaus design style with functionalist geometry and primary colors.
 
 ## Color Palette
@@ -1178,8 +1178,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"duotone": {
 		ID:          "duotone",
-		Name:        "双色风格",
-		Description: "简约双色设计，强烈的视觉对比",
+		Name:        "Duotone",
+		Description: "Minimal duotone design with strong visual contrast",
 		Prompt: `Minimal duotone design with strong visual contrast.
 
 ## Color Palette
@@ -1207,8 +1207,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"minimalist-line": {
 		ID:          "minimalist-line",
-		Name:        "极简线条风格",
-		Description: "简约线条设计，干净利落的视觉效果",
+		Name:        "Minimalist Line",
+		Description: "Minimalist line art design with clean sharp visual effect",
 		Prompt: `Minimalist line art design with clean sharp visual effect.
 
 ## Color Palette
@@ -1236,8 +1236,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"retro-newspaper": {
 		ID:          "retro-newspaper",
-		Name:        "复古报纸风格",
-		Description: "老式报纸排版，怀旧印刷质感",
+		Name:        "Retro Newspaper",
+		Description: "Vintage newspaper layout with nostalgic print texture",
 		Prompt: `Vintage newspaper layout with nostalgic print texture.
 
 ## Color Palette
@@ -1265,8 +1265,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"movie-poster": {
 		ID:          "movie-poster",
-		Name:        "电影海报风格",
-		Description: "戏剧性电影海报设计，震撼的视觉效果",
+		Name:        "Movie Poster",
+		Description: "Dramatic movie poster design with stunning visual impact",
 		Prompt: `Dramatic movie poster design with stunning visual impact.
 
 ## Color Palette
@@ -1294,8 +1294,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"music-festival": {
 		ID:          "music-festival",
-		Name:        "音乐节风格",
-		Description: "活力四射的音乐节海报，动感十足",
+		Name:        "Music Festival",
+		Description: "Energetic music festival poster with dynamic vibrant feel",
 		Prompt: `Energetic music festival poster with dynamic vibrant feel.
 
 ## Color Palette
@@ -1323,8 +1323,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"brutalist": {
 		ID:          "brutalist",
-		Name:        "粗野主义风格",
-		Description: "大胆粗犷的设计，强烈的视觉冲击",
+		Name:        "Brutalist",
+		Description: "Bold raw design with powerful visual impact",
 		Prompt: `Bold brutalist design with raw powerful visual impact.
 
 ## Color Palette
@@ -1352,8 +1352,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"glassmorphism": {
 		ID:          "glassmorphism",
-		Name:        "玻璃拟态风格",
-		Description: "半透明玻璃效果，现代通透感",
+		Name:        "Glassmorphism",
+		Description: "Semi-transparent glass effect with modern translucent feel",
 		Prompt: `Semi-transparent glass effect with modern translucent feel.
 
 ## Color Palette
@@ -1381,8 +1381,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"neumorphism": {
 		ID:          "neumorphism",
-		Name:        "新拟物风格",
-		Description: "柔和凸起效果，现代3D质感",
+		Name:        "Neumorphism",
+		Description: "Soft raised effect with modern 3D tactile quality",
 		Prompt: `Soft raised effect with modern 3D tactile quality.
 
 ## Color Palette
@@ -1410,8 +1410,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"isometric-3d": {
 		ID:          "isometric-3d",
-		Name:        "等距3D风格",
-		Description: "等距视角的3D图形，现代立体感",
+		Name:        "Isometric 3D",
+		Description: "Isometric perspective 3D graphics with modern dimensional feel",
 		Prompt: `Isometric 3D graphics with modern dimensional feel.
 
 ## Color Palette
@@ -1439,8 +1439,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"collage-scrapbook": {
 		ID:          "collage-scrapbook",
-		Name:        "拼贴手账风格",
-		Description: "剪贴簿拼贴效果，手工艺术感",
+		Name:        "Collage Scrapbook",
+		Description: "Scrapbook collage effect with handmade artistic feel",
 		Prompt: `Scrapbook collage effect with handmade artistic feel.
 
 ## Color Palette
@@ -1468,8 +1468,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"gradient-abstract": {
 		ID:          "gradient-abstract",
-		Name:        "抽象渐变风格",
-		Description: "抽象艺术渐变，梦幻流动感",
+		Name:        "Gradient Abstract",
+		Description: "Abstract art gradients with dreamy flowing feel",
 		Prompt: `Abstract art gradients with dreamy flowing feel.
 
 ## Color Palette
@@ -1497,8 +1497,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"vintage-travel": {
 		ID:          "vintage-travel",
-		Name:        "复古旅行风格",
-		Description: "老式旅行海报，怀旧冒险气息",
+		Name:        "Vintage Travel",
+		Description: "Vintage travel poster with nostalgic adventure spirit",
 		Prompt: `Vintage travel poster with nostalgic adventure spirit.
 
 ## Color Palette
@@ -1526,8 +1526,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"botanical-garden": {
 		ID:          "botanical-garden",
-		Name:        "植物花园风格",
-		Description: "自然植物插画，清新花园气息",
+		Name:        "Botanical Garden",
+		Description: "Natural botanical illustration with fresh garden atmosphere",
 		Prompt: `Natural botanical illustration with fresh garden atmosphere.
 
 ## Color Palette
@@ -1555,8 +1555,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"geometric-abstract": {
 		ID:          "geometric-abstract",
-		Name:        "几何抽象风格",
-		Description: "几何图形艺术，现代抽象美学",
+		Name:        "Geometric Abstract",
+		Description: "Geometric shape art with modern abstract aesthetic",
 		Prompt: `Geometric abstract art with modern aesthetic.
 
 ## Color Palette
@@ -1584,8 +1584,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"retro-arcade": {
 		ID:          "retro-arcade",
-		Name:        "复古街机风格",
-		Description: "80年代街机游戏美学，怀旧游戏感",
+		Name:        "Retro Arcade",
+		Description: "1980s arcade game aesthetic with nostalgic gaming feel",
 		Prompt: `80s arcade game aesthetic with nostalgic gaming feel.
 
 ## Color Palette
@@ -1613,8 +1613,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"luxe-gold": {
 		ID:          "luxe-gold",
-		Name:        "奢华金色风格",
-		Description: "高端奢华金色设计，尊贵气质",
+		Name:        "Luxe Gold",
+		Description: "High-end luxury gold design with premium elegant feel",
 		Prompt: `High-end luxury gold design with premium elegant feel.
 
 ## Color Palette
@@ -1642,8 +1642,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"sports-athletic": {
 		ID:          "sports-athletic",
-		Name:        "运动竞技风格",
-		Description: "动感运动风格，活力竞技气息",
+		Name:        "Sports Athletic",
+		Description: "Dynamic sports style with energetic athletic atmosphere",
 		Prompt: `Dynamic sports style with energetic athletic atmosphere.
 
 ## Color Palette
@@ -1671,8 +1671,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"comic-manga": {
 		ID:          "comic-manga",
-		Name:        "日式漫画风格",
-		Description: "日本漫画美学，动感线条与速度感",
+		Name:        "Comic Manga",
+		Description: "Japanese manga aesthetic with dynamic lines and speed",
 		Prompt: `Japanese manga aesthetic with dynamic lines and speed.
 
 ## Color Palette
@@ -1700,8 +1700,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"woodcut-print": {
 		ID:          "woodcut-print",
-		Name:        "木刻版画风格",
-		Description: "传统木刻印刷效果，质朴艺术感",
+		Name:        "Woodcut Print",
+		Description: "Traditional woodcut print effect with rustic artistic feel",
 		Prompt: `Traditional woodcut print effect with rustic artistic feel.
 
 ## Color Palette
@@ -1729,8 +1729,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"sticker-bomb": {
 		ID:          "sticker-bomb",
-		Name:        "贴纸炸弹风格",
-		Description: "密集贴纸装饰，街头潮流感",
+		Name:        "Sticker Bomb",
+		Description: "Dense sticker decoration with street trend feel",
 		Prompt: `Dense sticker decoration with street trend feel.
 
 ## Color Palette
@@ -1758,8 +1758,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"zen-minimal": {
 		ID:          "zen-minimal",
-		Name:        "禅意极简风格",
-		Description: "东方禅意美学，宁静简约之美",
+		Name:        "Zen Minimal",
+		Description: "Eastern zen aesthetic with peaceful minimalist beauty",
 		Prompt: `Eastern zen aesthetic with peaceful minimalist beauty.
 
 ## Color Palette
@@ -1787,8 +1787,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"retro-50s-diner": {
 		ID:          "retro-50s-diner",
-		Name:        "50年代餐厅风格",
-		Description: "美国50年代复古餐厅，怀旧摇滚风",
+		Name:        "Retro 50s Diner",
+		Description: "American 1950s diner retro with nostalgic rock and roll style",
 		Prompt: `American 1950s diner retro with nostalgic rock and roll style.
 
 ## Color Palette
@@ -1816,8 +1816,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"outer-space": {
 		ID:          "outer-space",
-		Name:        "太空宇宙风格",
-		Description: "宇宙星空主题，神秘浩瀚感",
+		Name:        "Outer Space",
+		Description: "Cosmic space theme with mysterious vast feel",
 		Prompt: `Cosmic space theme with mysterious vast feel.
 
 ## Color Palette
@@ -1845,8 +1845,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"retro-future": {
 		ID:          "retro-future",
-		Name:        "复古未来风格",
-		Description: "60年代未来主义，原子时代美学",
+		Name:        "Retro Future",
+		Description: "1960s futurism with atomic age aesthetic",
 		Prompt: `1960s futurism with atomic age aesthetic.
 
 ## Color Palette
@@ -1874,8 +1874,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"new-yorker": {
 		ID:          "new-yorker",
-		Name:        "纽约客风格",
-		Description: "纽约客杂志插画风格，优雅讽刺",
+		Name:        "New Yorker",
+		Description: "New Yorker magazine illustration style with elegant satire",
 		Prompt: `New Yorker magazine illustration style with elegant satire.
 
 ## Color Palette
@@ -1903,8 +1903,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"low-poly": {
 		ID:          "low-poly",
-		Name:        "低多边形风格",
-		Description: "几何多边形艺术，现代数字感",
+		Name:        "Low Poly",
+		Description: "Geometric polygon art with modern digital feel",
 		Prompt: `Geometric polygon art with modern digital feel.
 
 ## Color Palette
@@ -1932,8 +1932,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"ukiyo-e": {
 		ID:          "ukiyo-e",
-		Name:        "浮世绘风格",
-		Description: "日本浮世绘艺术，传统东方美学",
+		Name:        "Ukiyo-e",
+		Description: "Japanese ukiyo-e art with traditional eastern aesthetic",
 		Prompt: `Japanese ukiyo-e art with traditional eastern aesthetic.
 
 ## Color Palette
@@ -1961,8 +1961,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"swiss-international": {
 		ID:          "swiss-international",
-		Name:        "瑞士国际风格",
-		Description: "瑞士平面设计，网格与无衬线字体",
+		Name:        "Swiss International",
+		Description: "Swiss graphic design with grid and sans-serif typography",
 		Prompt: `Swiss graphic design with grid and sans-serif typography.
 
 ## Color Palette
@@ -1990,8 +1990,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"art-nouveau": {
 		ID:          "art-nouveau",
-		Name:        "新艺术风格",
-		Description: "19世纪新艺术运动，自然曲线与装饰",
+		Name:        "Art Nouveau",
+		Description: "19th century Art Nouveau with natural curves and ornamentation",
 		Prompt: `19th century Art Nouveau with natural curves and ornamentation.
 
 ## Color Palette
@@ -2019,8 +2019,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"neon-noir": {
 		ID:          "neon-noir",
-		Name:        "霓虹黑色风格",
-		Description: "黑色电影配霓虹灯光，都市夜晚感",
+		Name:        "Neon Noir",
+		Description: "Film noir with neon lighting for urban night atmosphere",
 		Prompt: `Film noir with neon lighting for urban night atmosphere.
 
 ## Color Palette
@@ -2048,8 +2048,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"boho-chic": {
 		ID:          "boho-chic",
-		Name:        "波西米亚风格",
-		Description: "自由奔放的波西米亚风，艺术浪漫",
+		Name:        "Boho Chic",
+		Description: "Free-spirited bohemian style with artistic romance",
 		Prompt: `Free-spirited bohemian style with artistic romance.
 
 ## Color Palette
@@ -2077,8 +2077,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"propaganda-poster": {
 		ID:          "propaganda-poster",
-		Name:        "宣传海报风格",
-		Description: "复古宣传海报，强烈视觉号召力",
+		Name:        "Propaganda Poster",
+		Description: "Vintage propaganda poster with strong visual call-to-action",
 		Prompt: `Vintage propaganda poster with strong visual call-to-action.
 
 ## Color Palette
@@ -2106,8 +2106,8 @@ var InfographStyles = map[string]InfographStyle{
 
 	"grunge-distressed": {
 		ID:          "grunge-distressed",
-		Name:        "垃圾摇滚风格",
-		Description: "破旧磨损效果，叛逆另类美学",
+		Name:        "Grunge Distressed",
+		Description: "Distressed grunge effect with rebellious alternative aesthetic",
 		Prompt: `Distressed grunge effect with rebellious alternative aesthetic.
 
 ## Color Palette

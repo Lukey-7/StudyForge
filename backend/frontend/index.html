@@ -8,7 +8,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css?v=32">
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css?v=41">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/16.3.0/lib/marked.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/mermaid/11.4.0/mermaid.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/echarts/5.5.0/echarts.min.js"></script>
@@ -41,32 +42,291 @@
     <script id="MathJax-script" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
-    <div class="app-container">
-        <!-- Header -->
-        <header class="app-header hidden">
-            <div class="header-brand">
-                <div class="logo-mark">
-                    <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2">
-                        <rect x="4" y="4" width="32" height="32" rx="2"/>
-                        <line x1="12" y1="12" x2="28" y2="12"/>
-                        <line x1="12" y1="18" x2="24" y2="18"/>
-                        <line x1="12" y1="24" x2="20" y2="24"/>
+    <div class="sf-layout">
+        <!-- Sidebar Navigation -->
+        <aside class="sf-sidebar" id="sfSidebar">
+            <div class="sf-sidebar-brand">
+                <div class="sf-sidebar-logo">
+                    <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32">
+                        <rect x="4" y="4" width="32" height="32" rx="6" fill="#8B5CF6" stroke="none"/>
+                        <rect x="8" y="8" width="24" height="24" rx="2" stroke="white"/>
+                        <line x1="12" y1="14" x2="28" y2="14" stroke="white"/>
+                        <line x1="12" y1="20" x2="24" y2="20" stroke="white"/>
+                        <line x1="12" y1="26" x2="20" y2="26" stroke="white"/>
                     </svg>
                 </div>
-                <div class="logo-type">
-                    <span class="logo-name">StudyForge</span>
-                    <span class="logo-tagline">Knowledge Archive</span>
+                <div class="sf-sidebar-brand-text">
+                    <span class="sf-sidebar-title">StudyForge</span>
+                    <span class="sf-sidebar-subtitle">Academic Focus</span>
                 </div>
             </div>
-            <div class="header-actions">
-
-                <div id="authContainer" class="auth-container">
-                    <button id="btnLogin" class="btn-primary btn-sm">Login</button>
-                    <div id="userProfile" class="user-profile hidden">
-                        <img id="userAvatar" src="" alt="Avatar" class="user-avatar">
-                        <span id="userName" class="user-name"></span>
-                        <button id="btnLogout" class="btn-text btn-sm">Logout</button>
+            <nav class="sf-sidebar-nav">
+                <a class="sf-nav-item active" data-view="landing" id="navDashboard">
+                    <span class="material-symbols-outlined">dashboard</span>
+                    <span>Dashboard</span>
+                </a>
+                <a class="sf-nav-item" data-view="documents" id="navDocuments">
+                    <span class="material-symbols-outlined">description</span>
+                    <span>Documents</span>
+                </a>
+                <a class="sf-nav-item" data-view="notebooks" id="navNotebooks">
+                    <span class="material-symbols-outlined">menu_book</span>
+                    <span>Notebooks</span>
+                </a>
+                <a class="sf-nav-item" data-view="chat" id="navChat">
+                    <span class="material-symbols-outlined">forum</span>
+                    <span>AI Chat</span>
+                </a>
+                <a class="sf-nav-item" data-view="settings" id="navSettings">
+                    <span class="material-symbols-outlined">settings</span>
+                    <span>Settings</span>
+                </a>
+            </nav>
+            <div class="sf-sidebar-footer">
+                <button class="sf-sidebar-cta" id="btnNewNotebookSidebar">
+                    <span class="material-symbols-outlined">add</span>
+                    New Notebook
+                </button>
+                <div class="sf-sidebar-user" id="sidebarUserArea">
+                    <div id="sidebarAuthContainer" class="auth-container">
+                        <button id="btnLoginSidebar" class="sf-sidebar-login">
+                            <span class="material-symbols-outlined">login</span>
+                            Sign In
+                        </button>
+                        <div id="sidebarUserProfile" class="sf-sidebar-profile hidden">
+                            <img id="sidebarUserAvatar" src="" alt="Avatar" class="sf-sidebar-avatar">
+                            <span id="sidebarUserName" class="sf-sidebar-username"></span>
+                        </div>
                     </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <div class="sf-main">
+            <!-- Top Bar -->
+            <header class="sf-topbar" id="sfTopbar">
+                <div class="sf-topbar-left">
+                    <button class="sf-sidebar-toggle" id="btnToggleSidebar">
+                        <span class="material-symbols-outlined">menu</span>
+                    </button>
+                    <div class="sf-breadcrumb" id="sfBreadcrumb">
+                        <span>Dashboard</span>
+                    </div>
+                </div>
+                <div class="sf-topbar-right">
+                    <div class="sf-search-box">
+                        <span class="material-symbols-outlined">search</span>
+                        <input type="text" placeholder="Search..." id="sfGlobalSearch">
+                    </div>
+                    <button class="sf-topbar-icon" id="btnNotifications">
+                        <span class="material-symbols-outlined">notifications</span>
+                    </button>
+                    <div id="topbarAuthContainer" class="auth-container">
+                        <button id="btnLoginTopbar" class="sf-topbar-icon hidden">
+                            <span class="material-symbols-outlined">account_circle</span>
+                        </button>
+                        <div id="topbarUserProfile" class="sf-topbar-user hidden">
+                            <img id="topbarUserAvatar" src="" alt="Avatar" class="sf-topbar-avatar">
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Canvas: all views render here -->
+            <div class="sf-canvas">
+
+                <!-- ============ DASHBOARD VIEW ============ -->
+                <section class="sf-view" id="dashboardView">
+                    <div class="sf-view-header">
+                        <h1>Dashboard</h1>
+                        <p>Welcome back — here's your study overview</p>
+                    </div>
+
+                    <!-- Stats Row -->
+                    <div class="sf-stats-row" id="dashboardStats">
+                        <div class="glass-card sf-stat-card">
+                            <div class="sf-stat-icon" style="background:rgba(139,92,246,0.12);color:#8B5CF6;">
+                                <span class="material-symbols-outlined">menu_book</span>
+                            </div>
+                            <div class="sf-stat-info">
+                                <span class="sf-stat-value" id="statNotebooks">0</span>
+                                <span class="sf-stat-label">Notebooks</span>
+                            </div>
+                        </div>
+                        <div class="glass-card sf-stat-card">
+                            <div class="sf-stat-icon" style="background:rgba(52,211,153,0.12);color:#34D399;">
+                                <span class="material-symbols-outlined">description</span>
+                            </div>
+                            <div class="sf-stat-info">
+                                <span class="sf-stat-value" id="statDocuments">0</span>
+                                <span class="sf-stat-label">Documents</span>
+                            </div>
+                        </div>
+                        <div class="glass-card sf-stat-card">
+                            <div class="sf-stat-icon" style="background:rgba(251,191,36,0.12);color:#FBBF24;">
+                                <span class="material-symbols-outlined">edit_note</span>
+                            </div>
+                            <div class="sf-stat-info">
+                                <span class="sf-stat-value" id="statNotes">0</span>
+                                <span class="sf-stat-label">Notes</span>
+                            </div>
+                        </div>
+                        <div class="glass-card sf-stat-card">
+                            <div class="sf-stat-icon" style="background:rgba(96,165,250,0.12);color:#60A5FA;">
+                                <span class="material-symbols-outlined">schedule</span>
+                            </div>
+                            <div class="sf-stat-info">
+                                <span class="sf-stat-value" id="statHoursSaved">0</span>
+                                <span class="sf-stat-label">AI Hours Saved</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Upload + Recent Uploads -->
+                    <div class="sf-dashboard-grid">
+                        <!-- Upload Zone -->
+                        <div class="glass-card sf-upload-card">
+                            <h3><span class="material-symbols-outlined">cloud_upload</span> Quick Upload</h3>
+                            <p class="text-secondary">Drag files here or click to upload to your latest notebook</p>
+                            <div class="sf-drop-zone" id="dashboardDropZone">
+                                <span class="material-symbols-outlined" style="font-size:40px;color:var(--text-muted);">upload_file</span>
+                                <span class="sf-drop-text">Drop files here</span>
+                                <span class="sf-drop-hint">PDF, DOCX, Images, Audio, Video</span>
+                            </div>
+                        </div>
+
+                        <!-- Recent Uploads -->
+                        <div class="glass-card sf-recent-card">
+                            <div class="sf-recent-header">
+                                <h3><span class="material-symbols-outlined">history</span> Recent Documents</h3>
+                                <a class="sf-link" id="dashboardViewAllDocs">View All</a>
+                            </div>
+                            <div class="sf-recent-list" id="dashboardRecentDocs">
+                                <div class="sf-empty-state">
+                                    <span class="material-symbols-outlined">folder_open</span>
+                                    <p>No documents yet. Upload your first file!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Notebooks -->
+                    <div class="sf-section">
+                        <div class="sf-section-header">
+                            <h3><span class="material-symbols-outlined">collections_bookmark</span> Recent Notebooks</h3>
+                            <a class="sf-link" id="dashboardViewAllNotebooks">View All</a>
+                        </div>
+                        <div class="sf-notebook-row" id="dashboardRecentNotebooks">
+                            <div class="sf-empty-state">
+                                <span class="material-symbols-outlined">auto_stories</span>
+                                <p>No notebooks yet. Create your first one!</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ============ DOCUMENTS VIEW ============ -->
+                <section class="sf-view hidden" id="documentsView">
+                    <div class="sf-view-header">
+                        <div class="sf-view-header-row">
+                            <div>
+                                <h1>Documents</h1>
+                                <p>All uploaded sources across your notebooks</p>
+                            </div>
+                            <button class="btn-primary" id="btnUploadDocument">
+                                <span class="material-symbols-outlined" style="font-size:18px;">add</span>
+                                Upload
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filter Tabs -->
+                    <div class="sf-filter-bar" id="docsFilterBar">
+                        <button class="sf-filter-tab active" data-filter="all">All</button>
+                        <button class="sf-filter-tab" data-filter="pdf">PDF</button>
+                        <button class="sf-filter-tab" data-filter="image">Image</button>
+                        <button class="sf-filter-tab" data-filter="audio">Audio</button>
+                        <button class="sf-filter-tab" data-filter="text">Text</button>
+                        <button class="sf-filter-tab" data-filter="url">URL</button>
+                    </div>
+
+                    <!-- Document Grid -->
+                    <div class="sf-docs-grid" id="docsGrid">
+                        <div class="sf-empty-state sf-empty-state-large">
+                            <span class="material-symbols-outlined">description</span>
+                            <h3>No documents found</h3>
+                            <p>Upload your first document to get started</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ============ DOCUMENT DETAIL VIEW ============ -->
+                <section class="sf-view hidden" id="documentDetailView">
+                    <div class="sf-detail-topbar">
+                        <button class="sf-back-btn" id="btnBackToDocs">
+                            <span class="material-symbols-outlined">arrow_back</span>
+                            Back to Documents
+                        </button>
+                        <div class="sf-detail-title">
+                            <span class="sf-detail-type-badge" id="detailTypeBadge">PDF</span>
+                            <h2 id="detailDocName">Document Name</h2>
+                        </div>
+                        <div class="sf-detail-actions">
+                            <button class="btn-secondary" id="btnDetailAddToNotebook">
+                                <span class="material-symbols-outlined" style="font-size:16px;">library_add</span>
+                                Open Notebook
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Split Pane -->
+                    <div class="sf-detail-split">
+                        <!-- Left: Extracted Text -->
+                        <div class="sf-detail-text-pane">
+                            <div class="sf-detail-pane-header">
+                                <h3><span class="material-symbols-outlined">article</span> Extracted Content</h3>
+                                <span class="sf-chip" id="detailChunkCount">0 chunks</span>
+                            </div>
+                            <div class="sf-detail-text-content" id="detailTextContent">
+                                <div class="sf-empty-state">
+                                    <span class="material-symbols-outlined">text_snippet</span>
+                                    <p>No extracted content available</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right: AI Insights -->
+                        <div class="sf-detail-insights-pane">
+                            <div class="sf-detail-pane-header">
+                                <h3><span class="material-symbols-outlined">auto_awesome</span> AI Insights</h3>
+                            </div>
+                            <!-- Mode Tabs -->
+                            <div class="sf-insight-tabs" id="insightTabs">
+                                <button class="sf-insight-tab active" data-mode="summary">Summary</button>
+                                <button class="sf-insight-tab" data-mode="faq">FAQ</button>
+                                <button class="sf-insight-tab" data-mode="exam">Exam Notes</button>
+                                <button class="sf-insight-tab" data-mode="outline">Outline</button>
+                            </div>
+                            <div class="sf-insight-content" id="insightContent">
+                                <div class="sf-empty-state">
+                                    <span class="material-symbols-outlined">psychology</span>
+                                    <p>Select a mode to generate AI insights</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+    <div class="app-container">
+        <!-- Legacy Header (hidden, preserved for app.js compat) -->
+        <header class="app-header hidden" style="display:none!important">
+            <div id="authContainer" class="auth-container">
+                <button id="btnLogin" class="btn-primary btn-sm">Login</button>
+                <div id="userProfile" class="user-profile hidden">
+                    <img id="userAvatar" src="" alt="Avatar" class="user-avatar">
+                    <span id="userName" class="user-name"></span>
+                    <button id="btnLogout" class="btn-text btn-sm">Logout</button>
                 </div>
             </div>
         </header>
@@ -1045,6 +1305,44 @@
         </div>
     </template>
 
-    <script src="/static/app.js?v=30"></script>
+    <!-- Settings View (placeholder) -->
+    <section class="sf-view hidden" id="settingsView">
+        <div class="sf-view-header">
+            <h1>Settings</h1>
+            <p>Configure your StudyForge experience</p>
+        </div>
+        <div class="sf-settings-grid">
+            <div class="glass-card sf-settings-card">
+                <h3><span class="material-symbols-outlined">palette</span> Appearance</h3>
+                <p class="text-secondary">Theme and display preferences</p>
+                <div class="sf-setting-row">
+                    <span>Dark Mode</span>
+                    <span class="sf-chip">Always On</span>
+                </div>
+            </div>
+            <div class="glass-card sf-settings-card">
+                <h3><span class="material-symbols-outlined">person</span> Account</h3>
+                <p class="text-secondary">Manage your account and login</p>
+                <div class="sf-setting-row">
+                    <span>Authentication</span>
+                    <button class="btn-primary btn-sm" id="btnLoginSettings">Sign In</button>
+                </div>
+            </div>
+            <div class="glass-card sf-settings-card">
+                <h3><span class="material-symbols-outlined">info</span> About</h3>
+                <p class="text-secondary">StudyForge — AI-Powered Study System</p>
+                <div class="sf-setting-row">
+                    <span>Version</span>
+                    <span class="sf-chip">1.0.0</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+            </div><!-- /.sf-canvas -->
+        </div><!-- /.sf-main -->
+    </div><!-- /.sf-layout -->
+
+    <script src="/static/app.js?v=40"></script>
 </body>
 </html>

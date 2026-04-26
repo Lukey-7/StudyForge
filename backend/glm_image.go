@@ -16,7 +16,7 @@ import (
 	"github.com/tmc/langchaingo/llms"
 )
 
-// GLMImageClient is a client for GLM-Image (智谱AI) image generation
+// GLMImageClient is a client for GLM-Image (Zhipu AI) image generation
 type GLMImageClient struct {
 	apiKey     string
 	baseURL    string
