@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Document Detail - StudyForge</title>
+<!-- Fonts & Icons -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Theme Configuration -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "error-container": "#93000a",
+                    "on-tertiary-fixed": "#1b1d00",
+                    "error": "#ffb4ab",
+                    "secondary-fixed-dim": "#cdc0ed",
+                    "tertiary-fixed": "#dfed1a",
+                    "surface-bright": "#39393b",
+                    "inverse-on-surface": "#313032",
+                    "on-surface": "#e5e1e4",
+                    "primary-container": "#a078ff",
+                    "tertiary-container": "#8e9800",
+                    "on-primary-fixed": "#23005c",
+                    "on-background": "#e5e1e4",
+                    "secondary": "#cdc0ed",
+                    "on-secondary-fixed": "#1f1538",
+                    "on-surface-variant": "#cbc3d7",
+                    "primary": "#d0bcff",
+                    "surface-variant": "#353437",
+                    "primary-fixed-dim": "#d0bcff",
+                    "outline": "#958ea0",
+                    "surface-dim": "#131315",
+                    "on-primary-container": "#340080",
+                    "surface": "#131315",
+                    "surface-container-low": "#1c1b1d",
+                    "secondary-container": "#4d4369",
+                    "on-primary-fixed-variant": "#5516be",
+                    "surface-container-high": "#2a2a2c",
+                    "outline-variant": "#494454",
+                    "tertiary-fixed-dim": "#c3d000",
+                    "on-tertiary": "#2f3300",
+                    "on-primary": "#3c0091",
+                    "surface-container": "#201f22",
+                    "tertiary": "#c3d000",
+                    "surface-tint": "#d0bcff",
+                    "inverse-primary": "#6d3bd7",
+                    "background": "#09090B", /* Overridden slightly to match style guide specific #09090B request */
+                    "on-tertiary-fixed-variant": "#454a00",
+                    "surface-container-highest": "#353437",
+                    "on-tertiary-container": "#292c00",
+                    "on-error": "#690005",
+                    "inverse-surface": "#e5e1e4",
+                    "surface-container-lowest": "#0e0e10",
+                    "primary-fixed": "#e9ddff",
+                    "on-secondary": "#342b4f",
+                    "on-error-container": "#ffdad6",
+                    "on-secondary-container": "#bfb2de",
+                    "secondary-fixed": "#e9ddff",
+                    "on-secondary-fixed-variant": "#4b4166"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.125rem",
+                    "lg": "0.25rem",
+                    "xl": "0.5rem",
+                    "full": "0.75rem"
+            },
+            "spacing": {
+                    "sm": "0.5rem",
+                    "gutter": "1.5rem",
+                    "lg": "1.5rem",
+                    "xl": "2rem",
+                    "md": "1rem",
+                    "margin": "2rem",
+                    "xs": "0.25rem"
+            },
+            "fontFamily": {
+                    "h3": ["Inter"],
+                    "body-sm": ["Inter"],
+                    "h2": ["Inter"],
+                    "body-lg": ["Inter"],
+                    "display": ["Inter"],
+                    "mono-label": ["monospace"],
+                    "body-md": ["Inter"],
+                    "h1": ["Inter"]
+            },
+            "fontSize": {
+                    "h3": ["18px", {"lineHeight": "1.4", "letterSpacing": "0", "fontWeight": "600"}],
+                    "body-sm": ["12px", {"lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400"}],
+                    "h2": ["24px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "body-lg": ["16px", {"lineHeight": "1.6", "letterSpacing": "0", "fontWeight": "400"}],
+                    "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "mono-label": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                    "body-md": ["14px", {"lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400"}],
+                    "h1": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        /* Custom scrollbar for webkit */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-[#09090B] text-on-background flex h-screen overflow-hidden antialiased selection:bg-primary/30 selection:text-primary">
+<!-- SideNavBar Component -->
+<!-- Applying exact style keys from JSON -->
+<nav class="fixed inset-y-0 left-0 flex flex-col p-4 bg-zinc-900/60 backdrop-blur-xl h-screen w-64 border-r border-white/10 z-50">
+<!-- Header -->
+<div class="flex items-center gap-3 px-2 mb-8 mt-2">
+<div class="h-8 w-8 rounded-lg bg-gradient-to-br from-violet-500 to-primary-container flex items-center justify-center shadow-lg shadow-violet-500/20">
+<span class="material-symbols-outlined text-white text-sm" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+</div>
+<div>
+<h1 class="text-xl font-bold tracking-tight text-white">StudyForge</h1>
+<p class="text-xs text-zinc-400">Academic Focus</p>
+</div>
+</div>
+<!-- CTA -->
+<button class="mb-6 w-full py-2.5 px-4 bg-[#8B5CF6] hover:bg-violet-500 text-[#FAFAFA] font-body-sm text-body-sm font-medium rounded-lg transition-colors flex items-center justify-center gap-2 active:scale-95 transition-transform duration-200">
+<span class="material-symbols-outlined text-[18px]">add</span>
+            New Note
+        </button>
+<!-- Navigation Links -->
+<!-- Active tab matched to "Documents" based on page intent -->
+<div class="flex flex-col space-y-1 flex-1">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-colors duration-200 font-inter antialiased text-sm font-medium active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-white border-l-2 border-violet-500 bg-white/5 font-inter antialiased text-sm font-medium active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">description</span>
+                Documents
+            </a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-colors duration-200 font-inter antialiased text-sm font-medium active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-[20px]">book_2</span>
+                Notebooks
+            </a>
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-colors duration-200 font-inter antialiased text-sm font-medium active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-[20px]">smart_toy</span>
+                AI Chat
+            </a>
+</div>
+<div class="mt-auto border-t border-white/5 pt-4">
+<a class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-colors duration-200 font-inter antialiased text-sm font-medium active:scale-95 transition-transform" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+                Settings
+            </a>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<!-- TopNavBar suppressed due to linear/task-focused sub-page intent (Detail with Back action) -->
+<main class="flex-1 ml-64 flex flex-col h-screen min-w-0 relative bg-[url('data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.02\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')]">
+<!-- Custom Top Detail Bar -->
+<header class="flex-shrink-0 h-16 px-6 flex items-center justify-between border-b border-white/[0.08] bg-[#09090B]/80 backdrop-blur-md z-10">
+<div class="flex items-center gap-4">
+<button class="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<div class="h-4 w-px bg-white/10"></div>
+<h2 class="font-h3 text-h3 text-on-surface truncate max-w-xl">Cellular_Respiration_Chapter_04.pdf</h2>
+<span class="px-2 py-0.5 rounded border border-white/10 bg-white/5 font-mono-label text-[10px] text-zinc-400 tracking-wider">PDF</span>
+</div>
+<div class="flex items-center gap-3">
+<button class="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors" title="Download Source">
+<span class="material-symbols-outlined text-[20px]">download</span>
+</button>
+<button class="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 transition-colors" title="Share Document">
+<span class="material-symbols-outlined text-[20px]">share</span>
+</button>
+<button class="px-4 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white font-body-sm text-body-sm hover:bg-white/10 transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">edit_document</span>
+                    Open in Editor
+                </button>
+</div>
+</header>
+<!-- Split View Content Area -->
+<div class="flex-1 p-6 flex flex-row gap-6 overflow-hidden">
+<!-- Left Panel: Extracted Text -->
+<section class="flex-1 flex flex-col bg-zinc-900/60 backdrop-blur-[12px] border border-white/[0.08] rounded-xl overflow-hidden shadow-2xl shadow-black/50">
+<!-- Panel Header -->
+<div class="flex-shrink-0 px-5 py-3 border-b border-white/[0.08] flex items-center justify-between bg-white/[0.02]">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-zinc-400 text-[18px]">format_align_left</span>
+<h3 class="font-body-md text-body-md font-medium text-zinc-200">Extracted Text</h3>
+</div>
+<div class="flex items-center gap-2 text-zinc-500 font-mono-label text-mono-label">
+<span>PAGE 1 OF 12</span>
+</div>
+</div>
+<!-- Scrollable Text Content -->
+<div class="flex-1 overflow-y-auto p-8 font-body-md text-body-md text-zinc-300 leading-relaxed space-y-6">
+<p>
+                        Cellular respiration is the process by which biological fuels are oxidized in the presence of an inorganic electron acceptor, such as oxygen, to produce large amounts of energy, to drive the bulk production of ATP.
+                    </p>
+<p>
+                        The overall reaction for cellular respiration, when using glucose as the primary metabolic fuel, is typically written as:
+                    </p>
+<div class="p-4 bg-black/40 rounded-lg border border-white/5 font-mono text-sm text-primary text-center my-4">
+                        C6H12O6 + 6O2 → 6CO2 + 6H2O + ATP + heat
+                    </div>
+<p>
+                        This process consists of three main stages: Glycolysis, the Citric Acid Cycle (Krebs Cycle), and Oxidative Phosphorylation. 
+                    </p>
+<h4 class="font-h3 text-[16px] text-white mt-8 mb-4">1. Glycolysis</h4>
+<p>
+                        Occurring in the cytoplasm, glycolysis involves the breakdown of one molecule of glucose (a six-carbon compound) into two molecules of pyruvate (a three-carbon compound). This anaerobic process nets 2 ATP molecules and 2 NADH molecules per glucose molecule.
+                    </p>
+<p>
+                        The regulatory enzyme phosphofructokinase-1 (PFK-1) is the committed step of the pathway, heavily regulated by the cell's energy charge (ATP/AMP ratio).
+                    </p>
+<h4 class="font-h3 text-[16px] text-white mt-8 mb-4">2. Pyruvate Oxidation &amp; The Citric Acid Cycle</h4>
+<p>
+                        Upon entering the mitochondrial matrix, pyruvate is oxidized to Acetyl-CoA by the Pyruvate Dehydrogenase Complex. Acetyl-CoA then enters the Citric Acid Cycle, combining with oxaloacetate to form citrate.
+                    </p>
+<p>
+                        Through a series of redox reactions, the cycle produces 3 NADH, 1 FADH2, and 1 GTP (which can be converted to ATP) per turn. Since one glucose yields two pyruvates, the cycle turns twice per glucose molecule.
+                    </p>
+</div>
+</section>
+<!-- Right Panel: AI Insights -->
+<section class="flex-1 flex flex-col bg-zinc-900/60 backdrop-blur-[12px] border border-white/[0.08] rounded-xl overflow-hidden shadow-2xl shadow-black/50 relative">
+<!-- Background Ambient Glow for AI -->
+<div class="absolute top-0 right-0 w-[300px] h-[300px] bg-primary/10 blur-[100px] rounded-full pointer-events-none"></div>
+<!-- Panel Header & Tabs -->
+<div class="flex-shrink-0 pt-4 px-5 border-b border-white/[0.08] bg-white/[0.02]">
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-[#8B5CF6] text-[18px]">auto_awesome</span>
+<h3 class="font-body-md text-body-md font-medium text-white">AI Insights</h3>
+</div>
+<!-- Mode Selector Tabs -->
+<div class="flex space-x-1 pb-[-1px]">
+<button class="px-4 py-2 text-zinc-400 hover:text-zinc-200 font-body-sm text-body-sm font-medium border-b-2 border-transparent transition-colors">
+                            Exact
+                        </button>
+<button class="px-4 py-2 text-zinc-400 hover:text-zinc-200 font-body-sm text-body-sm font-medium border-b-2 border-transparent transition-colors">
+                            Improved
+                        </button>
+<button class="px-4 py-2 text-zinc-400 hover:text-zinc-200 font-body-sm text-body-sm font-medium border-b-2 border-transparent transition-colors">
+                            Exam
+                        </button>
+<!-- Active Tab -->
+<button class="px-4 py-2 text-[#8B5CF6] font-body-sm text-body-sm font-medium border-b-2 border-[#8B5CF6] bg-white/[0.03] rounded-t-lg transition-colors">
+                            Explained
+                        </button>
+</div>
+</div>
+<!-- Scrollable AI Content -->
+<div class="flex-1 overflow-y-auto p-6 space-y-6">
+<!-- Insight Card 1 -->
+<div class="p-5 rounded-lg bg-surface/50 border border-white/[0.06] hover:border-white/[0.1] transition-colors relative group">
+<div class="absolute inset-y-0 left-0 w-1 bg-[#8B5CF6] rounded-l-lg opacity-50 group-hover:opacity-100 transition-opacity"></div>
+<h4 class="font-body-lg text-body-lg text-white font-medium mb-2">The Big Picture: Energy Conversion</h4>
+<p class="font-body-sm text-body-sm text-zinc-300 leading-relaxed mb-3">
+                            Think of cellular respiration as the cell's power plant. It takes raw fuel (glucose) and slowly extracts the energy to charge up the cell's "batteries" (ATP). It doesn't release all the energy at once—that would be an explosion—but rather in small, controlled steps.
+                        </p>
+<div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-[#8B5CF6]/10 border border-[#8B5CF6]/20">
+<span class="material-symbols-outlined text-[14px] text-[#8B5CF6]">format_quote</span>
+<span class="font-mono-label text-[10px] text-[#8B5CF6]">Ref: Paragraph 1</span>
+</div>
+</div>
+<!-- Insight Card 2 -->
+<div class="p-5 rounded-lg bg-surface/50 border border-white/[0.06] hover:border-white/[0.1] transition-colors relative group">
+<div class="absolute inset-y-0 left-0 w-1 bg-[#8B5CF6] rounded-l-lg opacity-50 group-hover:opacity-100 transition-opacity"></div>
+<h4 class="font-body-lg text-body-lg text-white font-medium mb-2">Key Regulatory Step: PFK-1</h4>
+<p class="font-body-sm text-body-sm text-zinc-300 leading-relaxed mb-3">
+                            Phosphofructokinase-1 (PFK-1) acts as the "thermostat" for glycolysis. When the cell has plenty of energy (high ATP), PFK-1 slows down the pathway. When energy is low (high AMP), it speeds it up. This prevents the cell from wasting glucose when it doesn't need energy.
+                        </p>
+<div class="inline-flex items-center gap-1.5 px-2 py-1 rounded bg-[#8B5CF6]/10 border border-[#8B5CF6]/20">
+<span class="material-symbols-outlined text-[14px] text-[#8B5CF6]">format_quote</span>
+<span class="font-mono-label text-[10px] text-[#8B5CF6]">Ref: Section 1, Glycolysis</span>
+</div>
+</div>
+<!-- Action Area within AI panel -->
+<div class="mt-8 pt-6 border-t border-white/[0.05] flex gap-3">
+<button class="flex-1 py-2 px-4 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-body-sm text-body-sm rounded-lg transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[16px]">content_copy</span>
+                            Copy Notes
+                        </button>
+<button class="flex-1 py-2 px-4 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-body-sm text-body-sm rounded-lg transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[16px]">add_circle</span>
+                            Add to Notebook
+                        </button>
+</div>
+</div>
+</section>
+</div>
+</main>
+</body></html>

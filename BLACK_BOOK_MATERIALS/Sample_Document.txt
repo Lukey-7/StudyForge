@@ -1,0 +1,1 @@
+The StudyForge system acts as a cognitive knowledge base. It allows you to ingest documents and convert them into interactive study notes.

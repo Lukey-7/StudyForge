@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Notebooks - StudyForge</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error-container": "#93000a",
+                        "on-tertiary-fixed": "#1b1d00",
+                        "error": "#ffb4ab",
+                        "secondary-fixed-dim": "#cdc0ed",
+                        "tertiary-fixed": "#dfed1a",
+                        "surface-bright": "#39393b",
+                        "inverse-on-surface": "#313032",
+                        "on-surface": "#e5e1e4",
+                        "primary-container": "#a078ff",
+                        "tertiary-container": "#8e9800",
+                        "on-primary-fixed": "#23005c",
+                        "on-background": "#e5e1e4",
+                        "secondary": "#cdc0ed",
+                        "on-secondary-fixed": "#1f1538",
+                        "on-surface-variant": "#cbc3d7",
+                        "primary": "#d0bcff",
+                        "surface-variant": "#353437",
+                        "primary-fixed-dim": "#d0bcff",
+                        "outline": "#958ea0",
+                        "surface-dim": "#131315",
+                        "on-primary-container": "#340080",
+                        "surface": "#131315",
+                        "surface-container-low": "#1c1b1d",
+                        "secondary-container": "#4d4369",
+                        "on-primary-fixed-variant": "#5516be",
+                        "surface-container-high": "#2a2a2c",
+                        "outline-variant": "#494454",
+                        "tertiary-fixed-dim": "#c3d000",
+                        "on-tertiary": "#2f3300",
+                        "on-primary": "#3c0091",
+                        "surface-container": "#201f22",
+                        "tertiary": "#c3d000",
+                        "surface-tint": "#d0bcff",
+                        "inverse-primary": "#6d3bd7",
+                        "background": "#131315",
+                        "on-tertiary-fixed-variant": "#454a00",
+                        "surface-container-highest": "#353437",
+                        "on-tertiary-container": "#292c00",
+                        "on-error": "#690005",
+                        "inverse-surface": "#e5e1e4",
+                        "surface-container-lowest": "#0e0e10",
+                        "primary-fixed": "#e9ddff",
+                        "on-secondary": "#342b4f",
+                        "on-error-container": "#ffdad6",
+                        "on-secondary-container": "#bfb2de",
+                        "secondary-fixed": "#e9ddff",
+                        "on-secondary-fixed-variant": "#4b4166"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "sm": "0.5rem",
+                        "gutter": "1.5rem",
+                        "lg": "1.5rem",
+                        "xl": "2rem",
+                        "md": "1rem",
+                        "margin": "2rem",
+                        "xs": "0.25rem"
+                    },
+                    "fontFamily": {
+                        "h3": ["Inter"],
+                        "body-sm": ["Inter"],
+                        "h2": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "display": ["Inter"],
+                        "mono-label": ["monospace"],
+                        "body-md": ["Inter"],
+                        "h1": ["Inter"]
+                    },
+                    "fontSize": {
+                        "h3": ["18px", {"lineHeight": "1.4", "letterSpacing": "0", "fontWeight": "600"}],
+                        "body-sm": ["12px", {"lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400"}],
+                        "h2": ["24px", {"lineHeight": "1.3", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-lg": ["16px", {"lineHeight": "1.6", "letterSpacing": "0", "fontWeight": "400"}],
+                        "display": ["48px", {"lineHeight": "1.1", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "mono-label": ["12px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "body-md": ["14px", {"lineHeight": "1.5", "letterSpacing": "0", "fontWeight": "400"}],
+                        "h1": ["32px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(24, 24, 27, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-panel {
+            background: rgba(24, 24, 27, 0.4);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body class="bg-[#09090B] text-on-background font-body-md text-body-md antialiased overflow-x-hidden selection:bg-inverse-primary selection:text-white">
+<!-- SideNavBar Component -->
+<aside class="fixed inset-y-0 left-0 flex flex-col p-4 h-screen w-64 border-r border-white/10 shadow-none bg-zinc-900/60 backdrop-blur-xl z-50">
+<!-- Brand -->
+<div class="mb-10 mt-2 px-4">
+<h2 class="text-xl font-bold tracking-tight text-white flex items-center gap-2">
+<span class="material-symbols-outlined text-violet-500" data-icon="hub">hub</span>
+                StudyForge
+            </h2>
+<p class="font-inter antialiased text-sm font-medium text-violet-500 mt-1">Academic Focus</p>
+</div>
+<!-- Navigation Tabs -->
+<nav class="flex-1 space-y-1">
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-colors duration-200 active:scale-95 transition-transform font-inter antialiased text-sm font-medium group" href="#">
+<span class="material-symbols-outlined group-hover:text-zinc-200 transition-colors" data-icon="dashboard">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-colors duration-200 active:scale-95 transition-transform font-inter antialiased text-sm font-medium group" href="#">
+<span class="material-symbols-outlined group-hover:text-zinc-200 transition-colors" data-icon="description">description</span>
+<span>Documents</span>
+</a>
+<!-- Active Tab -->
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-white border-l-2 border-violet-500 bg-white/5 active:scale-95 transition-transform font-inter antialiased text-sm font-medium" href="#">
+<span class="material-symbols-outlined text-violet-400" data-icon="book_2" data-weight="fill" style="font-variation-settings: 'FILL' 1;">book_2</span>
+<span>Notebooks</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-colors duration-200 active:scale-95 transition-transform font-inter antialiased text-sm font-medium group" href="#">
+<span class="material-symbols-outlined group-hover:text-zinc-200 transition-colors" data-icon="smart_toy">smart_toy</span>
+<span>AI Chat</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-colors duration-200 active:scale-95 transition-transform font-inter antialiased text-sm font-medium group" href="#">
+<span class="material-symbols-outlined group-hover:text-zinc-200 transition-colors" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+<!-- CTA / Footer Profile -->
+<div class="mt-auto pt-4 border-t border-white/5">
+<button class="w-full flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#8B5CF6] hover:bg-[#7C3AED] text-[#FAFAFA] transition-colors font-body-md text-body-md font-medium">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+                New Note
+            </button>
+<div class="mt-4 flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors">
+<img alt="User profile avatar" class="w-8 h-8 rounded-full object-cover border border-white/10" data-alt="close up portrait of young professional woman with natural lighting and dark background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAHZLv4U-5DG7aF5_VivL0TTAwUeRnYYUP9JIpTu1Ge9V9oG5-P6JHdQaJwBVBd9Q0aLcwcJ1w2sEc0sZ2D3aCH2s5QPU2za99WxwPgz8nopexklepM4uQF036hR_Lf0uGm8gAAVH5iiEXmCfgyVNCBlM0BobZmQ5eEPFBh6mTOLt3rq1c81KccmOsDf_RLm2eUlSERDKg-einoiyljw58FGNFmhU7BCW7cWVDw-AcJEeaATa3C2r2diz2t_iUS3U__uHX2Xtygddk"/>
+<div class="flex-1 min-w-0">
+<p class="text-sm font-medium text-white truncate">Alex Mercer</p>
+<p class="text-xs text-zinc-400 truncate">Pro Plan</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content Wrapper -->
+<div class="ml-64 flex flex-col min-h-screen">
+<!-- TopNavBar Component -->
+<header class="sticky top-0 z-40 flex items-center justify-between px-6 w-full h-16 border-b border-white/5 bg-zinc-950/40 backdrop-blur-md">
+<!-- Search Bar (on_right logic implies left space is empty or breadcrumbs) -->
+<div class="flex-1 flex items-center text-zinc-400 text-sm">
+<span class="material-symbols-outlined mr-2 text-zinc-500" data-icon="folder_open">folder_open</span>
+<span class="hover:text-white cursor-pointer transition-colors">Workspace</span>
+<span class="material-symbols-outlined mx-2 text-zinc-600 text-sm" data-icon="chevron_right">chevron_right</span>
+<span class="text-white font-medium">Notebooks</span>
+</div>
+<!-- Right Actions -->
+<div class="flex items-center gap-4">
+<div class="relative hidden md:flex items-center">
+<span class="material-symbols-outlined absolute left-3 text-zinc-500 text-sm" data-icon="search">search</span>
+<input class="bg-[#18181B]/80 border border-white/5 rounded-full py-1.5 pl-9 pr-4 text-sm text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-violet-500 focus:border-violet-500 w-64 transition-all" placeholder="Search notebooks..." type="text"/>
+</div>
+<button class="text-zinc-400 hover:text-white transition-opacity cursor-pointer focus:ring-1 focus:ring-violet-500 rounded-full p-1">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-zinc-400 hover:text-white transition-opacity cursor-pointer focus:ring-1 focus:ring-violet-500 rounded-full p-1 hidden">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Page Content Canvas -->
+<main class="flex-1 p-8 max-w-[1200px] w-full mx-auto">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+<div>
+<h1 class="font-h1 text-h1 text-white mb-2">Your Notebooks</h1>
+<p class="text-zinc-400 font-body-lg text-body-lg max-w-2xl">Organize your academic resources, research papers, and lecture notes into focused environments.</p>
+</div>
+<button class="flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-[#8B5CF6] hover:bg-[#7C3AED] text-[#FAFAFA] transition-all duration-200 shadow-[0_0_15px_rgba(139,92,246,0.3)] hover:shadow-[0_0_25px_rgba(139,92,246,0.5)] font-body-md text-body-md font-medium shrink-0">
+<span class="material-symbols-outlined text-sm" data-icon="add_circle">add_circle</span>
+                    Create Notebook
+                </button>
+</div>
+<!-- Toolbar / Filters -->
+<div class="flex items-center justify-between mb-6 pb-4 border-b border-white/5">
+<div class="flex gap-2">
+<button class="px-4 py-1.5 rounded-full glass-card text-white text-sm font-medium border-violet-500/30 bg-violet-500/10">All</button>
+<button class="px-4 py-1.5 rounded-full glass-card text-zinc-400 hover:text-white text-sm transition-colors">Recent</button>
+<button class="px-4 py-1.5 rounded-full glass-card text-zinc-400 hover:text-white text-sm transition-colors">Shared</button>
+</div>
+<div class="flex gap-3 text-zinc-400">
+<button class="hover:text-white transition-colors"><span class="material-symbols-outlined" data-icon="grid_view" data-weight="fill" style="font-variation-settings: 'FILL' 1;">grid_view</span></button>
+<button class="hover:text-white transition-colors"><span class="material-symbols-outlined" data-icon="view_list">view_list</span></button>
+</div>
+</div>
+<!-- Bento Grid Layout for Notebooks -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+<!-- Card 1: CS / AI -->
+<div class="glass-card rounded-xl p-5 flex flex-col group cursor-pointer hover:bg-white/[0.03] transition-colors duration-300 relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="text-zinc-400 hover:text-white"><span class="material-symbols-outlined text-lg" data-icon="more_horiz">more_horiz</span></button>
+</div>
+<div class="flex items-center gap-3 mb-4">
+<div class="w-10 h-10 rounded-lg bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-400">
+<span class="material-symbols-outlined" data-icon="terminal">terminal</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-violet-500 shadow-[0_0_8px_rgba(139,92,246,0.6)]"></span>
+<span class="font-mono-label text-mono-label text-zinc-400 uppercase tracking-wider">Computer Science</span>
+</div>
+</div>
+</div>
+<h3 class="font-h3 text-h3 text-white mb-2 group-hover:text-violet-400 transition-colors">Machine Learning Fundamentals</h3>
+<p class="text-zinc-500 text-sm mb-6 line-clamp-2">Notes on neural networks, backpropagation, and deep learning architectures from CS229.</p>
+<div class="mt-auto flex items-center justify-between border-t border-white/5 pt-4">
+<div class="flex items-center gap-1 text-zinc-400 text-xs font-medium">
+<span class="material-symbols-outlined text-[16px]" data-icon="description">description</span>
+                            42 Notes
+                        </div>
+<span class="text-xs text-zinc-500">Updated 2h ago</span>
+</div>
+</div>
+<!-- Card 2: Biology -->
+<div class="glass-card rounded-xl p-5 flex flex-col group cursor-pointer hover:bg-white/[0.03] transition-colors duration-300 relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="text-zinc-400 hover:text-white"><span class="material-symbols-outlined text-lg" data-icon="more_horiz">more_horiz</span></button>
+</div>
+<div class="flex items-center gap-3 mb-4">
+<div class="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+<span class="material-symbols-outlined" data-icon="science">science</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]"></span>
+<span class="font-mono-label text-mono-label text-zinc-400 uppercase tracking-wider">Biology</span>
+</div>
+</div>
+</div>
+<h3 class="font-h3 text-h3 text-white mb-2 group-hover:text-emerald-400 transition-colors">Cellular Systems &amp; Genetics</h3>
+<p class="text-zinc-500 text-sm mb-6 line-clamp-2">Research papers and synthesis on CRISPR applications and mitosis phases.</p>
+<div class="mt-auto flex items-center justify-between border-t border-white/5 pt-4">
+<div class="flex items-center gap-1 text-zinc-400 text-xs font-medium">
+<span class="material-symbols-outlined text-[16px]" data-icon="description">description</span>
+                            18 Notes
+                        </div>
+<span class="text-xs text-zinc-500">Updated 1d ago</span>
+</div>
+</div>
+<!-- Card 3: History -->
+<div class="glass-card rounded-xl p-5 flex flex-col group cursor-pointer hover:bg-white/[0.03] transition-colors duration-300 relative overflow-hidden lg:col-span-2 bg-gradient-to-br from-[#18181b]/60 to-[#2a1618]/40 border-rose-500/10">
+<div class="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="text-zinc-400 hover:text-white"><span class="material-symbols-outlined text-lg" data-icon="more_horiz">more_horiz</span></button>
+</div>
+<div class="flex flex-col h-full">
+<div class="flex items-center gap-3 mb-4">
+<div class="w-10 h-10 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-400">
+<span class="material-symbols-outlined" data-icon="account_balance">account_balance</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]"></span>
+<span class="font-mono-label text-mono-label text-zinc-400 uppercase tracking-wider">History</span>
+</div>
+</div>
+</div>
+<h3 class="font-h2 text-h2 text-white mb-2 group-hover:text-rose-400 transition-colors">European History: Renaissance to Enlightenment</h3>
+<p class="text-zinc-400 text-sm mb-6 max-w-xl">Comprehensive timeline and analysis of political shifts, scientific revolutions, and cultural rebirth across Western Europe during the 15th to 18th centuries.</p>
+<div class="mt-auto grid grid-cols-3 gap-4 border-t border-white/5 pt-4">
+<div>
+<p class="text-xs text-zinc-500 mb-1">Total Notes</p>
+<p class="text-sm text-white font-medium">156 Items</p>
+</div>
+<div>
+<p class="text-xs text-zinc-500 mb-1">Flashcards</p>
+<p class="text-sm text-white font-medium">320 Cards</p>
+</div>
+<div class="text-right">
+<p class="text-xs text-zinc-500 mb-1">Last Edited</p>
+<p class="text-sm text-white font-medium">3 days ago</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 4: Physics -->
+<div class="glass-card rounded-xl p-5 flex flex-col group cursor-pointer hover:bg-white/[0.03] transition-colors duration-300 relative overflow-hidden">
+<div class="absolute top-0 right-0 p-4 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="text-zinc-400 hover:text-white"><span class="material-symbols-outlined text-lg" data-icon="more_horiz">more_horiz</span></button>
+</div>
+<div class="flex items-center gap-3 mb-4">
+<div class="w-10 h-10 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400">
+<span class="material-symbols-outlined" data-icon="explore">explore</span>
+</div>
+<div>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.6)]"></span>
+<span class="font-mono-label text-mono-label text-zinc-400 uppercase tracking-wider">Physics</span>
+</div>
+</div>
+</div>
+<h3 class="font-h3 text-h3 text-white mb-2 group-hover:text-blue-400 transition-colors">Quantum Mechanics</h3>
+<p class="text-zinc-500 text-sm mb-6 line-clamp-2">Wave functions, Schrödinger equation, and uncertainty principle problem sets.</p>
+<div class="mt-auto flex items-center justify-between border-t border-white/5 pt-4">
+<div class="flex items-center gap-1 text-zinc-400 text-xs font-medium">
+<span class="material-symbols-outlined text-[16px]" data-icon="description">description</span>
+                            27 Notes
+                        </div>
+<span class="text-xs text-zinc-500">Updated 1w ago</span>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>
