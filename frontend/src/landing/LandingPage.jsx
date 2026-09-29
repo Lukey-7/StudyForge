@@ -26,7 +26,7 @@ export default function LandingPage({ signedIn }) {
 
   // In demo mode (or when signed in) there is nothing to sign into: go straight to the notebooks.
   const canSignIn = !signedIn && !isDemoMode
-  const startHref = canSignIn ? '/login?mode=signup' : '/notebooks'
+  const startHref = canSignIn ? '/login?mode=signup' : '/home'
 
   return (
     <div className="landing">

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Modal from '../components/Modal'
 import { useToast } from '../components/Toast'
 import { api } from '../lib/api'
@@ -8,7 +8,9 @@ import { plural, spineColor, timeAgo } from '../lib/format'
 
 // "Your notebooks": every notebook drawn as an exercise-book cover.
 export default function NotebooksPage() {
-  const [showCreate, setShowCreate] = useState(false)
+  // /notebooks?new=1 (the home page's "New notebook") opens the create dialog straight away
+  const [searchParams] = useSearchParams()
+  const [showCreate, setShowCreate] = useState(searchParams.get('new') === '1')
   const [search, setSearch] = useState('')
   const notebooks = useQuery({ queryKey: ['notebooks'], queryFn: () => api('/notebooks') })
 

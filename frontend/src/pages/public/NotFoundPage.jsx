@@ -7,10 +7,10 @@ export default function NotFoundPage({ signedIn }) {
     <PublicPage signedIn={signedIn} title="There is no page here" lede="The address may be mistyped, or the page may have moved.">
       <ul className="link-list">
         <li>
-          <Link to="/welcome">Start at the home page</Link>
+          <Link to="/welcome">See what StudyForge does</Link>
         </li>
         <li>
-          <Link to={signedIn ? '/notebooks' : '/login'}>{signedIn ? 'Open your notebooks' : 'Sign in'}</Link>
+          <Link to={signedIn ? '/home' : '/login'}>{signedIn ? 'Go to your home page' : 'Sign in'}</Link>
         </li>
         <li>
           <Link to="/formats">Browse the sixteen formats</Link>

@@ -15,6 +15,12 @@ Errors are JSON: `{"detail": "message"}` (for 422 validation errors `detail` is 
 | GET | `/health` | `{status, db_backend, auth_mode, chroma_mode, llm_model, embedding_model, openai_fallback, ai_configured}` . `embedding_model` is the model that actually ran; `llm_model`/`embedding_model` are `null` when no API key is set |
 | GET | `/pipelines` | `[{name, title, description, retrieval_strategy, default_params, counts}]` (16 items) |
 
+## Home
+
+| Method | Path | Returns |
+|---|---|---|
+| GET | `/me/overview` | `{notebooks[] (most recently updated first, with source_count/ready_count), totals{notebooks, sources, ready_sources, generations}, recent_generations[] (8, without output, with notebook_title), recent_chats[] (6, with notebook_title)}`. Powers the signed-in home page in one request |
+
 ## Notebooks
 
 | Method | Path | Body | Returns |

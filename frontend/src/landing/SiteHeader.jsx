@@ -5,7 +5,7 @@ import { isDemoMode } from '../lib/supabase'
 // Sticky, with links to the public pages and the account actions on the right.
 export default function SiteHeader({ signedIn }) {
   const canSignIn = !signedIn && !isDemoMode
-  const startHref = canSignIn ? '/login?mode=signup' : '/notebooks'
+  const startHref = canSignIn ? '/login?mode=signup' : '/home'
 
   return (
     <header className="landing-header">
@@ -29,8 +29,8 @@ export default function SiteHeader({ signedIn }) {
               </Link>
             </>
           ) : (
-            <Link to="/notebooks" className="btn btn-primary">
-              Your notebooks
+            <Link to="/home" className="btn btn-primary">
+              Open StudyForge
             </Link>
           )}
         </div>

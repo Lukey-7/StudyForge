@@ -46,7 +46,8 @@ const GROUPS = [
   },
   {
     title: 'Service',
-    rows: [['GET', '/health', 'Whether the server is up, which models are configured and which embedding model actually ran']],
+    rows: [
+      ['GET', '/me/overview', 'Everything the home page shows in one request: your notebooks, totals, recent work and recent chats'],['GET', '/health', 'Whether the server is up, which models are configured and which embedding model actually ran']],
   },
 ]
 

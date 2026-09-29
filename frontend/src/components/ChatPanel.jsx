@@ -8,9 +8,9 @@ import Markdown from './Markdown'
 // Chat with your notes. Saved messages come from the server (React Query);
 // the answer currently being streamed lives in local state (`live`) until it's saved,
 // then we reload the session's messages and drop the live copy.
-export default function ChatPanel({ notebookId, onOpenCitation }) {
+export default function ChatPanel({ notebookId, openSessionId, onOpenCitation }) {
   const queryClient = useQueryClient()
-  const [sessionId, setSessionId] = useState(null) // null = new chat
+  const [sessionId, setSessionId] = useState(openSessionId || null) // null = new chat; a deep link opens one
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
   const [live, setLive] = useState(null) // { question, answer, citations, rewrittenQuery, stopped }

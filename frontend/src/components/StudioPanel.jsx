@@ -8,7 +8,7 @@ import OutputView from './outputs/OutputView'
 import SearchDebug from './SearchDebug'
 
 // The middle column: choose a format, set a few options, generate, read the result, reopen old ones.
-export default function StudioPanel({ notebookId }) {
+export default function StudioPanel({ notebookId, openGenerationId }) {
   const queryClient = useQueryClient()
   const [selected, setSelected] = useState('summary')
   const [settings, setSettings] = useState({
@@ -39,6 +39,22 @@ export default function StudioPanel({ notebookId }) {
       queryClient.invalidateQueries({ queryKey: ['generations', notebookId] })
     },
   })
+
+  // Reopen the output a deep link points at (?gen=<id>), once, as soon as the history is loaded.
+  const history = useQuery({
+    queryKey: ['generations', notebookId],
+    queryFn: () => api(`/notebooks/${notebookId}/generations`),
+  })
+  const openedFromLink = useRef(false)
+  useEffect(() => {
+    if (!openGenerationId || openedFromLink.current || !history.data) return
+    const found = history.data.find((g) => g.id === openGenerationId)
+    if (found) {
+      openedFromLink.current = true
+      setSelected(found.pipeline_name)
+      setCurrent(found)
+    }
+  }, [openGenerationId, history.data])
 
   // Bring a newly opened output into view (it sits below the picker).
   useEffect(() => {

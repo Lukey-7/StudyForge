@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useParams, useSearchParams } from 'react-router-dom'
 import ChatPanel from '../components/ChatPanel'
 import SourceReader from '../components/SourceReader'
 import { claimsFor } from '../lib/citationMatch'
@@ -22,7 +22,11 @@ const TABS = [
 // the Sources list (read a whole source) and the Chat (jump to the passage a citation points at).
 export default function NotebookPage() {
   const { notebookId } = useParams()
-  const [activeTab, setActiveTab] = useState('studio')
+  // Deep links from the home page: ?gen=<id> reopens an output, ?chat=<id> reopens a conversation.
+  const [searchParams] = useSearchParams()
+  const openGenerationId = searchParams.get('gen')
+  const openChatId = searchParams.get('chat')
+  const [activeTab, setActiveTab] = useState(openChatId ? 'chat' : 'studio')
   const [reader, setReader] = useState(null) // { sourceId, chunkId?, label?, claims? } or null when closed
   const notebook = useQuery({ queryKey: ['notebook', notebookId], queryFn: () => api(`/notebooks/${notebookId}`) })
 
@@ -64,11 +68,12 @@ export default function NotebookPage() {
           <SourcesPanel notebookId={notebookId} onOpenSource={(sourceId) => setReader({ sourceId })} />
         </section>
         <section className={`column column-studio ${activeTab === 'studio' ? 'active' : ''}`} aria-label="Studio">
-          <StudioPanel notebookId={notebookId} />
+          <StudioPanel notebookId={notebookId} openGenerationId={openGenerationId} />
         </section>
         <section className={`column column-chat ${activeTab === 'chat' ? 'active' : ''}`} aria-label="Chat">
           <ChatPanel
             notebookId={notebookId}
+            openSessionId={openChatId}
             onOpenCitation={(c, answer) =>
               setReader({ sourceId: c.source_id, chunkId: c.chunk_id, label: c.label, claims: claimsFor(answer, c.label) })
             }

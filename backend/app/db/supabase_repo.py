@@ -135,6 +135,23 @@ class SupabaseRepository:
             .data
         )
 
+    # Uses the generations(user_id) index. The output column is left out: it can be large
+    # and the home page only needs to list what was made.
+    def list_recent_generations(self, user_id: str, limit: int = 8) -> list[Row]:
+        return (
+            self._t("generations")
+            .select("id, notebook_id, pipeline_name, params, model, created_at")
+            .eq("user_id", user_id)
+            .order("created_at", desc=True)
+            .limit(limit)
+            .execute()
+            .data
+        )
+
+    def count_generations(self, user_id: str) -> int:
+        response = self._t("generations").select("id", count="exact").eq("user_id", user_id).limit(1).execute()
+        return int(response.count or 0)
+
     def get_generation(self, generation_id: str) -> Row | None:
         return self._one(self._t("generations").select("*").eq("id", generation_id).limit(1).execute())
 
@@ -147,6 +164,11 @@ class SupabaseRepository:
 
     def list_chat_sessions(self, notebook_id: str) -> list[Row]:
         return self._t("chat_sessions").select("*").eq("notebook_id", notebook_id).order("updated_at", desc=True).execute().data
+
+    def list_recent_chat_sessions(self, user_id: str, limit: int = 6) -> list[Row]:
+        return (
+            self._t("chat_sessions").select("*").eq("user_id", user_id).order("updated_at", desc=True).limit(limit).execute().data
+        )
 
     def touch_chat_session(self, session_id: str) -> None:
         self._t("chat_sessions").update({"updated_at": _now()}).eq("id", session_id).execute()

@@ -53,12 +53,23 @@ def used_citations(answer: str, citations: list[dict]) -> list[dict]:
     return [c for c in citations if int(c["label"][1:]) in used]
 
 
+def session_title(message: str, limit: int = 70) -> str:
+    """The first line of the first question, cut at a word boundary: "How does X decide whether to…"."""
+    first = message.strip().splitlines()[0].strip() if message.strip() else ""
+    if not first:
+        return "New chat"
+    if len(first) <= limit:
+        return first
+    cut = first[:limit].rsplit(" ", 1)[0].rstrip(",;:-")
+    return f"{cut}…"
+
+
 def get_or_create_session(services: Services, notebook: Row, user_id: str, session_id: str | None, message: str) -> Row:
     if session_id:
         session = services.repo.get_chat_session(session_id)
         if session and session["notebook_id"] == notebook["id"]:
             return session
-    title = message.strip().splitlines()[0][:60] or "New chat"
+    title = session_title(message)
     return services.repo.create_chat_session({"notebook_id": notebook["id"], "user_id": user_id, "title": title})
 
 

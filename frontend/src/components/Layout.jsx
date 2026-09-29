@@ -24,16 +24,16 @@ export default function Layout({ email, onSignOut }) {
   return (
     <div className="app-shell">
       <header className="topbar">
-        <Link to="/notebooks" className="wordmark">
+        <Link to="/home" className="wordmark">
           StudyForge
         </Link>
 
         <nav className="topnav" aria-label="Main">
+          <NavLink to="/home" className="topnav-link">
+            Home
+          </NavLink>
           <NavLink to="/notebooks" className="topnav-link">
             Your notebooks
-          </NavLink>
-          <NavLink to="/welcome" className="topnav-link">
-            Home
           </NavLink>
         </nav>
 

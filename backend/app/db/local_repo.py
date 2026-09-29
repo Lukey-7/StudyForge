@@ -188,6 +188,16 @@ class LocalRepository:
             rows = self._where("generations", notebook_id=notebook_id)
         return sorted(rows, key=lambda r: r["created_at"], reverse=True)[:limit]
 
+    def list_recent_generations(self, user_id: str, limit: int = 8) -> list[Row]:
+        with self._lock:
+            rows = self._where("generations", user_id=user_id)
+        rows = sorted(rows, key=lambda r: r["created_at"], reverse=True)[:limit]
+        return [{k: v for k, v in r.items() if k != "output"} for r in rows]
+
+    def count_generations(self, user_id: str) -> int:
+        with self._lock:
+            return len(self._where("generations", user_id=user_id))
+
     def get_generation(self, generation_id: str) -> Row | None:
         with self._lock:
             row = self.t["generations"].get(generation_id)
@@ -209,6 +219,11 @@ class LocalRepository:
         with self._lock:
             rows = self._where("chat_sessions", notebook_id=notebook_id)
         return sorted(rows, key=lambda r: r["updated_at"], reverse=True)
+
+    def list_recent_chat_sessions(self, user_id: str, limit: int = 6) -> list[Row]:
+        with self._lock:
+            rows = self._where("chat_sessions", user_id=user_id)
+        return sorted(rows, key=lambda r: r["updated_at"], reverse=True)[:limit]
 
     def touch_chat_session(self, session_id: str) -> None:
         with self._lock:

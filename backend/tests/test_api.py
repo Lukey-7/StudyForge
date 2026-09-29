@@ -183,3 +183,29 @@ def test_chat_without_sources_says_so(client):
     events = parse_sse(client.post(f"/notebooks/{notebook['id']}/chat", json={"message": "hello?"}).text)
     text = "".join(d["text"] for name, d in events if name == "token")
     assert "couldn't find" in text
+
+
+def test_overview_lists_notebooks_recent_work_and_totals(client):
+    empty = client.get("/me/overview").json()
+    assert empty["totals"]["notebooks"] == 0 and empty["recent_generations"] == []
+
+    notebook = make_notebook(client, title="Operating systems")
+    upload(client, notebook["id"])
+    client.post(f"/notebooks/{notebook['id']}/generate/quiz", json={})
+    parse_sse(client.post(f"/notebooks/{notebook['id']}/chat", json={"message": "What is a B-tree?"}).text)
+
+    body = client.get("/me/overview").json()
+    assert body["totals"] == {"notebooks": 1, "sources": 1, "ready_sources": 1, "generations": 1}
+    assert body["notebooks"][0]["title"] == "Operating systems"
+    made = body["recent_generations"][0]
+    assert made["pipeline_name"] == "quiz" and made["notebook_title"] == "Operating systems"
+    assert "output" not in made  # the list stays light; the output is fetched when opened
+    assert body["recent_chats"][0]["title"].startswith("What is a B-tree")
+
+
+def test_overview_never_shows_other_users_work(client, services):
+    stranger = services.repo.create_notebook("someone-else", "Private", None)
+    services.repo.create_chat_session({"notebook_id": stranger["id"], "user_id": "someone-else", "title": "secret"})
+    body = client.get("/me/overview").json()
+    assert all(n["title"] != "Private" for n in body["notebooks"])
+    assert all(c["title"] != "secret" for c in body["recent_chats"])

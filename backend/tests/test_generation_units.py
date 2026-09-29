@@ -136,3 +136,12 @@ def test_bad_gemini_key_is_reported_clearly_not_as_schema_or_model_error():
 def test_mermaid_apostrophes_do_not_leave_gaps():
     text = to_mermaid(s.MindMapOutput(root="DBMS", branches=[{"label": "SQL's foundation", "children": []}]))
     assert "SQLs foundation" in text
+
+
+def test_chat_session_title_cuts_at_a_word_boundary():
+    from app.chat.rag_chat import session_title
+
+    assert session_title("What is a B-tree?") == "What is a B-tree?"
+    long = "How does the Banker's algorithm decide whether to grant a request for more resources?"
+    assert session_title(long) == "How does the Banker's algorithm decide whether to grant a request for…"
+    assert session_title("   ") == "New chat"
