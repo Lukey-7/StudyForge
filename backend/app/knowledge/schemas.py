@@ -12,6 +12,7 @@ class ExtractedConcept(BaseModel):
     )
     definition: str = Field(description="One sentence, from the passages only")
     aliases: list[str] = Field(description="Other names or abbreviations used in the passages")
+    passage: int = Field(description="Number of the passage [P#] that defines or best introduces it")
 
 
 class ExtractedClaim(BaseModel):

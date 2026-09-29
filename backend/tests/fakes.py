@@ -141,7 +141,9 @@ def fake_extraction(prompt: str) -> Extraction:
             lower = sentence.lower()
             for key, name in FAKE_TERMS.items():
                 if key in lower:
-                    concepts.setdefault(name, {"name": name, "kind": "term", "definition": sentence, "aliases": []})
+                    concepts.setdefault(
+                        name, {"name": name, "kind": "term", "definition": sentence, "aliases": [], "passage": int(number)}
+                    )
                     claims.append({"concept": name, "text": sentence, "passage": int(number)})
     links = [{"from_concept": "B-tree", "to_concept": "Index", "kind": "part_of"}] if {"B-tree", "Index"} <= set(concepts) else []
     return Extraction.model_validate({"concepts": list(concepts.values()), "claims": claims, "links": links})

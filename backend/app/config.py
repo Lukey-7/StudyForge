@@ -83,7 +83,7 @@ class Settings(BaseSettings):
     # --- Knowledge model (living textbook) --------------------------------------
     knowledge_enabled: bool = True
     knowledge_batch_passages: int = 6  # passages per extraction call
-    concept_merge_similarity: float = 0.90  # embeddings at least this close = same concept
+    concept_merge_similarity: float = 0.88  # at least this close: the LLM judges if it is the same concept
     claim_compare_similarity: float = 0.80  # below this, a claim is new without asking the LLM
     knowledge_max_passages_per_hour: int = 150  # free-tier budget for background extraction
 

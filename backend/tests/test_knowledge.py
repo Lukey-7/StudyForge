@@ -2,6 +2,7 @@
 conflicts, clean-up when a source is removed. Uses FakeLLM's rule-based extraction/verdicts."""
 
 from app.knowledge.build import PassageBudget
+from app.knowledge.schemas import Extraction
 from app.knowledge.triage import decide_claim, match_concept, normalise
 from tests.test_api import make_notebook, upload
 
@@ -142,3 +143,24 @@ def test_a_broken_knowledge_build_never_fails_the_upload(client, services, monke
     notebook = make_notebook(client)
     source = upload(client, notebook["id"], name="lecture.md", data=LECTURE)["source"]
     assert client.get(f"/sources/{source['id']}").json()["status"] == "ready"
+
+
+def test_near_concepts_are_merged_only_when_the_llm_says_same(client, services):
+    services.settings.concept_merge_similarity = 0.0  # every new concept is a near-match
+    notebook = make_notebook(client)
+    upload(client, notebook["id"], name="lecture.md", data=LECTURE)
+    names = {c["name"] for c in knowledge(client, notebook["id"])["concepts"]}
+    assert {"Index", "B-tree"} <= names  # judged "unrelated", so not merged into one
+
+
+def test_a_concept_without_claims_keeps_its_definition_as_evidence(client, services):
+    services.llm.json_outputs[Extraction] = [
+        '{"concepts": [{"name": "Paging", "kind": "term", "definition": "Memory split into fixed-size pages.",'
+        ' "aliases": [], "passage": 0}], "claims": [], "links": []}'
+    ] * 2
+    notebook = make_notebook(client)
+    upload(client, notebook["id"], name="lecture.md", data=LECTURE)
+    paging = concept_named(knowledge(client, notebook["id"]), "Paging")
+    assert paging["evidence_count"] == 1 and paging["source_count"] == 1
+    client.post(f"/notebooks/{notebook['id']}/knowledge/rebuild")
+    assert concept_named(knowledge(client, notebook["id"]), "Paging")["evidence_count"] == 1

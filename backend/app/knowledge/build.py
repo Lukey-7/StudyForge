@@ -20,7 +20,7 @@ from collections import deque
 from dataclasses import dataclass, field
 
 from app.db.repository import Row
-from app.knowledge.schemas import Extraction, Verdicts
+from app.knowledge.schemas import ExtractedClaim, Extraction, Verdicts
 from app.knowledge.triage import decide_claim, is_same_concept, match_concept, normalise
 from app.services import Services
 
@@ -42,6 +42,15 @@ VERIFY_SYSTEM = """For each numbered pair of statements, answer:
 - contradicts: they make incompatible statements about the same thing;
 - unrelated: they are about different aspects, or one adds new information.
 Judge only what the statements say."""
+
+SAME_CONCEPT_SYSTEM = """Each numbered pair gives two glossary entries (name: definition). Answer:
+- same: both entries name the same concept (synonyms, abbreviations, singular/plural);
+- contradicts: the same concept, but the definitions disagree;
+- unrelated: different concepts, even if closely related (a part of, a kind of, a remedy for)."""
+
+
+def concept_text(concept: Row) -> str:
+    return f"{concept['name']}: {concept['definition']}"
 
 
 class PassageBudget:
@@ -203,6 +212,15 @@ def apply_extraction(services: Services, source: Row, passages: list[Row], extra
             state.links.add((a, b, link.kind))
 
     claims = [(c, concept_id(c.concept)) for c in extraction.claims if 0 <= c.passage < len(passages)]
+    # A concept the extractor named but made no claim about still has its definition as evidence;
+    # without it the concept would show no source and vanish on the next rebuild.
+    covered = {cid for _, cid in claims}
+    for concept in extraction.concepts:
+        cid = concept_id(concept.name)
+        if cid and cid not in covered and concept.definition.strip() and 0 <= concept.passage < len(passages):
+            text = f"{concept.name.strip()}: {concept.definition.strip()}"
+            claims.append((ExtractedClaim(concept=concept.name, text=text, passage=concept.passage), cid))
+            covered.add(cid)
     triage_claims(services, source, passages, [(c, cid) for c, cid in claims if cid], state)
 
 
@@ -224,10 +242,25 @@ def resolve_concepts(services: Services, source: Row, extraction: Extraction, st
     embedder = services.embedder
     vectors = embedder.embed_documents([f"{c.name}: {c.definition}" for c in unmatched])
     model = embedder.active_model
-    for concept, vector in zip(unmatched, vectors):
+
+    # Embeddings only shortlist: "Deadlock prevention" sits close to "Coffman conditions" without
+    # being the same thing. One LLM call judges every near-match of this batch.
+    near: dict[int, str] = {}
+    for i, vector in enumerate(vectors):
         hits = services.vectors.query(model, vector, 1, {"notebook_id": notebook_id}, kind="concepts")
         if hits and hits[0][0] in state.concepts and is_same_concept(hits[0][1], services.settings.concept_merge_similarity):
-            concept_id = hits[0][0]
+            near[i] = hits[0][0]
+    same: set[int] = set()
+    if near:
+        keys = list(near)
+        pairs = [(concept_text(state.concepts[near[i]]), f"{unmatched[i].name}: {unmatched[i].definition}") for i in keys]
+        result = services.llm.generate_json(verify_prompt(pairs), Verdicts, system=SAME_CONCEPT_SYSTEM, fast=True).data
+        same = {keys[v.pair] for v in result.verdicts if 0 <= v.pair < len(keys) and v.verdict != "unrelated"}
+
+    for i, (concept, vector) in enumerate(zip(unmatched, vectors)):
+        existing = match_concept(concept.name, concept.aliases, state.known)  # created earlier in this batch
+        if existing or i in same:
+            concept_id = existing or near[i]
             add_aliases(services, state, concept_id, [concept.name, *concept.aliases])
         else:
             row = repo.insert(
