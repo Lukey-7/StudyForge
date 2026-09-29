@@ -23,14 +23,14 @@ CHAT_SYSTEM_PROMPT = """You are StudyForge, a study assistant that answers ONLY 
 Rules:
 1. Use only facts found in the CONTEXT passages. Never use outside knowledge for facts.
 2. After every sentence that states a fact, cite the passage(s) it came from, like [S1] or [S2][S4].
-   Use only labels that appear in the context.
+   Book sections are labelled [B1], [B2]: cite them the same way. Use only labels that appear in the context.
 3. If the context does not contain the answer, say exactly: "I couldn't find that in your sources."
    and optionally suggest what to upload or ask instead. Do not guess.
 4. Be clear and well-structured; use short paragraphs or bullet points and markdown where it helps.
 5. Answer in English."""
 
 NO_CONTEXT_ANSWER = "I couldn't find that in your sources. Try rephrasing, or upload a document that covers it."
-_LABEL = re.compile(r"\[S(\d+)\]")
+_LABEL = re.compile(r"\b([SB]\d+)\b")
 
 
 def sse(event: str, data: dict) -> str:
@@ -49,8 +49,8 @@ def build_chat_prompt(context: str, history: list[Row], question: str) -> str:
 
 def used_citations(answer: str, citations: list[dict]) -> list[dict]:
     """Keep only the citations the model actually referenced, in label order."""
-    used = {int(n) for n in _LABEL.findall(answer)}
-    return [c for c in citations if int(c["label"][1:]) in used]
+    used = set(_LABEL.findall(answer))
+    return [c for c in citations if c["label"] in used]
 
 
 def session_title(message: str, limit: int = 70) -> str:
@@ -100,6 +100,10 @@ def chat_stream(
             result = Retriever(services).retrieve(standalone, Scope(notebook["id"], tuple(ready)), notebook["sources_version"])
             citations = [c.to_dict() for c in result.context.citations]
             context_text = result.context.text
+            book_text, book_citations = _ask_the_book(services, notebook["id"], standalone)
+            if book_text:
+                context_text = f"{context_text}\n\nBOOK SECTIONS (written from these sources):\n{book_text}"
+                citations += book_citations
 
         yield sse("meta", {"session_id": session["id"], "rewritten_query": standalone, "citations": citations})
 
@@ -144,3 +148,16 @@ def friendly_error(exc: Exception) -> str:
     if "not configured" in text or "API key" in text or "model" in text and "not found" in text:
         return text.split(": ", 1)[-1] if "failed on all providers" in text else text
     return "Something went wrong while answering. Please try again."
+
+
+def _ask_the_book(services: Services, notebook_id: str, question: str) -> tuple[str, list[dict]]:
+    """The book sections that best match the question, cited as [B#] (phase 5: ask the book)."""
+    if not services.settings.book_enabled:
+        return "", []
+    try:
+        from app.book.learner import book_context
+
+        return book_context(services, notebook_id, question)
+    except Exception:  # noqa: BLE001 - chat must work without the book tables
+        logger.exception("book context unavailable")
+        return "", []

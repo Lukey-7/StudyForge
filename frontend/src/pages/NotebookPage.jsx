@@ -31,6 +31,9 @@ export default function NotebookPage() {
   const [searchParams] = useSearchParams()
   const openGenerationId = searchParams.get('gen')
   const openChatId = searchParams.get('chat')
+  // ?section=<id> / ?concept=<id> (search results) open the Book at that section or concept.
+  const [bookTarget, setBookTarget] = useState(() => (searchParams.get('section') ? { id: searchParams.get('section') } : null))
+  const conceptTarget = searchParams.get('concept') ? { id: searchParams.get('concept') } : null
   const [activeTab, setActiveTab] = useState(openChatId ? 'chat' : openGenerationId ? 'studio' : 'book')
   // What the middle column shows on wide screens; follows the last centre tab picked.
   const [centre, setCentre] = useState(openGenerationId ? 'studio' : 'book')
@@ -62,13 +65,7 @@ export default function NotebookPage() {
 
       <div className="tab-bar" role="tablist" aria-label="Notebook areas">
         {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            role="tab"
-            aria-selected={activeTab === tab.id}
-            className="tab"
-            onClick={() => pick(tab.id)}
-          >
+          <button key={tab.id} role="tab" aria-selected={activeTab === tab.id} className="tab" onClick={() => pick(tab.id)}>
             {tab.label}
           </button>
         ))}
@@ -93,6 +90,8 @@ export default function NotebookPage() {
           <div hidden={centre !== 'book'}>
             <BookPanel
               notebookId={notebookId}
+              requestedSection={bookTarget}
+              requestedConcept={conceptTarget}
               onOpenEvidence={(e, claim) => setReader({ sourceId: e.source_id, chunkId: e.chunk_id, label: 'evidence', claims: [claim] })}
             />
           </div>
@@ -104,9 +103,15 @@ export default function NotebookPage() {
           <ChatPanel
             notebookId={notebookId}
             openSessionId={openChatId}
-            onOpenCitation={(c, answer) =>
+            onOpenCitation={(c, answer) => {
+              if (c.kind === 'book') {
+                // [B#]: open that section of the book (a fresh object, so asking twice works)
+                setBookTarget({ id: c.section_id })
+                pick('book')
+                return
+              }
               setReader({ sourceId: c.source_id, chunkId: c.chunk_id, label: c.label, claims: claimsFor(answer, c.label) })
-            }
+            }}
           />
         </section>
       </div>

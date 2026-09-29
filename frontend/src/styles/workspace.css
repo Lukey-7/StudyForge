@@ -1269,3 +1269,109 @@ button.cite-mark:hover:not(:disabled),
 .book-history p {
   margin: 0 0 var(--space-1);
 }
+
+/* ---------------------------------------------------------------- the Book: figures, export, learner (phases 4-5) */
+.book-figure {
+  margin: 0;
+}
+.compare-scroll {
+  overflow-x: auto;
+}
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+}
+.compare-table th,
+.compare-table td {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+.compare-table ul {
+  margin: 0;
+  padding-left: var(--space-4);
+}
+.book-learn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+}
+.book-explain .row {
+  flex-wrap: wrap;
+  align-items: center;
+}
+.book-explain-text {
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  border-radius: var(--radius-control);
+  background: var(--slate-deep);
+}
+.book-weak {
+  margin: 0;
+}
+.toc-read {
+  color: var(--success);
+  font-size: var(--text-xs);
+}
+.book-progress-read {
+  align-self: center;
+}
+.book-export {
+  position: relative;
+}
+.book-export > summary {
+  list-style: none;
+}
+.book-export > summary::-webkit-details-marker {
+  display: none;
+}
+.book-export-menu {
+  position: absolute;
+  right: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  min-width: 200px;
+  margin-top: var(--space-1);
+  padding: var(--space-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--slate-deep);
+  box-shadow: var(--shadow-float);
+}
+.book-print {
+  display: none;
+}
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .book-print,
+  .book-print * {
+    visibility: visible;
+  }
+  .book-print {
+    display: block;
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    color: #000;
+    background: #fff;
+    font-family: var(--font-read);
+  }
+}
+.home-search {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+}
+.book-figure .mindmap {
+  overflow-x: auto;
+}

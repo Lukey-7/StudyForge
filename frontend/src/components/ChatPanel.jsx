@@ -280,10 +280,10 @@ function useSuggestions(notebookId) {
   return { suggestions: buildSuggestions(headings), hasReadySource: readyIds.length > 0 }
 }
 
-// Turn "[S1]" (or "[S1, S2]") into markdown links "[S1](#cite-S1)" so react-markdown hands them
+// Turn "[S1]" (or "[S1, S2]", or a book section "[B1]") into markdown links "[S1](#cite-S1)" so react-markdown hands them
 // to our custom <a> renderer below, which draws a highlighter mark instead of a link.
 function linkCitations(text) {
-  return (text || '').replace(/\[(S\d+(?:\s*,\s*S\d+)*)\]/g, (_, labels) =>
+  return (text || '').replace(/\[([SB]\d+(?:\s*,\s*[SB]\d+)*)\]/g, (_, labels) =>
     labels
       .split(/\s*,\s*/)
       .map((label) => `[${label}](#cite-${label})`)

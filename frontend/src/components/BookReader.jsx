@@ -4,16 +4,25 @@ import { api } from '../lib/api'
 import { buildMatcher, linkTerms } from '../lib/glossary'
 import { changeSummary } from '../lib/bookChanges'
 import { ConflictsDrawer, HistoryDrawer } from './BookDrawers'
+import { ChapterMap, ChapterQuiz, ComparisonTables, ExplainBox, ExportMenu } from './BookExtras'
 
 // The book itself (living textbook): contents on the left, one section at a time in the middle,
 // and beside every paragraph the passages it was written from (the evidence rail). Glossary terms
 // show their definition on hover. Phase 3 adds trust: every paragraph was checked against its
 // passages (unsupported ones are marked, never hidden), where the sources disagree, and history.
-export default function BookReader({ notebookId, concepts, busy, onOpenConcept, onOpenEvidence }) {
+export default function BookReader({ notebookId, concepts, busy, requestedSection, onOpenConcept, onOpenEvidence }) {
   const queryClient = useQueryClient()
   const [openSection, setOpenSection] = useState(null)
   const [openVersion, setOpenVersion] = useState(null) // an older version of the open section
   const [drawer, setDrawer] = useState(null) // 'conflicts' | 'history'
+  const [quizChapter, setQuizChapter] = useState(null)
+  // Another part of the app (a chat [B#] citation, a search result) asked for a section.
+  useEffect(() => {
+    if (requestedSection?.id) {
+      setOpenSection(requestedSection.id)
+      setOpenVersion(null)
+    }
+  }, [requestedSection])
   const [tocOpen, setTocOpen] = useState(false)
   const [layoutRef, wide] = useWiderThan(760)
 
@@ -89,6 +98,11 @@ export default function BookReader({ notebookId, concepts, busy, onOpenConcept, 
       <div className="book-toolbar">
         <SupportSummary support={data.support} />
         <div className="book-toolbar-actions">
+          {data.progress?.total > 0 && (
+            <span className="muted small book-progress-read">
+              Read {data.progress.read} of {data.progress.total}
+            </span>
+          )}
           {conflicts.data?.length > 0 && (
             <button className="btn btn-quiet btn-sm" onClick={() => setDrawer('conflicts')}>
               Where sources disagree ({conflicts.data.length})
@@ -97,8 +111,25 @@ export default function BookReader({ notebookId, concepts, busy, onOpenConcept, 
           <button className="btn btn-quiet btn-sm" onClick={() => setDrawer('history')}>
             History
           </button>
+          <ExportMenu notebookId={notebookId} />
         </div>
       </div>
+      {data.weak_spots?.length > 0 && (
+        <p className="book-weak small">
+          <strong>Weak spots:</strong>{' '}
+          {data.weak_spots.map((w, i) => (
+            <span key={w.chapter}>
+              {i > 0 && ', '}
+              <button className="btn-link" onClick={() => open(w.section_id)}>
+                {w.chapter}
+              </button>{' '}
+              <span className="muted">
+                ({w.score}/{w.total})
+              </span>
+            </span>
+          ))}
+        </p>
+      )}
       {failed && !writing && (
         <p className="error-text small">
           Some sections could not be written.{' '}
@@ -133,6 +164,11 @@ export default function BookReader({ notebookId, concepts, busy, onOpenConcept, 
                       }}
                     >
                       <span>{s.title}</span>
+                      {s.read && (
+                        <span className="toc-read" aria-label="read">
+                          ✓
+                        </span>
+                      )}
                       {s.revised && <span className="toc-revised" title="Revised since you last read" aria-label="revised" />}
                       {s.status !== 'current' && <span className="toc-status">{STATUS[s.status]}</span>}
                       {s.status === 'current' && s.disputed && <span className="toc-status">sources disagree</span>}
@@ -156,6 +192,8 @@ export default function BookReader({ notebookId, concepts, busy, onOpenConcept, 
             onOpenSection={open}
             onOpenConcept={onOpenConcept}
             onOpenEvidence={onOpenEvidence}
+            chapterMap={data.chapters.find((ch) => ch.title === current.chapter)?.map}
+            onQuiz={() => setQuizChapter(current.chapter)}
           />
         )}
       </div>
@@ -167,6 +205,14 @@ export default function BookReader({ notebookId, concepts, busy, onOpenConcept, 
           onOpenConcept={onOpenConcept}
           onOpenSection={open}
           onOpenEvidence={onOpenEvidence}
+        />
+      )}
+      {quizChapter && (
+        <ChapterQuiz
+          notebookId={notebookId}
+          chapter={quizChapter}
+          conceptNames={chapterConcepts(sections, quizChapter, concepts)}
+          onClose={() => setQuizChapter(null)}
         />
       )}
       {drawer === 'history' && <HistoryDrawer notebookId={notebookId} onClose={() => setDrawer(null)} onOpenSection={open} />}
@@ -199,6 +245,12 @@ function useWiderThan(px) {
     return () => observer.disconnect()
   }, [el, px])
   return [setEl, wide]
+}
+
+// Names of the chapter's concepts, to focus the chapter quiz.
+function chapterConcepts(sections, chapter, concepts) {
+  const byId = Object.fromEntries(concepts.map((c) => [c.id, c.name]))
+  return sections.filter((s) => s.chapter === chapter).flatMap((s) => (s.concept_ids || []).map((id) => byId[id]).filter(Boolean))
 }
 
 const STATUS = { stale: 'to update', writing: 'writing…', failed: 'failed' }
@@ -242,8 +294,25 @@ function ChangesBanner({ changes, sections, onOpen, onDismiss }) {
   )
 }
 
-function SectionView({ notebookId, section, version, onVersion, concepts, neighbours, onOpenSection, onOpenConcept, onOpenEvidence }) {
+function SectionView({
+  notebookId,
+  section,
+  version,
+  onVersion,
+  concepts,
+  neighbours,
+  onOpenSection,
+  onOpenConcept,
+  onOpenEvidence,
+  chapterMap,
+  onQuiz,
+}) {
+  const queryClient = useQueryClient()
   const [activePara, setActivePara] = useState(null)
+  const markRead = useMutation({
+    mutationFn: (read) => api(`/notebooks/${notebookId}/book/sections/${section.id}/read`, { method: 'POST', body: { read } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['book', notebookId] }),
+  })
   const detail = useQuery({
     queryKey: ['book-section', notebookId, section.id, section.version, section.status, version],
     queryFn: () => api(`/notebooks/${notebookId}/book/sections/${section.id}${version ? `?version=${version}` : ''}`),
@@ -366,6 +435,27 @@ function SectionView({ notebookId, section, version, onVersion, concepts, neighb
           </aside>
         </div>
       ))}
+
+      {d && !old && <ComparisonTables tables={d.comparisons} onOpenConcept={onOpenConcept} />}
+      {chapterMap && (
+        <details className="disclosure book-figure">
+          <summary>Concept map of this chapter</summary>
+          <ChapterMap code={chapterMap} />
+        </details>
+      )}
+      {d && !old && paragraphs.length > 0 && (
+        <div className="book-learn">
+          <ExplainBox notebookId={notebookId} sectionId={section.id} />
+          <div className="row">
+            <button className="btn btn-secondary btn-sm" onClick={() => markRead.mutate(!section.read)} disabled={markRead.isPending}>
+              {section.read ? 'Mark as unread' : 'Mark as read'}
+            </button>
+            <button className="btn btn-quiet btn-sm" onClick={onQuiz}>
+              Quiz me on this chapter
+            </button>
+          </div>
+        </div>
+      )}
 
       {d && d.see_also.length > 0 && (
         <p className="book-see-also">

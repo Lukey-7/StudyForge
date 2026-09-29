@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../lib/api'
 import { plural, spineColor, timeAgo } from '../lib/format'
@@ -13,9 +14,7 @@ export default function HomePage({ email }) {
   if (overview.isError) {
     return (
       <div className="page">
-        <p className="error-text">
-          Couldn't load your home page: {overview.error.message}. Check the server is running, then reload.
-        </p>
+        <p className="error-text">Couldn't load your home page: {overview.error.message}. Check the server is running, then reload.</p>
       </div>
     )
   }
@@ -33,12 +32,18 @@ export default function HomePage({ email }) {
         <p className="home-summary">{summary(totals)}</p>
       </header>
 
+      {notebooks.length > 0 && <SearchEverything />}
+
       {notebooks.length === 0 ? (
         <FirstRun />
       ) : (
         <>
           <div className="home-top">
-            <ContinueCard notebook={latest} lastMade={made.find((g) => g.notebook_id === latest.id)} lastAsked={asked.find((c) => c.notebook_id === latest.id)} />
+            <ContinueCard
+              notebook={latest}
+              lastMade={made.find((g) => g.notebook_id === latest.id)}
+              lastAsked={asked.find((c) => c.notebook_id === latest.id)}
+            />
             <aside className="home-shelf" aria-labelledby="shelf-title">
               <h2 id="shelf-title">Your notebooks</h2>
               <ul>
@@ -73,7 +78,11 @@ export default function HomePage({ email }) {
                 <ul className="home-list">
                   {made.map((g) => (
                     <li key={g.id}>
-                      <Link to={`/notebooks/${g.notebook_id}?gen=${g.id}`} className="home-row" style={{ '--goal': groupOf(g.pipeline_name)?.color }}>
+                      <Link
+                        to={`/notebooks/${g.notebook_id}?gen=${g.id}`}
+                        className="home-row"
+                        style={{ '--goal': groupOf(g.pipeline_name)?.color }}
+                      >
                         <span className="goal-dot" aria-hidden="true" />
                         <span className="home-row-main">
                           <span className="home-row-title">{formatLabel(g.pipeline_name)}</span>
@@ -217,4 +226,57 @@ export function summary({ notebooks, ready_sources: ready, generations }) {
   const parts = [plural(notebooks, 'notebook'), `${plural(ready, 'document')} ready to study`]
   const made = generations ? `and you have made ${plural(generations, 'study set')} so far` : 'and nothing made yet'
   return `You have ${parts.join(' with ')}, ${made}.`
+}
+
+// Search every notebook's concepts and book sections at once (living textbook, phase 5).
+function SearchEverything() {
+  const [draft, setDraft] = useState('')
+  const [q, setQ] = useState('')
+  const results = useQuery({
+    queryKey: ['search', q],
+    queryFn: () => api(`/search?q=${encodeURIComponent(q)}`),
+    enabled: q.length >= 2,
+  })
+  return (
+    <section className="home-search" aria-label="Search all notebooks">
+      <form
+        className="row"
+        onSubmit={(e) => {
+          e.preventDefault()
+          setQ(draft.trim())
+        }}
+      >
+        <input
+          className="input"
+          type="search"
+          placeholder="Search every notebook, e.g. deadlock"
+          aria-label="Search every notebook"
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+        />
+        <button className="btn btn-secondary" type="submit" disabled={draft.trim().length < 2}>
+          Search
+        </button>
+      </form>
+      {results.isError && <p className="error-text small">{results.error.message}</p>}
+      {results.data && results.data.length === 0 && <p className="muted small">Nothing in your books matches “{q}”.</p>}
+      {results.data?.length > 0 && (
+        <ul className="home-list">
+          {results.data.map((r) => (
+            <li key={`${r.kind}-${r.id}`}>
+              <Link to={`/notebooks/${r.notebook.id}?${r.kind === 'concept' ? 'concept' : 'section'}=${r.id}`} className="home-row">
+                <span className="home-row-main">
+                  <strong>{r.title}</strong>{' '}
+                  <span className="muted small">
+                    {r.kind === 'concept' ? 'concept' : 'book section'} · {r.notebook.title}
+                  </span>
+                </span>
+                <span className="muted small ellipsis">{r.snippet}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  )
 }

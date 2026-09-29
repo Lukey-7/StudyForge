@@ -4,6 +4,7 @@ import MindTree from './MindTree'
 
 let mermaidPromise = null
 let renderCounter = 0
+export const nextMermaidId = (prefix) => `${prefix}-${++renderCounter}`
 
 // Mermaid's "base" theme is the one that honours themeVariables, so we feed it our tokens.
 // Mind map branches use the cScale0..N colours; we reuse the notebook spine palette with dark text.
@@ -29,7 +30,7 @@ function themeVariables() {
 
 // Mermaid is large (~1 MB), so it is loaded only the first time a mind map is shown
 // (dynamic import = Vite puts it in a separate chunk). initialize() runs once.
-function loadMermaid() {
+export function loadMermaid() {
   if (!mermaidPromise) {
     mermaidPromise = import('mermaid').then(({ default: mermaid }) => {
       mermaid.initialize({ startOnLoad: false, theme: 'base', themeVariables: themeVariables(), securityLevel: 'strict' })

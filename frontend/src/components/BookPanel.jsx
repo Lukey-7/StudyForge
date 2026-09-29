@@ -9,12 +9,20 @@ import { isProcessing } from './SourceProgress'
 // knowledge map it is written from: every concept StudyForge found across the notebook's sources,
 // with how many sources support it and where the sources disagree. Opening a concept (from either
 // view) shows its claims, each with evidence chips that open the exact passage.
-export default function BookPanel({ notebookId, onOpenEvidence }) {
+export default function BookPanel({ notebookId, onOpenEvidence, requestedSection, requestedConcept }) {
   const queryClient = useQueryClient()
   const [view, setView] = useState('reader')
   const [filter, setFilter] = useState('')
   const [onlyConflicts, setOnlyConflicts] = useState(false)
   const [openId, setOpenId] = useState(null)
+  // A chat citation or a search result can point at a section (reader) or a concept (drawer).
+  useEffect(() => {
+    if (requestedSection?.id) setView('reader')
+  }, [requestedSection])
+  const conceptId = requestedConcept?.id
+  useEffect(() => {
+    if (conceptId) setOpenId(conceptId)
+  }, [conceptId])
 
   // Same key as the Sources panel, so both share one request and one polling loop.
   const sources = useQuery({
@@ -102,6 +110,7 @@ export default function BookPanel({ notebookId, onOpenEvidence }) {
             notebookId={notebookId}
             concepts={data?.concepts || []}
             busy={Boolean(stillReading) || job?.status === 'running'}
+            requestedSection={requestedSection}
             onOpenConcept={setOpenId}
             onOpenEvidence={onOpenEvidence}
           />

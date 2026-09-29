@@ -1,9 +1,17 @@
 """The book (phase 2 of the living textbook): table of contents, sections with their evidence,
 what changed since the reader last looked."""
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from typing import Literal
 
-from app.api.deps import get_services, owned_notebook
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
+from fastapi.responses import Response
+from pydantic import BaseModel, Field
+
+from app.api.deps import get_services, get_user, owned_notebook
+from app.auth import User
+from app.book import export as book_export
+from app.book.figures import chapter_map, comparisons
+from app.book.learner import STYLES, explain_section, search
 from app.book.sync import after_knowledge_change
 from app.db.repository import Row
 from app.services import Services
@@ -63,12 +71,17 @@ def book(notebook: Row = Depends(owned_notebook), services: Services = Depends(g
     sections = sorted(
         services.repo.select("book_sections", notebook_id=notebook["id"]), key=lambda s: (s["chapter_index"], s["section_index"])
     )
-    seen = _read_row(services, notebook)["last_seen_version"]
+    reads = _read_row(services, notebook)
+    seen = reads["last_seen_version"]
+    read = set(reads.get("read_sections") or [])
     disputed = _disputed_concepts(services, notebook["id"])
+    concepts = {c["id"]: c for c in services.repo.select("concepts", notebook_id=notebook["id"])}
+    links = services.repo.select("concept_links", notebook_id=notebook["id"])
     chapters: list[dict] = []
     for s in sections:
         if not chapters or chapters[-1]["index"] != s["chapter_index"]:
-            chapters.append({"index": s["chapter_index"], "title": s["chapter_title"], "sections": []})
+            chapters.append({"index": s["chapter_index"], "title": s["chapter_title"], "sections": [], "concept_ids": []})
+        chapters[-1]["concept_ids"] += s["concept_ids"]
         chapters[-1]["sections"].append(
             {
                 "id": s["id"],
@@ -78,9 +91,22 @@ def book(notebook: Row = Depends(owned_notebook), services: Services = Depends(g
                 "revised": s["status"] == "current" and s["version"] > seen,
                 "support_rate": s.get("support_rate"),
                 "disputed": any(cid in disputed for cid in s["concept_ids"]),
+                "read": s["id"] in read,
+                "concept_ids": s["concept_ids"],
             }
         )
+    for chapter in chapters:
+        chapter["map"] = chapter_map(chapter.pop("concept_ids"), concepts, links)
+    scores = reads.get("quiz_scores") or {}
+    written = [s for s in sections if s["status"] == "current"]
     return {
+        "progress": {"read": len([s for s in written if s["id"] in read]), "total": len(written)},
+        "quiz_scores": scores,
+        "weak_spots": [
+            {"chapter": ch["title"], "section_id": ch["sections"][0]["id"], **scores[ch["title"]]}
+            for ch in chapters
+            if ch["title"] in scores and scores[ch["title"]]["score"] < 0.7 * scores[ch["title"]]["total"]
+        ],
         "version": _version(services, notebook["id"]),
         "last_seen_version": seen,
         "chapters": chapters,
@@ -153,6 +179,7 @@ def section(
         "version": s["version"],
         "concepts": [{"id": cid, "name": concepts[cid]["name"]} for cid in s["concept_ids"] if cid in concepts],
         "current_version": found[0]["version"],
+        "comparisons": _comparisons(services, notebook["id"], s["concept_ids"], concepts),
         "versions": [v["version"] for v in history],
         "support_rate": s.get("support_rate"),
         "paragraphs": [
@@ -241,3 +268,86 @@ def conflicts(notebook: Row = Depends(owned_notebook), services: Services = Depe
             }
         )
     return out
+
+
+def _comparisons(services: Services, notebook_id: str, concept_ids: list[str], concepts: dict[str, Row]) -> list[dict]:
+    links = services.repo.select("concept_links", notebook_id=notebook_id)
+    if not any(link["kind"] == "contrasts_with" for link in links):
+        return []
+    evidence = {e["claim_id"] for e in services.repo.select("claim_evidence", notebook_id=notebook_id)}
+    claims_of: dict[str, list[str]] = {}
+    for c in services.repo.select("claims", notebook_id=notebook_id):
+        if c["id"] in evidence:
+            claims_of.setdefault(c["concept_id"], []).append(c["text"])
+    return comparisons(concept_ids, concepts, links, claims_of)
+
+
+# ---------------------------------------------------------------- phase 4: export
+@router.get("/notebooks/{notebook_id}/book/export")
+def export(
+    format: Literal["md", "epub"] = "md", notebook: Row = Depends(owned_notebook), services: Services = Depends(get_services)
+) -> Response:
+    book = book_export.assemble(services, notebook)
+    if format == "epub":
+        body, media = book_export.to_epub(book, notebook["id"]), "application/epub+zip"
+    else:
+        body, media = book_export.to_markdown(book).encode(), "text/markdown; charset=utf-8"
+    name = book_export.filename(notebook["title"], format)
+    return Response(body, media_type=media, headers={"Content-Disposition": f'attachment; filename="{name}"'})
+
+
+# ---------------------------------------------------------------- phase 5: the learner in the loop
+class ReadMark(BaseModel):
+    read: bool = True
+
+
+@router.post("/notebooks/{notebook_id}/book/sections/{section_id}/read")
+def mark_read(
+    section_id: str, body: ReadMark, notebook: Row = Depends(owned_notebook), services: Services = Depends(get_services)
+) -> dict:
+    row = _read_row(services, notebook)
+    read = [s for s in row.get("read_sections") or [] if s != section_id] + ([section_id] if body.read else [])
+    services.repo.update("book_reads", row["id"], {"read_sections": read})
+    return {"read_sections": read}
+
+
+class QuizResult(BaseModel):
+    chapter: str = Field(max_length=300)
+    score: int = Field(ge=0)
+    total: int = Field(gt=0)
+
+
+@router.post("/notebooks/{notebook_id}/book/quiz-result")
+def quiz_result(body: QuizResult, notebook: Row = Depends(owned_notebook), services: Services = Depends(get_services)) -> dict:
+    """The latest "Quiz me on this chapter" score; chapters under 70% become weak spots."""
+    if body.score > body.total:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "score is larger than total")
+    row = _read_row(services, notebook)
+    scores = {**(row.get("quiz_scores") or {}), body.chapter: {"score": body.score, "total": body.total}}
+    services.repo.update("book_reads", row["id"], {"quiz_scores": scores})
+    return {"quiz_scores": scores}
+
+
+class ExplainRequest(BaseModel):
+    style: Literal["simpler", "steps"] = "simpler"
+
+
+@router.post("/notebooks/{notebook_id}/book/sections/{section_id}/explain")
+def explain(
+    section_id: str, body: ExplainRequest, notebook: Row = Depends(owned_notebook), services: Services = Depends(get_services)
+) -> dict:
+    found = services.repo.select("book_sections", id=section_id, notebook_id=notebook["id"])
+    if not found or not found[0].get("paragraphs"):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "section not found or not written yet")
+    if services.embedder is None:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "AI is not configured (GEMINI_API_KEY missing)")
+    assert body.style in STYLES
+    return explain_section(services, found[0], body.style)
+
+
+@router.get("/search")
+def search_everything(
+    q: str = Query(min_length=2, max_length=200), user: User = Depends(get_user), services: Services = Depends(get_services)
+) -> list[dict]:
+    """Concepts and book sections across every notebook of the user."""
+    return search(services, user.id, q)

@@ -1,19 +1,27 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 // Interactive multiple-choice quiz.
 //   round   - indexes of the questions in play (all of them, or just the missed ones on a retry)
 //   answers - { questionIndex: optionIndex } picked in this round
-export default function QuizView({ output }) {
+//   onFinish(score, total) - optional, called once when the first full round is finished
+export default function QuizView({ output, onFinish }) {
   const questions = output.questions || []
   const [round, setRound] = useState(() => questions.map((_, i) => i))
   const [answers, setAnswers] = useState({})
-
-  if (questions.length === 0) return <p className="muted">This quiz came back empty. Try generating it again.</p>
 
   const answered = round.filter((qi) => answers[qi] !== undefined)
   const missed = round.filter((qi) => answers[qi] !== undefined && answers[qi] !== questions[qi].correct_index)
   const finished = answered.length === round.length
   const isRetry = round.length < questions.length
+  const reported = useRef(false)
+  useEffect(() => {
+    if (questions.length > 0 && finished && !isRetry && onFinish && !reported.current) {
+      reported.current = true
+      onFinish(round.length - missed.length, round.length)
+    }
+  }, [questions.length, finished, isRetry, onFinish, round.length, missed.length])
+
+  if (questions.length === 0) return <p className="muted">This quiz came back empty. Try generating it again.</p>
 
   function pick(qi, oi) {
     if (answers[qi] !== undefined) return // one attempt per question per round
@@ -81,8 +89,7 @@ function Question({ number, question, picked, onPick }) {
       </div>
       {revealed && (
         <p className="quiz-explanation">
-          <strong className={correct ? 'text-good' : 'text-bad'}>{correct ? 'Right.' : 'Not quite.'}</strong>{' '}
-          {question.explanation}
+          <strong className={correct ? 'text-good' : 'text-bad'}>{correct ? 'Right.' : 'Not quite.'}</strong> {question.explanation}
         </p>
       )}
     </div>
