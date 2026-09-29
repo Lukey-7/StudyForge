@@ -19,13 +19,11 @@ export default function SearchDebug({ notebookId }) {
   const labelByChunk = Object.fromEntries((result?.citations || []).map((c) => [c.chunk_id, c.label]))
 
   return (
-    <details className="panel glass-card search-debug">
-      <summary>
-        <h3>Retrieval debugger</h3>
-      </summary>
+    <details className="panel search-debug">
+      <summary>Retrieval debugger</summary>
 
       <form
-        className="controls"
+        className="settings-bar"
         onSubmit={(e) => {
           e.preventDefault()
           search.mutate()
@@ -33,12 +31,13 @@ export default function SearchDebug({ notebookId }) {
       >
         <input
           className="input field-grow"
-          placeholder="Search query…"
+          placeholder="What would a student ask?"
+          aria-label="Search query"
           required
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
-        <select className="input" value={mode} onChange={(e) => setMode(e.target.value)}>
+        <select className="input" aria-label="Retrieval mode" value={mode} onChange={(e) => setMode(e.target.value)}>
           {MODES.map((m) => (
             <option key={m} value={m}>
               {m}
@@ -50,27 +49,27 @@ export default function SearchDebug({ notebookId }) {
         </button>
       </form>
 
-      {search.isError && <p className="error-text small">{search.error.message}</p>}
+      {search.isError && <p className="error-text small">Search failed: {search.error.message}</p>}
 
       {result && (
         <div className="stack">
-          <p className="mono-label muted">
-            embedding: {result.embedding_model} · context: {result.context_tokens} tokens
+          <p className="muted small">
+            Embedding model {result.embedding_model}, {result.context_tokens} tokens of context.
           </p>
 
           <div className="layer-grid">
             {LAYERS.filter((name) => Array.isArray(result.layers?.[name])).map((name) => (
               <div key={name} className="layer">
-                <span className="mono-label text-accent">
+                <h3 className="layer-name">
                   {name} ({result.layers[name].length})
-                </span>
+                </h3>
                 <ol>
                   {result.layers[name].slice(0, 10).map((item, i) => {
                     // dense/bm25/fused items are {id, score}; the mmr layer is a plain list of ids
                     const id = typeof item === 'string' ? item : item.id
                     return (
-                      <li key={`${id}-${i}`} className="mono-small">
-                        {labelByChunk[id] && <span className="cite-chip static">{labelByChunk[id]}</span>}
+                      <li key={`${id}-${i}`} className="code-small">
+                        {labelByChunk[id] && <span className="cite-mark static">{labelByChunk[id]}</span>}
                         {id.slice(0, 8)}
                         {typeof item === 'object' && <span className="muted"> {item.score}</span>}
                       </li>
@@ -84,8 +83,8 @@ export default function SearchDebug({ notebookId }) {
           <ul className="citation-list">
             {result.citations.map((c) => (
               <li key={c.label}>
-                <span className="cite-chip static">{c.label}</span> <strong>{c.source_name}</strong>
-                {c.page ? <span className="muted small"> · p. {c.page}</span> : null}
+                <span className="cite-mark static">{c.label}</span> <strong>{c.source_name}</strong>
+                {c.page ? <span className="muted small">, p. {c.page}</span> : null}
                 <p className="muted small">{c.snippet}</p>
               </li>
             ))}

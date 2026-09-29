@@ -6,13 +6,17 @@ export default function CompareTableView({ output }) {
   return (
     <div className="stack">
       {/* wrapper scrolls sideways on phones instead of squashing the table */}
-      <div className="table-scroll">
+      <div className="table-scroll" tabIndex={0} aria-label="Comparison table">
         <table className="data-table">
           <thead>
             <tr>
-              <th>Aspect</th>
+              <th scope="col">
+                <span className="visually-hidden">Aspect</span>
+              </th>
               {concepts.map((c) => (
-                <th key={c}>{c}</th>
+                <th key={c} scope="col">
+                  {c}
+                </th>
               ))}
             </tr>
           </thead>

@@ -53,7 +53,7 @@ copy .env.example .env            # optional in demo mode
 npm run dev
 ```
 
-Open http://localhost:5173. In demo mode there's no login and a "Demo mode" badge appears in the sidebar.
+Open http://localhost:5173. In demo mode there's no login and a "Demo mode" tag appears in the top bar. The landing page is at `/welcome` (and at `/` when signed out).
 
 ## 4. Full mode with Supabase
 

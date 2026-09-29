@@ -1,77 +1,74 @@
-/* Design tokens - ported from legacy-go/backend/frontend/DESIGN.md.
-   Every color / size in app.css should come from here, so the look can change in one place. */
+/* Design tokens: "chalkboard and highlighter". See frontend/DESIGN.md for the reasoning.
+   Every colour, size and radius in the other stylesheets comes from here. */
 :root {
-  /* Backgrounds */
-  --bg-primary: #09090b;
-  --bg-secondary: rgba(24, 24, 27, 0.8);
-  --bg-tertiary: rgba(39, 39, 42, 0.6);
-  --bg-hover: rgba(255, 255, 255, 0.03);
-  --bg-card: rgba(24, 24, 27, 0.8);
-  --bg-input: rgba(24, 24, 27, 0.6);
-  --bg-button-secondary: rgba(39, 39, 42, 0.8);
-  --bg-sidebar: rgba(9, 9, 11, 0.95);
-  --bg-floating: rgba(39, 39, 42, 0.92); /* modals, popovers: lighter surface */
+  /* Surfaces: a green-black chalkboard, raised panels a step lighter */
+  --slate: #1a2320; /* page background */
+  --slate-raised: #24302b; /* panels, cards */
+  --slate-high: #2e3b35; /* hover, inputs */
+  --slate-deep: #141b18; /* recessed areas: code, drop zone, drawer backdrop tint */
+  --line: rgba(236, 233, 223, 0.1); /* hairline borders */
+  --line-strong: rgba(236, 233, 223, 0.2);
 
-  /* Text */
-  --text-primary: #fafafa;
-  --text-secondary: #a1a1aa;
-  --text-muted: #71717a; /* DESIGN.md says #52525B; nudged lighter for readable contrast on small text */
-  --text-light: #3f3f46;
+  /* Text. chalk-dim on slate = 6.4:1, on slate-raised = 5.5:1, on slate-high = 4.7:1 (all pass WCAG AA) */
+  --chalk: #ece9df;
+  --chalk-dim: #9da69d;
+  --ink: #1a2320; /* dark text on light fills (violet buttons, solid highlighter marks) */
 
-  /* Accent */
-  --accent-primary: #8b5cf6;
-  --accent-secondary: #7c3aed;
-  --accent-gradient: linear-gradient(135deg, #8b5cf6, #7c3aed);
-  --accent-light: rgba(139, 92, 246, 0.12);
-  --accent-glow: rgba(139, 92, 246, 0.2);
+  /* Highlighter: ONLY for highlight meaning (citations, the cited passage, the selected format, selection) */
+  --highlighter: #f4d35e;
+  --highlighter-soft: rgba(244, 211, 94, 0.42);
+  /* A marker stroke over the lower part of the text, the way a real highlighter sits on a line */
+  --swipe: linear-gradient(transparent 52%, var(--highlighter-soft) 52%, var(--highlighter-soft) 92%, transparent 92%);
 
-  /* Semantic */
-  --accent-green: #34d399;
-  --accent-red: #f87171;
-  --accent-amber: #fbbf24;
-  --green-light: rgba(52, 211, 153, 0.12);
-  --red-light: rgba(248, 113, 113, 0.12);
-  --amber-light: rgba(251, 191, 36, 0.12);
+  /* Violet: primary actions only (buttons, active nav). Dark text on it = 5.7:1 */
+  --violet: #9b8afb;
+  --violet-deep: #8e7cf6; /* hover; still 4.9:1 with dark text */
+  --violet-soft: rgba(155, 138, 251, 0.14);
 
-  /* Borders */
-  --border-color: rgba(255, 255, 255, 0.06);
-  --border-strong: rgba(255, 255, 255, 0.08);
-  --border-hover: rgba(139, 92, 246, 0.3);
-  --border-thin: 1px solid var(--border-color);
+  /* Meaning */
+  --success: #7fd1a1;
+  --danger: #f08a7e;
+  --warning: var(--highlighter);
 
-  /* Shadows & blur */
-  --shadow-glow: 0 0 24px rgba(139, 92, 246, 0.1);
-  --focus-ring: 0 0 0 3px rgba(139, 92, 246, 0.2);
-  --blur-card: blur(16px);
-  --blur-floating: blur(20px);
+  /* Type */
+  --font-ui: 'Bricolage Grotesque', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-read: 'Literata', Georgia, 'Times New Roman', serif;
+  --font-code: ui-monospace, 'Cascadia Code', Consolas, monospace;
 
-  /* Typography */
-  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
-  --text-display: 48px;
-  --text-h1: 32px;
-  --text-h2: 24px;
-  --text-h3: 18px;
-  --text-lg: 16px;
-  --text-md: 14px;
-  --text-sm: 12px;
+  /* 1.25 type scale: 13 / 15 / 17 / 21 / 26 / 33 / 41 / 52 / 65 px */
+  --text-xs: 0.8125rem;
+  --text-sm: 0.9375rem;
+  --text-md: 1.0625rem;
+  --text-lg: 1.3125rem;
+  --text-xl: 1.625rem;
+  --text-2xl: 2.0625rem;
+  --text-3xl: 2.5625rem;
+  --text-4xl: 3.25rem;
+  --text-5xl: 4.0625rem;
 
-  /* Spacing */
-  --space-xs: 4px;
-  --space-sm: 8px;
-  --space-md: 12px;
-  --space-lg: 16px;
-  --space-xl: 24px;
-  --space-2xl: 32px;
+  --leading-ui: 1.55;
+  --leading-read: 1.65;
+  --measure: 72ch; /* longest comfortable line for reading text */
 
-  /* Radii */
-  --radius-card: 12px;
-  --radius-button: 8px;
-  --radius-input: 8px;
-  --radius-small: 6px;
-  --radius-pill: 9999px;
+  /* Spacing (4 px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 72px;
+  --space-9: 112px;
 
-  /* Layout */
-  --sidebar-width: 240px;
-  --transition: all 200ms ease;
+  /* Radii vary with hierarchy: small controls are crisp, panels softer, notebook spines square */
+  --radius-control: 4px;
+  --radius-panel: 10px;
+  --radius-pill: 999px;
+
+  /* Only floating things (modal, drawer, toast) get a shadow */
+  --shadow-float: 0 18px 50px rgba(0, 0, 0, 0.45);
+
+  --topbar-height: 56px;
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
 }

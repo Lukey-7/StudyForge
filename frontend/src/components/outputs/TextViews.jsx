@@ -1,6 +1,6 @@
 // Renderers for the "read-only" pipelines. Each takes the pipeline's `output` object
 // (shapes documented in docs/API.md) and lays it out. `|| []` guards keep a slightly
-// malformed output from crashing the page.
+// malformed output from crashing the page. Typography comes from the .reading wrapper.
 import Markdown from '../Markdown'
 
 function BulletList({ items }) {
@@ -11,6 +11,17 @@ function BulletList({ items }) {
         <li key={i}>{item}</li>
       ))}
     </ul>
+  )
+}
+
+function NumberedList({ items }) {
+  if (!items?.length) return null
+  return (
+    <ol className="bullets">
+      {items.map((item, i) => (
+        <li key={i}>{item}</li>
+      ))}
+    </ol>
   )
 }
 
@@ -39,18 +50,18 @@ export function SummaryView({ output }) {
 
 export function KeyConceptsView({ output }) {
   return (
-    <div className="concept-grid">
+    <div className="concepts">
       {(output.concepts || []).map((c, i) => (
-        <div key={i} className="concept-card">
+        <section key={i} className="concept">
           <h4>{c.name}</h4>
           <p>{c.definition}</p>
-          <p className="small">
-            <span className="mono-label text-accent">Why it matters</span> {c.why_it_matters}
+          <p className="concept-note">
+            <strong>Why it matters:</strong> {c.why_it_matters}
           </p>
-          <p className="small muted">
-            <span className="mono-label">Example</span> {c.example}
+          <p className="concept-note">
+            <strong>Example:</strong> {c.example}
           </p>
-        </div>
+        </section>
       ))}
     </div>
   )
@@ -61,7 +72,7 @@ export function FaqView({ output }) {
   return (
     <div className="accordion">
       {(output.items || []).map((item, i) => (
-        <details key={i} className="accordion-item">
+        <details key={i} className="disclosure">
           <summary>{item.question}</summary>
           <p>{item.answer}</p>
         </details>
@@ -80,11 +91,7 @@ export function ExamNotesView({ output }) {
       ))}
       {output.likely_exam_questions?.length > 0 && (
         <Section title="Likely exam questions">
-          <ol className="bullets">
-            {output.likely_exam_questions.map((q, i) => (
-              <li key={i}>{q}</li>
-            ))}
-          </ol>
+          <NumberedList items={output.likely_exam_questions} />
         </Section>
       )}
     </div>
@@ -94,15 +101,15 @@ export function ExamNotesView({ output }) {
 export function StudyGuideView({ output }) {
   return (
     <div className="stack">
-      <Section title="Learning objectives">
+      <Section title="By the end you should be able to">
         <BulletList items={output.learning_objectives} />
       </Section>
       {(output.sections || []).map((s, i) => (
         <Section key={i} title={s.title}>
           <Markdown>{s.content}</Markdown>
           {s.check_yourself?.length > 0 && (
-            <div className="callout">
-              <span className="mono-label text-accent">Check yourself</span>
+            <div className="margin-note">
+              <p className="margin-note-title">Check yourself</p>
               <BulletList items={s.check_yourself} />
             </div>
           )}
@@ -124,7 +131,7 @@ export function OutlineView({ output }) {
         {(output.items || []).map((item, i) => (
           <li key={i} className={`outline-item level-${item.level}`}>
             <strong>{item.title}</strong>
-            {item.summary && <span className="muted small"> — {item.summary}</span>}
+            {item.summary && <span className="outline-summary">{item.summary}</span>}
           </li>
         ))}
       </ul>
@@ -151,24 +158,19 @@ export function PracticeProblemsView({ output }) {
   return (
     <div className="stack">
       {(output.problems || []).map((p, i) => (
-        <div key={i} className="problem">
-          <div className="problem-header">
-            <strong>Problem {i + 1}</strong>
-            <span className="badge">{p.difficulty}</span>
-          </div>
+        <section key={i} className="problem">
+          <h4>
+            Problem {i + 1} <span className="tag">{p.difficulty}</span>
+          </h4>
           <p>{p.problem}</p>
-          <details className="accordion-item">
-            <summary>Show worked solution</summary>
-            <ol className="bullets">
-              {(p.solution_steps || []).map((step, si) => (
-                <li key={si}>{step}</li>
-              ))}
-            </ol>
+          <details className="disclosure">
+            <summary>Show the worked solution</summary>
+            <NumberedList items={p.solution_steps} />
             <p>
-              <span className="mono-label text-green">Answer</span> {p.final_answer}
+              <strong>Answer:</strong> {p.final_answer}
             </p>
           </details>
-        </div>
+        </section>
       ))}
     </div>
   )
@@ -179,10 +181,9 @@ export function SimpleExplanationView({ output }) {
     <div className="stack">
       {output.title && <h3>{output.title}</h3>}
       {output.analogy && (
-        <div className="callout">
-          <span className="mono-label text-accent">Think of it like…</span>
+        <blockquote className="analogy">
           <p>{output.analogy}</p>
-        </div>
+        </blockquote>
       )}
       {(output.explanation_paragraphs || []).map((p, i) => (
         <p key={i}>{p}</p>
@@ -211,11 +212,7 @@ export function TextbookChapterView({ output }) {
       )}
       {output.review_questions?.length > 0 && (
         <Section title="Review questions">
-          <ol className="bullets">
-            {output.review_questions.map((q, i) => (
-              <li key={i}>{q}</li>
-            ))}
-          </ol>
+          <NumberedList items={output.review_questions} />
         </Section>
       )}
     </div>

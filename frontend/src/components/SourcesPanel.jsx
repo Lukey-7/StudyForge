@@ -1,26 +1,28 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRef, useState } from 'react'
 import { api } from '../lib/api'
-import { formatBytes } from '../lib/format'
-import StatusBadge, { isProcessing } from './StatusBadge'
+import { formatBytes, plural } from '../lib/format'
+import SourceProgress, { isProcessing } from './SourceProgress'
+import { useToast } from './Toast'
 
 const ACCEPT = '.pdf,.docx,.txt,.md,.png,.jpg,.jpeg,.webp,.mp3,.wav,.m4a,.ogg,.flac'
 
-export default function SourcesPanel({ notebookId }) {
+// Left column: add notes (upload or paste) and see each source move through processing.
+export default function SourcesPanel({ notebookId, onOpenSource }) {
   const queryClient = useQueryClient()
-  const [notice, setNotice] = useState('')
+  const toast = useToast()
   const [showPaste, setShowPaste] = useState(false)
 
   const sources = useQuery({
     queryKey: ['sources', notebookId],
     queryFn: () => api(`/notebooks/${notebookId}/sources`),
-    // Poll every 2 s only while something is still being ingested; stop when all are ready/failed.
+    // Poll every 2 s only while something is still being processed; stop when all are ready/failed.
     refetchInterval: (query) => (query.state.data?.some((s) => isProcessing(s.status)) ? 2000 : false),
   })
 
   const refresh = () => {
     queryClient.invalidateQueries({ queryKey: ['sources', notebookId] })
-    queryClient.invalidateQueries({ queryKey: ['notebooks'] }) // source counts on the home page
+    queryClient.invalidateQueries({ queryKey: ['notebooks'] }) // source counts on the notebooks page
   }
 
   // Upload files one after another (simpler to reason about than parallel uploads).
@@ -36,7 +38,7 @@ export default function SourcesPanel({ notebookId }) {
       return duplicates
     },
     onSuccess: (duplicates) => {
-      setNotice(duplicates.length ? `Already uploaded: ${duplicates.join(', ')}` : '')
+      if (duplicates.length) toast(`Already in this notebook: ${duplicates.join(', ')}`)
       refresh()
     },
     onError: refresh, // some files may have succeeded before the error
@@ -44,15 +46,16 @@ export default function SourcesPanel({ notebookId }) {
 
   function handlePasted() {
     setShowPaste(false)
+    toast('Notes added')
     refresh()
   }
 
   return (
-    <div className="panel glass-card">
+    <div className="panel">
       <div className="panel-header">
-        <h3>Sources</h3>
-        <button className="btn btn-secondary btn-sm" onClick={() => setShowPaste(!showPaste)}>
-          {showPaste ? 'Close' : 'Paste text'}
+        <h2>Sources</h2>
+        <button className="btn btn-quiet" onClick={() => setShowPaste(!showPaste)} aria-expanded={showPaste}>
+          {showPaste ? 'Upload files instead' : 'Paste text'}
         </button>
       </div>
 
@@ -62,16 +65,21 @@ export default function SourcesPanel({ notebookId }) {
         <DropZone busy={upload.isPending} onFiles={(files) => upload.mutate(files)} />
       )}
 
-      {upload.isError && <p className="error-text small">{upload.error.message}</p>}
-      {notice && <p className="notice-text small">{notice}</p>}
+      {upload.isError && (
+        <p className="error-text small">
+          Upload failed: {upload.error.message}. Check the file type and size, then try again.
+        </p>
+      )}
 
       {sources.isPending && <p className="muted small">Loading sources…</p>}
-      {sources.isError && <p className="error-text small">{sources.error.message}</p>}
-      {sources.data?.length === 0 && <p className="muted small">No sources yet. Add a PDF, notes, an image or audio.</p>}
+      {sources.isError && <p className="error-text small">Couldn't load sources: {sources.error.message}</p>}
+      {sources.data?.length === 0 && (
+        <p className="muted small">Nothing here yet. Add your first lecture notes above to start studying.</p>
+      )}
 
       <ul className="source-list">
         {sources.data?.map((source) => (
-          <SourceItem key={source.id} source={source} onChange={refresh} />
+          <SourceItem key={source.id} source={source} onChange={refresh} onOpen={() => onOpenSource(source.id)} />
         ))}
       </ul>
     </div>
@@ -89,10 +97,6 @@ function DropZone({ busy, onFiles }) {
     if (files.length) onFiles(files)
   }
 
-  function openPicker() {
-    if (!busy) inputRef.current.click()
-  }
-
   return (
     <div
       className={`drop-zone ${dragging ? 'dragging' : ''}`}
@@ -102,10 +106,6 @@ function DropZone({ busy, onFiles }) {
       }}
       onDragLeave={() => setDragging(false)}
       onDrop={handleDrop}
-      onClick={openPicker}
-      onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && openPicker()}
-      role="button"
-      tabIndex={0}
     >
       <input
         ref={inputRef}
@@ -119,16 +119,13 @@ function DropZone({ busy, onFiles }) {
           if (files.length) onFiles(files)
         }}
       />
-      {busy ? (
-        <span>
-          <span className="spinner" /> Uploading…
-        </span>
-      ) : (
-        <>
-          <strong>Drop files here</strong>
-          <span className="muted small">or click to browse · PDF, DOCX, TXT, MD, images, audio · max 25 MB</span>
-        </>
-      )}
+      <p className="drop-title">{busy ? 'Uploading…' : 'Drop lecture notes here'}</p>
+      <p className="drop-help">
+        PDF, Word, text or Markdown, photos of slides or whiteboards, and recordings (MP3, WAV, M4A). Up to 25 MB each.
+      </p>
+      <button className="btn btn-secondary" disabled={busy} onClick={() => inputRef.current.click()}>
+        Upload files
+      </button>
     </div>
   )
 }
@@ -143,38 +140,44 @@ function PasteTextForm({ notebookId, onDone }) {
 
   return (
     <form
-      className="stack"
+      className="stack paste-form"
       onSubmit={(e) => {
         e.preventDefault()
         add.mutate()
       }}
     >
-      <input
-        className="input"
-        placeholder="Title (e.g. Lecture 3 notes)"
-        required
-        maxLength={200}
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-      />
-      <textarea
-        className="input"
-        rows={6}
-        placeholder="Paste your notes here (at least 20 characters)…"
-        required
-        minLength={20}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-      />
-      {add.isError && <p className="error-text small">{add.error.message}</p>}
-      <button className="btn btn-primary btn-sm" disabled={add.isPending}>
-        {add.isPending ? 'Adding…' : 'Add as source'}
+      <label className="field">
+        <span>Title</span>
+        <input
+          className="input"
+          placeholder="e.g. Lecture 3 notes"
+          required
+          maxLength={200}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
+      </label>
+      <label className="field">
+        <span>Notes</span>
+        <textarea
+          className="input"
+          rows={7}
+          placeholder="Paste at least a couple of sentences"
+          required
+          minLength={20}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+        />
+      </label>
+      {add.isError && <p className="error-text small">Couldn't add the notes: {add.error.message}</p>}
+      <button className="btn btn-primary" disabled={add.isPending}>
+        {add.isPending ? 'Adding…' : 'Add notes'}
       </button>
     </form>
   )
 }
 
-function SourceItem({ source, onChange }) {
+function SourceItem({ source, onChange, onOpen }) {
   const retry = useMutation({
     mutationFn: () => api(`/sources/${source.id}/retry`, { method: 'POST' }),
     onSuccess: onChange,
@@ -184,41 +187,56 @@ function SourceItem({ source, onChange }) {
     onSuccess: onChange,
   })
 
+  const isReady = source.status === 'ready'
   const details = [
     formatBytes(source.size_bytes),
-    source.page_count ? `${source.page_count} pages` : null,
-    source.chunk_count ? `${source.chunk_count} chunks` : null,
+    source.page_count ? plural(source.page_count, 'page') : null,
+    source.chunk_count ? plural(source.chunk_count, 'passage') : null,
   ].filter(Boolean)
-
   const actionError = retry.error || remove.error
 
   return (
-    <li className="source-item">
-      <div className="source-top">
-        <span className="source-name ellipsis" title={source.file_name}>
+    <li className={`source-item status-${source.status}`}>
+      {/* Only a ready source has passages to read, so only then is the name a button. */}
+      {isReady ? (
+        <button className="source-name" onClick={onOpen} title={`Read ${source.file_name}`}>
+          {source.file_name}
+        </button>
+      ) : (
+        <span className="source-name" title={source.file_name}>
           {source.file_name}
         </span>
-        <StatusBadge status={source.status} />
-      </div>
-      <div className="muted small">{details.join(' · ')}</div>
+      )}
+      <span className="source-details">{details.join(', ')}</span>
+
+      {isProcessing(source.status) && <SourceProgress status={source.status} />}
 
       {source.status === 'failed' && (
         <div className="source-error">
-          <span className="error-text small">{source.error_message || 'Processing failed.'}</span>
+          <p className="error-text small">
+            {source.error_message || 'Processing failed.'} You can try again, or delete it and upload another copy.
+          </p>
           <button className="btn btn-secondary btn-sm" onClick={() => retry.mutate()} disabled={retry.isPending}>
-            Retry
+            {retry.isPending ? 'Retrying…' : 'Try again'}
           </button>
         </div>
       )}
       {actionError && <p className="error-text small">{actionError.message}</p>}
 
-      <button
-        className="link-btn danger small"
-        disabled={remove.isPending}
-        onClick={() => window.confirm(`Delete "${source.file_name}"?`) && remove.mutate()}
-      >
-        Delete
-      </button>
+      <div className="source-actions">
+        {isReady && (
+          <button className="link-btn small" onClick={onOpen}>
+            Read passages
+          </button>
+        )}
+        <button
+          className="link-btn link-danger small"
+          disabled={remove.isPending}
+          onClick={() => window.confirm(`Delete “${source.file_name}” from this notebook?`) && remove.mutate()}
+        >
+          Delete
+        </button>
+      </div>
     </li>
   )
 }

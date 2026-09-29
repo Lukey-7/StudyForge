@@ -37,7 +37,7 @@ For generation (`GenerateTransformation`, `agent.go:86`), v1 did **not** use ret
 | The chat rules: answer only from the materials, cite sources, admit when the answer is missing | `chatSystemPrompt()`, rewritten as `app/chat/rag_chat.py` with `[S#]` labels |
 | The mind-map idea (Mermaid `mindmap`) | `mindmapPrompt()`. v2 asks for JSON and renders Mermaid in code, so the output can't break |
 | The table design: notebooks → sources → notes/chat sessions → messages, `ON DELETE CASCADE` | `legacy-go/backend/store.go`, redone in Postgres with UUIDs, indexes and RLS |
-| The dark glassmorphism design system (tokens, Inter/JetBrains Mono, violet accent) | `legacy-go/backend/frontend/DESIGN.md`, ported to `frontend/src/styles/tokens.css` |
+| The dark theme and violet primary-action colour | `legacy-go/backend/frontend/DESIGN.md`. v2 replaced the glassmorphism look with its own "chalkboard and highlighter" system (`frontend/DESIGN.md`) but kept a dark base and violet for actions |
 
 ## v1 weaknesses that v2 fixes
 

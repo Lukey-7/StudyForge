@@ -1,4 +1,4 @@
-// Podcast script shown as chat bubbles; the first speaker on the left, others on the right.
+// Podcast script laid out like a play script: speaker name in the margin, their line beside it.
 export default function PodcastView({ output }) {
   const speakers = output.speakers || []
   const lines = output.lines || []
@@ -6,20 +6,15 @@ export default function PodcastView({ output }) {
   return (
     <div className="stack">
       {output.title && <h3>{output.title}</h3>}
-      <p className="muted small">Speakers: {speakers.join(', ')}</p>
-      <div className="podcast">
-        {lines.map((line, i) => {
-          const side = line.speaker === speakers[0] ? 'left' : 'right'
-          return (
-            <div key={i} className={`bubble-row ${side}`}>
-              <div className={`bubble ${side === 'left' ? 'bubble-other' : 'bubble-accent'}`}>
-                <span className="mono-label">{line.speaker}</span>
-                <p>{line.text}</p>
-              </div>
-            </div>
-          )
-        })}
-      </div>
+      <dl className="script">
+        {lines.map((line, i) => (
+          // data-speaker = position in the speakers list, so each voice gets its own colour in CSS
+          <div key={i} className="script-line" data-speaker={Math.max(0, speakers.indexOf(line.speaker)) % 2}>
+            <dt>{line.speaker}</dt>
+            <dd>{line.text}</dd>
+          </div>
+        ))}
+      </dl>
     </div>
   )
 }

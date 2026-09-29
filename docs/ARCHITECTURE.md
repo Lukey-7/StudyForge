@@ -62,7 +62,7 @@ Every file/function named below is in `backend/app/` unless it starts with `fron
 
 ## (b) Generate a quiz
 
-1. **Browser:** `frontend/src/components/PipelineGrid.jsx` → the `generate` mutation → `POST /notebooks/{id}/generate/quiz` `{difficulty, length, focus_topic, force}`.
+1. **Browser:** `frontend/src/components/StudioPanel.jsx` (format chosen in `FormatPicker.jsx`) → the `generate` mutation → `POST /notebooks/{id}/generate/quiz` `{difficulty, length, focus_topic, force}`.
 2. **API:** `api/generate.py::generate` → `generation/runner.py::run_pipeline`.
 3. **Cache:** `params_hash(params)` (normalised SHA-256) → `repo.find_generation(notebook, "quiz", hash, sources_version)`. On a hit, return `{…, cached: true}`.
 4. **Ready sources:** `repo.list_sources`, filtered to `status == "ready"`. If none, 409.

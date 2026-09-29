@@ -1,22 +1,24 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueries, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../lib/api'
 import { postStream } from '../lib/sse'
+import { buildSuggestions } from '../lib/suggestions'
 import Markdown from './Markdown'
 
-// Chat with your sources. Saved messages come from the server (React Query);
+// Chat with your notes. Saved messages come from the server (React Query);
 // the answer currently being streamed lives in local state (`live`) until it's saved,
 // then we reload the session's messages and drop the live copy.
-export default function ChatPanel({ notebookId }) {
+export default function ChatPanel({ notebookId, onOpenCitation }) {
   const queryClient = useQueryClient()
   const [sessionId, setSessionId] = useState(null) // null = new chat
   const [input, setInput] = useState('')
   const [streaming, setStreaming] = useState(false)
-  const [live, setLive] = useState(null) // { question, answer, citations, rewrittenQuery }
+  const [live, setLive] = useState(null) // { question, answer, citations, rewrittenQuery, stopped }
   const [chatError, setChatError] = useState('')
-  const [activeCitation, setActiveCitation] = useState(null)
   const abortRef = useRef(null)
+  const stoppedByUser = useRef(false)
   const scrollRef = useRef(null)
+  const inputRef = useRef(null)
 
   const sessions = useQuery({
     queryKey: ['chat-sessions', notebookId],
@@ -31,7 +33,7 @@ export default function ChatPanel({ notebookId }) {
   const deleteSession = useMutation({
     mutationFn: (id) => api(`/chat/sessions/${id}`, { method: 'DELETE' }),
     onSuccess: () => {
-      setSessionId(null)
+      startNewChat()
       queryClient.invalidateQueries({ queryKey: ['chat-sessions', notebookId] })
     },
   })
@@ -46,16 +48,24 @@ export default function ChatPanel({ notebookId }) {
     if (box) box.scrollTop = box.scrollHeight
   }, [savedMessages.length, live?.answer])
 
-  async function send(e) {
-    e.preventDefault()
-    const question = input.trim()
+  // Loads a session's saved messages into the cache, then shows that session.
+  async function showSession(id) {
+    await queryClient
+      .fetchQuery({ queryKey: ['chat-messages', id], queryFn: () => api(`/chat/sessions/${id}/messages`), staleTime: 0 })
+      .catch(() => {})
+    queryClient.invalidateQueries({ queryKey: ['chat-sessions', notebookId] })
+    setSessionId(id)
+  }
+
+  async function ask(text) {
+    const question = text.trim()
     if (!question || streaming) return
 
     setInput('')
     setChatError('')
-    setActiveCitation(null)
     setStreaming(true)
-    setLive({ question, answer: '', citations: [], rewrittenQuery: null })
+    setLive({ question, answer: '', citations: [], rewrittenQuery: null, stopped: false })
+    stoppedByUser.current = false
     abortRef.current = new AbortController()
 
     let finalSessionId = sessionId
@@ -77,44 +87,52 @@ export default function ChatPanel({ notebookId }) {
     try {
       await postStream(`/notebooks/${notebookId}/chat`, { message: question, session_id: sessionId }, onEvent, abortRef.current.signal)
     } catch (err) {
-      if (err.name === 'AbortError') return // component unmounted
-      failed = true
-      setChatError(err.message)
+      if (err.name !== 'AbortError') {
+        failed = true
+        setChatError(`${err.message}. Check the server is running and try again.`)
+      } else if (!stoppedByUser.current) {
+        return // the component unmounted: nothing left to update
+      }
     }
 
-    if (finalSessionId) {
-      // Load the saved messages BEFORE removing the live bubble, so nothing flickers.
-      await queryClient
-        .fetchQuery({
-          queryKey: ['chat-messages', finalSessionId],
-          queryFn: () => api(`/chat/sessions/${finalSessionId}/messages`),
-          staleTime: 0,
-        })
-        .catch(() => {})
-      queryClient.invalidateQueries({ queryKey: ['chat-sessions', notebookId] })
-      setSessionId(finalSessionId)
+    if (stoppedByUser.current) {
+      // The server saved the question but not the half-written answer. Show the saved
+      // question from the session, and keep the partial answer on screen marked as stopped.
+      setLive((l) => ({ ...l, question: finalSessionId ? null : l.question, stopped: true }))
+      if (finalSessionId) await showSession(finalSessionId)
+    } else {
+      if (finalSessionId) await showSession(finalSessionId) // load saved messages BEFORE removing the live copy: no flicker
+      setLive(null)
     }
     if (failed && !finalSessionId) setInput(question) // nothing was saved: give the text back to retry
-    setLive(null)
     setStreaming(false)
+  }
+
+  function stop() {
+    stoppedByUser.current = true
+    abortRef.current?.abort()
   }
 
   function startNewChat() {
     setSessionId(null)
-    setActiveCitation(null)
+    setLive(null)
     setChatError('')
   }
 
+  const isEmpty = !sessionId && !live
+
   return (
-    <div className="panel glass-card chat-panel">
+    <div className="panel chat-panel">
       <div className="panel-header chat-toolbar">
+        <h2 className="visually-hidden">Chat</h2>
         <select
           className="input chat-session-select"
+          aria-label="Choose a chat"
           value={sessionId ?? ''}
           disabled={streaming}
           onChange={(e) => {
+            setLive(null)
             setSessionId(e.target.value || null)
-            setActiveCitation(null)
           }}
         >
           <option value="">New chat</option>
@@ -124,26 +142,31 @@ export default function ChatPanel({ notebookId }) {
             </option>
           ))}
         </select>
-        <button className="btn btn-secondary btn-sm" onClick={startNewChat} disabled={streaming}>
-          + New
+        <button className="btn btn-quiet" onClick={startNewChat} disabled={streaming || isEmpty}>
+          New chat
         </button>
         {sessionId && (
           <button
-            className="icon-btn danger"
-            title="Delete this chat"
+            className="btn btn-quiet link-danger"
             disabled={streaming || deleteSession.isPending}
-            onClick={() => window.confirm('Delete this chat?') && deleteSession.mutate(sessionId)}
+            onClick={() => window.confirm('Delete this chat and its messages?') && deleteSession.mutate(sessionId)}
           >
-            🗑
+            Delete
           </button>
         )}
       </div>
 
       <div className="chat-messages" ref={scrollRef}>
-        {!sessionId && !live && (
-          <p className="muted small center">Ask anything about your sources. Answers cite passages like [S1].</p>
+        {isEmpty && (
+          <EmptyChat
+            notebookId={notebookId}
+            onPick={(q) => {
+              ask(q)
+              inputRef.current?.focus()
+            }}
+          />
         )}
-        {messages.isError && <p className="error-text small">{messages.error.message}</p>}
+        {messages.isError && <p className="error-text small">Couldn't load this chat: {messages.error.message}</p>}
 
         {savedMessages.map((m) => (
           <ChatMessage
@@ -152,63 +175,125 @@ export default function ChatPanel({ notebookId }) {
             content={m.content}
             citations={m.citations}
             rewrittenQuery={m.rewritten_query}
-            onCitation={setActiveCitation}
+            onCitation={onOpenCitation}
           />
         ))}
 
         {live && (
           <>
-            <ChatMessage role="user" content={live.question} />
+            {live.question && <ChatMessage role="user" content={live.question} />}
             <ChatMessage
               role="assistant"
               content={live.answer}
               citations={live.citations}
               rewrittenQuery={live.rewrittenQuery !== live.question ? live.rewrittenQuery : null}
-              onCitation={setActiveCitation}
+              onCitation={onOpenCitation}
               pending={streaming && !live.answer}
             />
+            {live.stopped && <p className="muted small">You stopped this answer, so it wasn't saved.</p>}
           </>
         )}
-        {chatError && <p className="error-text small">{chatError}</p>}
+        {chatError && (
+          <p className="error-text small" role="alert">
+            {chatError}
+          </p>
+        )}
       </div>
 
-      {activeCitation && <CitationCard citation={activeCitation} onClose={() => setActiveCitation(null)} />}
-
-      <form className="chat-input" onSubmit={send}>
+      <form
+        className="chat-input"
+        onSubmit={(e) => {
+          e.preventDefault()
+          ask(input)
+        }}
+      >
         <textarea
+          ref={inputRef}
           className="input"
           rows={2}
           maxLength={4000}
-          placeholder={streaming ? 'Answering…' : 'Ask a question…'}
+          aria-label="Your question"
+          placeholder={streaming ? 'Writing the answer…' : 'Ask about your notes'}
           value={input}
-          disabled={streaming}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
             // Enter sends, Shift+Enter adds a new line (like most chat apps)
-            if (e.key === 'Enter' && !e.shiftKey) send(e)
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault()
+              ask(input)
+            }
           }}
         />
-        <button className="btn btn-primary" disabled={streaming || !input.trim()}>
-          {streaming ? <span className="spinner" /> : 'Send'}
-        </button>
+        {streaming ? (
+          <button type="button" className="btn btn-secondary" onClick={stop}>
+            Stop
+          </button>
+        ) : (
+          <button className="btn btn-primary" disabled={!input.trim()}>
+            Ask
+          </button>
+        )}
       </form>
     </div>
   )
 }
 
-// Turn "[S1]" into a markdown link "[S1](#cite-S1)" so react-markdown hands it to our
-// custom <a> renderer below, which draws a clickable chip instead of a link.
+// Empty chat: explain what the chat does and offer a few questions built from the notes' headings.
+function EmptyChat({ notebookId, onPick }) {
+  const { suggestions, hasReadySource } = useSuggestions(notebookId)
+  if (!hasReadySource) {
+    return (
+      <div className="chat-empty">
+        <h3>Ask your notes</h3>
+        <p className="muted">
+          Add lecture notes in Sources first. Once a source is ready you can ask anything about it here.
+        </p>
+      </div>
+    )
+  }
+  return (
+    <div className="chat-empty">
+      <h3>Ask your notes</h3>
+      <p className="muted">
+        Answers come only from the sources in this notebook, and each claim points to the passage it came from.
+      </p>
+      <div className="suggestions">
+        {suggestions.map((q) => (
+          <button key={q} className="suggestion" onClick={() => onPick(q)}>
+            {q}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Headings of the first few ready sources -> up to 4 suggested questions.
+// Uses the same ['sources'] and ['chunks'] cache keys as the Sources panel and reader, so no extra requests.
+function useSuggestions(notebookId) {
+  const sources = useQuery({ queryKey: ['sources', notebookId], queryFn: () => api(`/notebooks/${notebookId}/sources`) })
+  const readyIds = (sources.data || []).filter((s) => s.status === 'ready').slice(0, 3).map((s) => s.id)
+  const chunkQueries = useQueries({
+    queries: readyIds.map((id) => ({ queryKey: ['chunks', id], queryFn: () => api(`/sources/${id}/chunks`) })),
+  })
+  const headings = chunkQueries.flatMap((q) => (q.data || []).map((c) => c.heading))
+  return { suggestions: buildSuggestions(headings), hasReadySource: readyIds.length > 0 }
+}
+
+// Turn "[S1]" (or "[S1, S2]") into markdown links "[S1](#cite-S1)" so react-markdown hands them
+// to our custom <a> renderer below, which draws a highlighter mark instead of a link.
 function linkCitations(text) {
-  return (text || '').replace(/\[S(\d+)\]/g, '[S$1](#cite-S$1)')
+  return (text || '').replace(/\[(S\d+(?:\s*,\s*S\d+)*)\]/g, (_, labels) =>
+    labels
+      .split(/\s*,\s*/)
+      .map((label) => `[${label}](#cite-${label})`)
+      .join(' '),
+  )
 }
 
 function ChatMessage({ role, content, citations = [], rewrittenQuery, onCitation, pending }) {
   if (role === 'user') {
-    return (
-      <div className="bubble-row right">
-        <div className="bubble bubble-accent">{content}</div>
-      </div>
-    )
+    return <div className="msg msg-user">{content}</div>
   }
 
   const components = {
@@ -222,12 +307,14 @@ function ChatMessage({ role, content, citations = [], rewrittenQuery, onCitation
       }
       const label = href.slice('#cite-'.length)
       const citation = citations?.find((c) => c.label === label)
+      const where = citation ? `${citation.source_name}${citation.page ? `, page ${citation.page}` : ''}` : ''
       return (
         <button
           type="button"
-          className="cite-chip"
+          className="cite-mark"
           disabled={!citation}
-          title={citation ? `${citation.source_name}${citation.page ? `, p. ${citation.page}` : ''}` : label}
+          title={citation ? `Open ${where}` : label}
+          aria-label={citation ? `Source ${label}: ${where}` : label}
           onClick={() => onCitation(citation)}
         >
           {label}
@@ -237,36 +324,13 @@ function ChatMessage({ role, content, citations = [], rewrittenQuery, onCitation
   }
 
   return (
-    <div className="bubble-row left">
-      <div className="bubble bubble-other">
-        {rewrittenQuery && <div className="rewritten muted small">Searched for: “{rewrittenQuery}”</div>}
-        {pending ? (
-          <span className="muted">
-            <span className="spinner" /> Searching your sources…
-          </span>
-        ) : (
-          <Markdown components={components}>{linkCitations(content)}</Markdown>
-        )}
-      </div>
-    </div>
-  )
-}
-
-function CitationCard({ citation, onClose }) {
-  return (
-    <div className="citation-card">
-      <div className="citation-card-header">
-        <span className="cite-chip static">{citation.label}</span>
-        <strong className="ellipsis">{citation.source_name}</strong>
-        <button className="icon-btn" aria-label="Close citation" onClick={onClose}>
-          ✕
-        </button>
-      </div>
-      <div className="muted small">
-        {citation.page ? `Page ${citation.page}` : 'No page number'}
-        {citation.heading ? ` · ${citation.heading}` : ''}
-      </div>
-      <p className="citation-snippet">{citation.snippet}</p>
+    <div className="msg msg-answer reading">
+      {rewrittenQuery && <p className="rewritten">Searched your notes for “{rewrittenQuery}”</p>}
+      {pending ? (
+        <p className="muted">Searching your notes…</p>
+      ) : (
+        <Markdown components={components}>{linkCitations(content)}</Markdown>
+      )}
     </div>
   )
 }

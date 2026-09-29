@@ -22,7 +22,8 @@
   - Each is personalised by difficulty, length and focus topic.
   - Output is schema-validated JSON with one automatic repair.
   - Results are cached per (notebook, pipeline, params, sources version).
-- **RAG chat:** answers stream token by token over Server-Sent Events and cite every factual sentence. If the documents don't contain the answer, it says so.
+- **RAG chat:** answers stream token by token over Server-Sent Events and cite every factual sentence. If the documents don't contain the answer, it says so. Click a citation to jump to the exact passage.
+- **Study tools:** interactive quiz with "Retry the ones I missed", flashcards with Got it / Again self-rating, Mermaid mind maps, Copy as Markdown / Download / Export for Anki, suggested questions from your notes' headings. Design system: [frontend/DESIGN.md](frontend/DESIGN.md).
 
 ## Architecture
 
