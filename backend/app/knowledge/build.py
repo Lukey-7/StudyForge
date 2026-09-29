@@ -135,7 +135,7 @@ def build_for_source(services: Services, source_id: str) -> None:
     if source is None or source["status"] != "ready":
         return
     notebook_id = source["notebook_id"]
-    remove_source_knowledge(services, source)
+    remove_source_knowledge(services, source, keep_concepts=True)
     job = repo.insert("knowledge_jobs", {"notebook_id": notebook_id, "source_id": source_id, "status": "running", "progress": 0})
     try:
         llm, embedder = services.require_ai()
@@ -153,6 +153,8 @@ def build_for_source(services: Services, source_id: str) -> None:
             extraction = llm.generate_json(extraction_prompt(group), Extraction, system=EXTRACT_SYSTEM, fast=True).data
             apply_extraction(services, source, group, extraction, state)
             repo.update("knowledge_jobs", job["id"], {"progress": int(100 * number / len(groups))})
+        orphans = prune_concepts(services, notebook_id)  # concepts this source no longer supports
+        services.vectors.delete_ids(embedder.active_model, orphans, "concepts")
         repo.update("knowledge_jobs", job["id"], {"status": "done", "progress": 100, "detail": f"{len(passages)} passages read"})
         logger.info(
             "knowledge built for %s: %d passages, %d concepts in notebook",
@@ -165,9 +167,11 @@ def build_for_source(services: Services, source_id: str) -> None:
         repo.update("knowledge_jobs", job["id"], {"status": "failed", "detail": str(exc)[:300]})
 
 
-def remove_source_knowledge(services: Services, source: Row) -> None:
+def remove_source_knowledge(services: Services, source: Row, keep_concepts: bool = False) -> None:
     """Undo what a source contributed: its evidence and conflicts, then any claim or concept that
-    no longer has evidence from any source."""
+    no longer has evidence from any source. A rebuild keeps the concepts (keep_concepts) so that
+    re-reading the source finds them again by name: concept ids, and so the book's outline, stay
+    the same. prune_concepts() removes the ones still unsupported afterwards."""
     repo, notebook_id = services.repo, source["notebook_id"]
     for table in ("claim_evidence", "conflicts", "knowledge_jobs"):
         repo.delete(table, source_id=source["id"])
@@ -178,10 +182,7 @@ def remove_source_knowledge(services: Services, source: Row) -> None:
     for claim_id in orphan_claims:
         repo.delete("claims", id=claim_id)
 
-    used = {c["concept_id"] for c in claims if c["id"] in supported}
-    orphan_concepts = [c["id"] for c in repo.select("concepts", notebook_id=notebook_id) if c["id"] not in used]
-    for concept_id in orphan_concepts:
-        repo.delete("concepts", id=concept_id)
+    orphan_concepts = [] if keep_concepts else prune_concepts(services, notebook_id)
 
     # a concept stays "conflicted" only while it still has a conflict
     disputed = {c["claim_id"] for c in repo.select("conflicts", notebook_id=notebook_id)}
@@ -194,6 +195,16 @@ def remove_source_knowledge(services: Services, source: Row) -> None:
         model = services.embedder.active_model
         services.vectors.delete_ids(model, orphan_claims, "claims")
         services.vectors.delete_ids(model, orphan_concepts, "concepts")
+
+
+def prune_concepts(services: Services, notebook_id: str) -> list[str]:
+    """Deletes concepts that no claim supports any more; returns their ids."""
+    repo = services.repo
+    used = {c["concept_id"] for c in repo.select("claims", notebook_id=notebook_id)}
+    orphans = [c["id"] for c in repo.select("concepts", notebook_id=notebook_id) if c["id"] not in used]
+    for concept_id in orphans:
+        repo.delete("concepts", id=concept_id)
+    return orphans
 
 
 # --------------------------------------------------------------------------- merging one batch

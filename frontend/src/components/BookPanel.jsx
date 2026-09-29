@@ -48,7 +48,12 @@ export default function BookPanel({ notebookId, onOpenEvidence }) {
       ),
   })
 
-  const data = map.data
+  // While the map is being rebuilt the server holds a half-built map; keep showing the last
+  // complete one (live data still drives the progress bar) and swap when the build finishes.
+  const lastComplete = useRef(null)
+  const building = map.data?.job?.status === 'running'
+  if (map.data && !building) lastComplete.current = map.data
+  const data = building ? lastComplete.current || map.data : map.data
   const conflicted = new Set(data?.concepts_with_conflicts || [])
   const query = filter.trim().toLowerCase()
   const shown = (data?.concepts || []).filter(
@@ -58,7 +63,7 @@ export default function BookPanel({ notebookId, onOpenEvidence }) {
   )
   const terms = shown.filter((c) => c.kind === 'term')
   const examples = shown.filter((c) => c.kind === 'example')
-  const job = data?.job
+  const job = map.data?.job
 
   return (
     <div className="panel book">

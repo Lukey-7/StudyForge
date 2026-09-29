@@ -39,6 +39,8 @@ def _changes_since(services: Services, notebook_id: str, seen: int) -> dict:
                 merged[key] += row["changes"].get(key, [])
     for key in ("added", "revised"):  # a section revised twice is listed once, as its latest title
         merged[key] = list({item["id"]: item for item in merged[key]}.values())
+    added = {item["id"] for item in merged["added"]}
+    merged["revised"] = [item for item in merged["revised"] if item["id"] not in added]  # new to this reader, not "revised"
     merged["new_concepts"] = list(dict.fromkeys(merged["new_concepts"]))
     return merged
 

@@ -5,14 +5,30 @@ e.g.  table("sources").select("*").eq("notebook_id", x)  ->
       GET /rest/v1/sources?select=*&notebook_id=eq.x
 """
 
+import logging
 from datetime import UTC, datetime
 
-from supabase import Client, create_client
+import httpx
+from supabase import Client, ClientOptions, create_client
 
 from app.db.local_repo import TIMESTAMPED
 from app.db.repository import Row
 
 CHUNK_INSERT_BATCH = 500
+logger = logging.getLogger(__name__)
+
+
+class RetryStaleConnection(httpx.HTTPTransport):
+    """Supabase closes idle keep-alive connections; the next request on a pooled one then fails
+    with "Server disconnected" before the server has read it. Such a request is sent once more,
+    on a fresh connection."""
+
+    def handle_request(self, request: httpx.Request) -> httpx.Response:
+        try:
+            return super().handle_request(request)
+        except httpx.RemoteProtocolError:
+            logger.info("stale Supabase connection, retrying %s %s", request.method, request.url.path)
+            return super().handle_request(request)
 
 
 def _now() -> str:
@@ -23,7 +39,8 @@ class SupabaseRepository:
     def __init__(self, url: str, service_role_key: str) -> None:
         if not url or not service_role_key:
             raise ValueError("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required when DB_BACKEND=supabase")
-        self.client: Client = create_client(url, service_role_key)
+        http = httpx.Client(transport=RetryStaleConnection(), timeout=120, follow_redirects=True)
+        self.client: Client = create_client(url, service_role_key, ClientOptions(httpx_client=http))
 
     def _t(self, name: str):
         return self.client.table(name)

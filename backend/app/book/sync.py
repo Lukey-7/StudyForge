@@ -53,23 +53,27 @@ class Model:
 
     def __init__(self, services: Services, notebook_id: str) -> None:
         repo = services.repo
-        self.concepts = {c["id"]: c for c in repo.select("concepts", notebook_id=notebook_id)}
-        self.links = repo.select("concept_links", notebook_id=notebook_id)
-        self.claims_of: dict[str, list[Row]] = defaultdict(list)
-        for claim in repo.select("claims", notebook_id=notebook_id):
-            self.claims_of[claim["concept_id"]].append(claim)
         self.evidence_of: dict[str, list[Row]] = defaultdict(list)
         for evidence in repo.select("claim_evidence", notebook_id=notebook_id):
             self.evidence_of[evidence["claim_id"]].append(evidence)
+        self.claims_of: dict[str, list[Row]] = defaultdict(list)
+        for claim in repo.select("claims", notebook_id=notebook_id):
+            if self.evidence_of[claim["id"]]:
+                self.claims_of[claim["concept_id"]].append(claim)
+        # Only concepts with evidence are in the book. A concept whose claims were never saved
+        # (an interrupted build) waits until a rebuild gives it evidence: nothing is written from
+        # a definition alone.
+        self.concepts = {c["id"]: c for c in repo.select("concepts", notebook_id=notebook_id) if self.claims_of[c["id"]]}
+        self.links = repo.select("concept_links", notebook_id=notebook_id)
 
     def fingerprint(self, concept_ids: list[str]) -> str:
         parts = []
         for cid in sorted(concept_ids):
             concept = self.concepts.get(cid, {})
             parts.append(f"{cid}|{concept.get('name')}|{concept.get('definition')}")
-            for claim in sorted(self.claims_of[cid], key=lambda c: c["id"]):
+            for claim in sorted(self.claims_of[cid], key=lambda c: c["text"]):
                 chunks = sorted(e["chunk_id"] for e in self.evidence_of[claim["id"]])
-                parts.append(f"{claim['id']}|{claim['text']}|{','.join(chunks)}")
+                parts.append(f"{claim['text']}|{','.join(chunks)}")  # text, not id: a rebuild re-creates claims
         return hashlib.sha1("\n".join(parts).encode()).hexdigest()
 
 
@@ -215,6 +219,8 @@ def write_prompt(section: Row, model: Model, passages: list[Row], sources: dict[
 
 def write_section(services: Services, model: Model, section: Row, outline: list[Row], sources: dict[str, Row]) -> dict:
     passages = section_passages(services, model, section["concept_ids"])
+    if not passages:
+        raise ValueError("no passages to write from")
     own = set(section["concept_ids"])
     others = [model.concepts[cid]["name"] for s in outline for cid in s["concept_ids"] if cid not in own][:60]
     prompt = write_prompt(section, model, passages, sources, others)

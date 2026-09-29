@@ -98,3 +98,56 @@ def test_the_first_edition_is_not_reported_as_changes(client):
     upload(client, notebook["id"], name="lecture.md", data=LECTURE)
     body = book(client, notebook["id"])
     assert body["last_seen_version"] == 1 and body["changes"]["added"] == []
+
+
+def test_a_rebuild_keeps_the_outline_and_rewrites_nothing(client):
+    notebook = make_notebook(client)
+    upload(client, notebook["id"], name="lecture.md", data=LECTURE)
+    before = sections_by_title(book(client, notebook["id"]))
+    client.post(f"/notebooks/{notebook['id']}/knowledge/rebuild")
+    body = book(client, notebook["id"])
+    after = sections_by_title(body)
+    assert {t: s["id"] for t, s in after.items()} == {t: s["id"] for t, s in before.items()}  # same concepts, same sections
+    assert body["version"] == 1
+
+
+def test_concepts_without_evidence_are_left_out_of_the_book(client, services):
+    notebook = make_notebook(client)
+    upload(client, notebook["id"], name="lecture.md", data=LECTURE)
+    # what an interrupted build leaves behind: a concept whose claims were never saved
+    services.repo.insert(
+        "concepts",
+        {"notebook_id": notebook["id"], "user_id": notebook["user_id"], "name": "Orphan", "definition": "Unsupported."},
+    )
+    client.post(f"/notebooks/{notebook['id']}/book/write")
+    assert "Orphan" not in sections_by_title(book(client, notebook["id"]))
+
+
+def test_a_stale_supabase_connection_is_retried_once(monkeypatch):
+    import httpx
+
+    from app.db.supabase_repo import RetryStaleConnection
+
+    calls = []
+
+    def flaky(self, request):
+        calls.append(request.url.path)
+        if len(calls) == 1:
+            raise httpx.RemoteProtocolError("Server disconnected")
+        return httpx.Response(200, json=[])
+
+    monkeypatch.setattr(httpx.HTTPTransport, "handle_request", flaky)
+    with httpx.Client(transport=RetryStaleConnection()) as http:
+        assert http.get("https://example.supabase.co/rest/v1/claims").status_code == 200
+    assert calls == ["/rest/v1/claims", "/rest/v1/claims"]
+
+
+def test_a_section_added_and_then_rewritten_counts_once_as_new(client):
+    notebook = make_notebook(client)
+    upload(client, notebook["id"], name="lecture.md", data=LECTURE)
+    book(client, notebook["id"])  # seen: version 1
+    upload(client, notebook["id"], name="textbook.md", data=TEXTBOOK)  # adds Transaction (v2)
+    upload(client, notebook["id"], name="more.md", data=b"# More\n\nA transaction has a begin and an end.\n")  # rewrites it (v3)
+    changes = book(client, notebook["id"])["changes"]
+    assert "Transaction" in [s["title"] for s in changes["added"]]
+    assert "Transaction" not in [s["title"] for s in changes["revised"]]
