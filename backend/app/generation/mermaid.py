@@ -9,10 +9,11 @@ import re
 
 from app.generation.schemas import MindMapOutput
 
-_UNSAFE = re.compile(r"[()\[\]{}\"'`<>#;:]")
+_UNSAFE = re.compile(r"[()\[\]{}\"`<>#;:]")
 
 
 def clean_label(label: str) -> str:
+    label = label.replace("'", "").replace("’", "")  # "SQL's" -> "SQLs", not "SQL s"
     return " ".join(_UNSAFE.sub(" ", label).split())[:60] or "..."
 
 

@@ -54,3 +54,8 @@ def test_heading_detection():
     assert detect_heading("CHAPTER ONE") == "CHAPTER ONE"
     assert detect_heading("This is a normal sentence that ends with a period.") is None
     assert detect_heading("2019 was a big year for us") is None
+
+
+def test_bold_markdown_headings_are_cleaned():
+    assert detect_heading("**1. The Relational Model**") == "1. The Relational Model"
+    assert detect_heading("## **Indexing**") == "Indexing"

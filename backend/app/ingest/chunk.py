@@ -45,9 +45,10 @@ class Chunk:
 
 def detect_heading(line: str) -> str | None:
     """Cheap heuristic: markdown '#', numbered ('2.1 Indexing'), ALL CAPS or Title Case short lines."""
-    line = line.strip()
+    # pymupdf4llm marks bold lines as **text**; heading text should not carry the markers.
+    line = line.strip().strip("*_").strip()
     if line.startswith("#"):
-        return line.lstrip("#").strip() or None
+        return line.lstrip("#").strip().strip("*_").strip() or None
     words = line.split()
     if not words or len(words) > 12 or len(line) > 90 or line.endswith((".", ",", ";", ":", "?")):
         return None

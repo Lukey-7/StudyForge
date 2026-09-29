@@ -131,3 +131,8 @@ def test_bad_gemini_key_is_reported_clearly_not_as_schema_or_model_error():
     assert "GEMINI_API_KEY" in str(translate_error(bad_key, "m"))
     assert "not found" in str(translate_error(missing_model, "x"))
     assert translate_error(other_400, "m") is other_400
+
+
+def test_mermaid_apostrophes_do_not_leave_gaps():
+    text = to_mermaid(s.MindMapOutput(root="DBMS", branches=[{"label": "SQL's foundation", "children": []}]))
+    assert "SQLs foundation" in text
