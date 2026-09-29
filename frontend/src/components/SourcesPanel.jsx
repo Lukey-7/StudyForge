@@ -18,6 +18,10 @@ export default function SourcesPanel({ notebookId, onOpenSource }) {
     queryFn: () => api(`/notebooks/${notebookId}/sources`),
     // Poll every 2 s only while something is still being processed; stop when all are ready/failed.
     refetchInterval: (query) => (query.state.data?.some((s) => isProcessing(s.status)) ? 2000 : false),
+    // Keep polling when the tab is hidden and refresh when it regains focus. Otherwise someone who
+    // switches apps while a PDF is processed comes back to a stale "Reading the text…" for good.
+    refetchIntervalInBackground: true,
+    refetchOnWindowFocus: true,
   })
 
   const refresh = () => {
