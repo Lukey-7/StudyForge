@@ -1,0 +1,77 @@
+/* Design tokens - ported from legacy-go/backend/frontend/DESIGN.md.
+   Every color / size in app.css should come from here, so the look can change in one place. */
+:root {
+  /* Backgrounds */
+  --bg-primary: #09090b;
+  --bg-secondary: rgba(24, 24, 27, 0.8);
+  --bg-tertiary: rgba(39, 39, 42, 0.6);
+  --bg-hover: rgba(255, 255, 255, 0.03);
+  --bg-card: rgba(24, 24, 27, 0.8);
+  --bg-input: rgba(24, 24, 27, 0.6);
+  --bg-button-secondary: rgba(39, 39, 42, 0.8);
+  --bg-sidebar: rgba(9, 9, 11, 0.95);
+  --bg-floating: rgba(39, 39, 42, 0.92); /* modals, popovers: lighter surface */
+
+  /* Text */
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a; /* DESIGN.md says #52525B; nudged lighter for readable contrast on small text */
+  --text-light: #3f3f46;
+
+  /* Accent */
+  --accent-primary: #8b5cf6;
+  --accent-secondary: #7c3aed;
+  --accent-gradient: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  --accent-light: rgba(139, 92, 246, 0.12);
+  --accent-glow: rgba(139, 92, 246, 0.2);
+
+  /* Semantic */
+  --accent-green: #34d399;
+  --accent-red: #f87171;
+  --accent-amber: #fbbf24;
+  --green-light: rgba(52, 211, 153, 0.12);
+  --red-light: rgba(248, 113, 113, 0.12);
+  --amber-light: rgba(251, 191, 36, 0.12);
+
+  /* Borders */
+  --border-color: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(139, 92, 246, 0.3);
+  --border-thin: 1px solid var(--border-color);
+
+  /* Shadows & blur */
+  --shadow-glow: 0 0 24px rgba(139, 92, 246, 0.1);
+  --focus-ring: 0 0 0 3px rgba(139, 92, 246, 0.2);
+  --blur-card: blur(16px);
+  --blur-floating: blur(20px);
+
+  /* Typography */
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', monospace;
+  --text-display: 48px;
+  --text-h1: 32px;
+  --text-h2: 24px;
+  --text-h3: 18px;
+  --text-lg: 16px;
+  --text-md: 14px;
+  --text-sm: 12px;
+
+  /* Spacing */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
+
+  /* Radii */
+  --radius-card: 12px;
+  --radius-button: 8px;
+  --radius-input: 8px;
+  --radius-small: 6px;
+  --radius-pill: 9999px;
+
+  /* Layout */
+  --sidebar-width: 240px;
+  --transition: all 200ms ease;
+}
