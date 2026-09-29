@@ -3,12 +3,18 @@
 *StudyForge's real idea, as described in the blackbook (objective 4, research gap 2.4, future scope 7.3.1
 "chunked textbook generation"), taken to its conclusion. This document is the plan.*
 
-**Status:** phases 1–3 are built:
+**Status:** all five phases are built:
 - phase 1: the knowledge map;
 - phase 2: the book (outline, sections, stale-per-section, a reader with an evidence rail and glossary hover, "since you last read");
-- phase 3: support check and support rate, where sources disagree, history and older versions, cost controls.
+- phase 3: support check and support rate, where sources disagree, history and older versions, cost controls;
+- phase 4: chapter concept maps and comparison tables drawn by code; Markdown, EPUB and print-to-PDF export;
+- phase 5: reading progress, chapter quizzes feeding weak spots, "explain this section", chat that also cites the book, search across notebooks.
 
-See `backend/app/knowledge`, `backend/app/book`, `migrations/002`–`004` and DECISIONS D27–D29. Measured: `backend/eval/book_support.md`. Phases 4–5 are not started.
+See `backend/app/knowledge`, `backend/app/book`, `migrations/002`–`005` and DECISIONS D27–D30. Measured: `backend/eval/book_support.md`.
+
+Not built:
+- timelines and charts (extraction doesn't capture dates or numeric tables);
+- semantic search over book sections (search and "ask the book" use word overlap).
 
 ## 1. What we are building, in one paragraph
 

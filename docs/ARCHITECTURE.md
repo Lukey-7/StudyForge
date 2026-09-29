@@ -133,4 +133,14 @@ Continues from (a) step 6, after `status=ready`. Plan and decisions: [LIVING_TEX
    - `POST /sources/{id}/knowledge/retry`: re-reads one source, then syncs the book.
    - Drawers: `frontend/src/components/BookDrawers.jsx`.
    - `backend/eval/book_support.py` reports the support rate (`--check` checks paragraphs written before the check existed).
-5. **Removing a source:** `api/sources.py::remove_source` → `delete_source` (removes its evidence, then orphaned claims and concepts) → background `after_knowledge_change`. Sections that lose all their concepts are removed; sections that lose evidence are rewritten.
+5. **Figures, export, learner** (phases 4–5):
+   - **Figures:** `book/figures.py::chapter_map` (Mermaid from the concept links, returned as `chapters[].map` by `GET /book`) and `comparisons` (from `contrasts_with` links, returned per section). `BookExtras.jsx::ChapterMap` renders them with the mind map's Mermaid loader.
+   - **Export:** `GET /book/export?format=md|epub` → `book/export.py::assemble` → `to_markdown` / `to_epub`. "Print or save as PDF" renders the Markdown export into a print-only block and calls `window.print()`.
+   - **Reading and quizzes:**
+     - `POST /book/sections/{id}/read` stores `book_reads.read_sections`.
+     - "Quiz me on this chapter" calls the existing `POST /generate/quiz` with a chapter `focus_topic`.
+     - `QuizView`'s `onFinish` → `POST /book/quiz-result` stores `book_reads.quiz_scores`; chapters under 70% are returned as `weak_spots`.
+   - **Explain:** `POST /book/sections/{id}/explain` → `book/learner.py::explain_section` (one fast call from the section's passages).
+   - **Ask the book:** `chat/rag_chat.py::_ask_the_book` → `learner.book_context` adds the 2 best-matching sections as `[B#]` to the chat context. Citations have `kind: "book"`, and `NotebookPage` opens that section.
+   - **Search:** `GET /search?q=` → `learner.search` across the user's notebooks; `HomePage.jsx::SearchEverything` links to `?section=` or `?concept=`.
+6. **Removing a source:** `api/sources.py::remove_source` → `delete_source` (removes its evidence, then orphaned claims and concepts) → background `after_knowledge_change`. Sections that lose all their concepts are removed; sections that lose evidence are rewritten.

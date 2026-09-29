@@ -454,6 +454,7 @@ function SectionView({
               Quiz me on this chapter
             </button>
           </div>
+          {markRead.isError && <p className="error-text small">Couldn't save that: {markRead.error.message}</p>}
         </div>
       )}
 

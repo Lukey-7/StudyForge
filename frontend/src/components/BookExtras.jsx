@@ -212,6 +212,7 @@ export function ChapterQuiz({ notebookId, chapter, conceptNames, onClose }) {
           {quiz.isError && <p className="error-text">{quiz.error.message}</p>}
           {quiz.data && <QuizView output={quiz.data.output} onFinish={(score, total) => save.mutate({ score, total })} />}
           {save.isSuccess && <p className="muted small">Score saved.</p>}
+          {save.isError && <p className="error-text small">Couldn't save your score: {save.error.message}</p>}
         </div>
       </aside>
     </div>

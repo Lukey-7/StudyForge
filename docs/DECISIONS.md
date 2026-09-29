@@ -106,3 +106,18 @@ Short records of each non-obvious choice: **decision → why → trade-off**.
 - **Why keep it:** hiding text would silently change the book. A visible mark is honest and lets the student decide.
 - **Caveat:** the checker is the same model family as the writer, so the support rate is a self-check that catches drift from the cited passages. It isn't a human judgement, and it can't catch a passage that is itself wrong.
 - **Cost controls:** calls counted per job (`knowledge_jobs.llm_calls`); at most 60 section writes per notebook per day (sections over the cap stay stale); a per-source "Retry this source" instead of a full rebuild, because a rebuild rewrites most sections (D28).
+
+
+### D30. Figures by code, export without a PDF library, simple retrieval for the book
+- **Figures:**
+  - Chapter concept maps are Mermaid source that the backend builds from the concept links (`book/figures.py`), and comparison tables come from "contrasts with" links. The LLM never draws.
+  - Labels are sanitised, so a concept name can't break the diagram.
+  - Top-down layout, since the reading column is narrow.
+- **Export:**
+  - Markdown with footnotes, and EPUB 3 built with `zipfile` (the `mimetype` entry is stored first, as the format requires).
+  - PDF is the browser's print dialog over a print stylesheet: no PDF dependency on the server, and fonts and layout match the reader.
+- **Ask the book and search:**
+  - Book sections are picked by word overlap, with concept names weighted double: 2 sections per chat question, cited as `[B#]`.
+  - It's cheap and works because a book is small (tens of sections) and its vocabulary *is* the concept names.
+  - Semantic retrieval over sections is the upgrade path (embed each section into a Chroma collection).
+- **Quiz → weak spots:** "Quiz me on this chapter" reuses the existing quiz pipeline with a chapter focus. Only the first full attempt counts, and under 70% marks the chapter as a weak spot. Stored in `book_reads.quiz_scores`, with no new table.
