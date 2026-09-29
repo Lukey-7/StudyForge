@@ -31,7 +31,10 @@
   /* Highlighter: ONLY for highlight meaning (citations, the cited passage, the selected format, selection) */
   --highlighter: #f4d35e;
   --highlighter-soft: rgba(244, 211, 94, 0.42);
-  /* A marker stroke over the lower part of the text, the way a real highlighter sits on a line */
+  /* On dark surfaces a see-through stroke turns muddy olive, so there the highlight is yellow text
+     on a solid yellow underline of this thickness (cited sentence, selected format). */
+  --mark-underline: 2px;
+  /* On paper: a marker stroke over the lower part of the text, the way a real highlighter sits on a line */
   --swipe: linear-gradient(transparent 52%, var(--highlighter-soft) 52%, var(--highlighter-soft) 92%, transparent 92%);
 
   /* Violet: primary actions only (buttons, active nav). Dark text on it = 5.7:1 */

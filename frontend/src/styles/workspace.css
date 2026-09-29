@@ -244,7 +244,9 @@ button.source-name:hover {
   background: var(--slate-high);
 }
 .format-option.is-selected .format-name {
-  background: var(--swipe);
+  color: var(--highlighter);
+  text-decoration: underline var(--mark-underline) var(--highlighter);
+  text-underline-offset: 4px;
 }
 /* the real radio is hidden, so show its keyboard focus on the label */
 .format-option:has(input:focus-visible) {
@@ -570,12 +572,14 @@ button.cite-mark:hover:not(:disabled),
   color: var(--ink);
   font-weight: 650;
 }
+/* The supporting sentence: yellow text on a solid yellow underline. Readable on the dark
+   drawer, where a see-through highlighter stroke would turn olive. */
 .passage .support {
   background: none;
-  background-image: var(--swipe);
-  box-decoration-break: clone;
-  -webkit-box-decoration-break: clone;
-  color: inherit;
+  color: var(--highlighter);
+  text-decoration: underline var(--mark-underline) var(--highlighter);
+  text-underline-offset: 5px;
+  text-decoration-skip-ink: none; /* one continuous line, like a pen stroke */
 }
 .passage-note {
   margin-top: var(--space-2);

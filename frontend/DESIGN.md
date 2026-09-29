@@ -37,9 +37,16 @@ Yellow is never decoration. It is used for exactly these things:
 - the one sentence swiped on the landing page, and the passage in the landing margin note;
 - text selection (`::selection`) and keyboard focus inside reading content.
 
-It is drawn like a real marker: either a stroke across the lower part of the text
-(`--swipe`, a hard-stop gradient) or a solid block with `--ink` text. It is never a button colour, a
-border, or a divider.
+How it is drawn depends on the surface:
+
+- **on paper** (the landing notes page, the margin note): a real marker stroke across the lower part of the
+  text (`--swipe`, a hard-stop gradient);
+- **on the dark chalkboard** (cited sentence in the reader, selected format): yellow text on a solid
+  yellow underline (`--mark-underline`). A see-through stroke on dark slate mixes into a muddy olive, so it
+  is not used there;
+- **citation marks**: a small solid yellow block with `--ink` text.
+
+It is never a button colour or a divider.
 
 ### The violet rule
 

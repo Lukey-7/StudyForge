@@ -227,9 +227,10 @@
   color: var(--chalk);
 }
 .demo-format.is-selected {
-  color: var(--chalk);
+  color: var(--highlighter);
   font-weight: 650;
-  background-image: var(--swipe);
+  text-decoration: underline var(--mark-underline) var(--highlighter);
+  text-underline-offset: 4px;
 }
 .demo-format:focus-visible {
   outline-color: var(--highlighter);
