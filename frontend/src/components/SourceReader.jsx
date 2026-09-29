@@ -80,7 +80,7 @@ export default function SourceReader({ sourceId, highlightChunkId, citeLabel, cl
                 <p className="passage-label">
                   {pageLabel(chunk)}
                   {chunk.heading && <span className="passage-heading">{chunk.heading}</span>}
-                  {marked && <span className="passage-cited-tag">{citeLabel ? `Cited as ${citeLabel}` : 'Cited'}</span>}
+                  {marked && <span className="passage-cited-tag">{citeLabel === 'evidence' ? 'Evidence' : citeLabel ? `Cited as ${citeLabel}` : 'Cited'}</span>}
                 </p>
                 {paragraphs(chunk.text).map((para, i) => (
                   <p key={i} className={`passage-text ${para.isHeading ? 'passage-subhead' : ''}`}>

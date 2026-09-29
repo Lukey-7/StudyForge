@@ -80,6 +80,13 @@ class Settings(BaseSettings):
     # On by default: in our eval the LLM rerank raised MRR 0.92 -> 0.98 (eval/results.md).
     rerank_with_llm: bool = True
 
+    # --- Knowledge model (living textbook) --------------------------------------
+    knowledge_enabled: bool = True
+    knowledge_batch_passages: int = 6  # passages per extraction call
+    concept_merge_similarity: float = 0.90  # embeddings at least this close = same concept
+    claim_compare_similarity: float = 0.80  # below this, a claim is new without asking the LLM
+    knowledge_max_passages_per_hour: int = 150  # free-tier budget for background extraction
+
     # --- Chat / generation guardrails --------------------------------------------
     chat_max_history_turns: int = 6
     # Gemini Flash accepts ~1M input tokens, so most notebooks go to the model in ONE call.

@@ -27,9 +27,14 @@ logger = logging.getLogger(__name__)
 HNSW_CONFIG = {"hnsw": {"space": "cosine", "ef_construction": 200, "ef_search": 100}}
 
 
-def collection_name(model: str, dim: int) -> str:
+# What a collection holds: passages (the search index), or the knowledge model's concepts and
+# claims (used to find "the same thing said before" when a new source arrives).
+KINDS = ("chunks", "concepts", "claims")
+
+
+def collection_name(model: str, dim: int, kind: str = "chunks") -> str:
     slug = re.sub(r"[^a-zA-Z0-9-]", "-", model.split("/")[-1])
-    return f"chunks__{slug}__{dim}"
+    return f"{kind}__{slug}__{dim}"
 
 
 class ChromaVectorStore:
@@ -44,20 +49,22 @@ class ChromaVectorStore:
             self.client = chromadb.PersistentClient(path=settings.chroma_path, settings=chroma_settings)
         self._collections: dict[str, object] = {}
 
-    def _collection(self, model: str):
-        name = collection_name(model, self.dim)
+    def _collection(self, model: str, kind: str = "chunks"):
+        name = collection_name(model, self.dim, kind)
         if name not in self._collections:
             self._collections[name] = self.client.get_or_create_collection(name=name, configuration=HNSW_CONFIG)
         return self._collections[name]
 
-    def upsert(self, model: str, ids: list[str], embeddings: list[list[float]], metadatas: list[dict]) -> None:
+    def upsert(
+        self, model: str, ids: list[str], embeddings: list[list[float]], metadatas: list[dict], kind: str = "chunks"
+    ) -> None:
         """Upsert (not add): re-ingesting a source overwrites the same ids instead of duplicating."""
         if ids:
-            self._collection(model).upsert(ids=ids, embeddings=embeddings, metadatas=metadatas)
+            self._collection(model, kind).upsert(ids=ids, embeddings=embeddings, metadatas=metadatas)
 
-    def query(self, model: str, embedding: list[float], k: int, where: dict) -> list[tuple[str, float]]:
-        """Top-k nearest chunks as (chunk_id, cosine_similarity), best first."""
-        collection = self._collection(model)
+    def query(self, model: str, embedding: list[float], k: int, where: dict, kind: str = "chunks") -> list[tuple[str, float]]:
+        """Top-k nearest items as (id, cosine_similarity), best first."""
+        collection = self._collection(model, kind)
         result = collection.query(query_embeddings=[embedding], n_results=k, where=where, include=["distances"])
         ids = result["ids"][0] if result["ids"] else []
         distances = result["distances"][0] if result.get("distances") else [0.0] * len(ids)
@@ -74,10 +81,14 @@ class ChromaVectorStore:
         result = self._collection(model).get(where={"notebook_id": notebook_id}, include=[])
         return len(result["ids"])
 
+    def delete_ids(self, model: str, ids: list[str], kind: str) -> None:
+        if ids:
+            self._collection(model, kind).delete(ids=ids)
+
     def _delete_everywhere(self, where: dict) -> None:
         for info in self.client.list_collections():
             name = info if isinstance(info, str) else info.name
-            if name.startswith("chunks__"):
+            if name.split("__")[0] in KINDS:
                 self.client.get_collection(name).delete(where=where)
 
     def delete_source(self, source_id: str) -> None:

@@ -15,6 +15,8 @@ from pathlib import Path
 from app.db.repository import Row
 
 TABLES = ("profiles", "notebooks", "sources", "chunks", "generations", "chat_sessions", "chat_messages")
+# The knowledge model (migrations/002_knowledge.sql). Accessed through the generic table methods.
+KNOWLEDGE_TABLES = ("concepts", "concept_links", "claims", "claim_evidence", "conflicts", "knowledge_jobs")
 
 
 def now_iso() -> str:
@@ -25,10 +27,10 @@ class LocalRepository:
     def __init__(self, path: str | None = None) -> None:
         self.path = Path(path) if path else None
         self._lock = threading.RLock()
-        self.t: dict[str, dict[str, Row]] = {name: {} for name in TABLES}
+        self.t: dict[str, dict[str, Row]] = {name: {} for name in TABLES + KNOWLEDGE_TABLES}
         if self.path and self.path.exists():
             loaded = json.loads(self.path.read_text(encoding="utf-8"))
-            for name in TABLES:
+            for name in TABLES + KNOWLEDGE_TABLES:
                 self.t[name] = loaded.get(name, {})
 
     # ---------------------------------------------------------------- helpers
@@ -55,6 +57,39 @@ class LocalRepository:
         for row_id in ids:
             del self.t[table][row_id]
         return ids
+
+    # ------------------------------------------------ generic table access (knowledge model)
+    def insert(self, table: str, row: Row) -> Row:
+        with self._lock:
+            created = self._insert(table, {**row, "updated_at": now_iso()} if table in ("concepts", "knowledge_jobs") else row)
+            self._save()
+            return created
+
+    def select(self, table: str, **equals) -> list[Row]:
+        with self._lock:
+            return sorted(self._where(table, **equals), key=lambda r: r["created_at"])
+
+    def update(self, table: str, row_id: str, fields: Row) -> Row:
+        with self._lock:
+            self.t[table][row_id].update(fields, updated_at=now_iso())
+            self._save()
+            return dict(self.t[table][row_id])
+
+    def delete(self, table: str, **equals) -> None:
+        with self._lock:
+            ids = self._delete_where(table, **equals)
+            # emulate ON DELETE CASCADE inside the knowledge model
+            for row_id in ids:
+                if table == "concepts":
+                    for claim_id in self._delete_where("claims", concept_id=row_id):
+                        self._delete_where("claim_evidence", claim_id=claim_id)
+                        self._delete_where("conflicts", claim_id=claim_id)
+                    self._delete_where("concept_links", from_id=row_id)
+                    self._delete_where("concept_links", to_id=row_id)
+                elif table == "claims":
+                    self._delete_where("claim_evidence", claim_id=row_id)
+                    self._delete_where("conflicts", claim_id=row_id)
+            self._save()
 
     # --------------------------------------------------------------- profiles
     def ensure_profile(self, user_id: str, email: str | None) -> None:
@@ -93,7 +128,7 @@ class LocalRepository:
         with self._lock:  # emulate ON DELETE CASCADE
             for session_id in self._delete_where("chat_sessions", notebook_id=notebook_id):
                 self._delete_where("chat_messages", session_id=session_id)
-            for table in ("chunks", "sources", "generations"):
+            for table in ("chunks", "sources", "generations", *KNOWLEDGE_TABLES):
                 self._delete_where(table, notebook_id=notebook_id)
             self.t["notebooks"].pop(notebook_id, None)
             self._save()
@@ -139,6 +174,8 @@ class LocalRepository:
     def delete_source(self, source_id: str) -> None:
         with self._lock:
             self._delete_where("chunks", source_id=source_id)
+            for table in ("claim_evidence", "conflicts", "knowledge_jobs"):
+                self._delete_where(table, source_id=source_id)
             self.t["sources"].pop(source_id, None)
             self._save()
 

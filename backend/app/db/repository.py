@@ -61,6 +61,16 @@ class Repository(Protocol):
     def list_chat_messages(self, session_id: str, limit: int | None = None) -> list[Row]: ...
 
 
+class TableAccess(Protocol):
+    """Generic row access used by the knowledge model (concepts, claims, evidence, conflicts,
+    links, jobs). Deleting a concept or claim cascades to its children."""
+
+    def insert(self, table: str, row: Row) -> Row: ...
+    def select(self, table: str, **equals) -> list[Row]: ...
+    def update(self, table: str, row_id: str, fields: Row) -> Row: ...
+    def delete(self, table: str, **equals) -> None: ...
+
+
 class FileStorage(Protocol):
     """Where original uploaded files live (Supabase Storage or a local folder)."""
 

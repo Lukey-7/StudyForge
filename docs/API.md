@@ -52,6 +52,16 @@ Allowed files: `.pdf .docx .txt .md .png .jpg .jpeg .webp .mp3 .wav .m4a .ogg .f
 
 `Chunk = {id, source_id, notebook_id, chunk_index, page, page_end, heading, text, token_count}`
 
+## Knowledge map (the Book tab)
+
+Built in the background for each source once it is `ready` (see docs/LIVING_TEXTBOOK_PLAN.md).
+
+| Method | Path | Returns |
+|---|---|---|
+| GET | `/notebooks/{id}/knowledge` | `{concepts[{id, name, kind term\|example, definition, aliases, status current\|conflicted, claim_count, evidence_count, source_count}], links[{from_id, to_id, kind}], conflict_count, concepts_with_conflicts[], job{status running\|queued\|done, progress, failed[], queued[]}}` |
+| GET | `/notebooks/{id}/concepts/{concept_id}` | `{concept, claims[{id, text, evidence[{chunk_id, source_id, source_name, page}]}], conflicts[{claim_text, claim_evidence[], contradicting_text, contradicting_evidence}], related[{id, name, kind, direction}]}` |
+| POST | `/notebooks/{id}/knowledge/rebuild` | `202`. Re-reads every ready source (idempotent) |
+
 ## Generation (16 pipelines)
 
 `POST /notebooks/{id}/generate/{pipeline_name}`

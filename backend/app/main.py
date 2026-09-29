@@ -11,7 +11,7 @@ import sys
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import chat, generate, health, me, notebooks, sources
+from app.api import chat, generate, health, knowledge, me, notebooks, sources
 from app.auth import Authenticator
 from app.config import Settings, get_settings
 from app.services import Services, build_services
@@ -50,7 +50,7 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    for module in (health, me, notebooks, sources, generate, chat):
+    for module in (health, me, notebooks, sources, knowledge, generate, chat):
         app.include_router(module.router)
 
     logging.getLogger(__name__).info(

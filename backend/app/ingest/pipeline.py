@@ -121,6 +121,15 @@ def run_ingestion(services: Services, source_id: str) -> None:
         repo.update_source(source_id, {"status": "ready", "embedding_model": model})
         repo.bump_sources_version(source["notebook_id"])
         services.bm25.invalidate(source["notebook_id"])
+        if services.settings.knowledge_enabled:
+            # The knowledge map is built after the source is ready and must never fail it
+            # (e.g. the knowledge tables are missing because migration 002 was not run yet).
+            from app.knowledge.build import build_for_source
+
+            try:
+                build_for_source(services, source_id)
+            except Exception:  # noqa: BLE001
+                logger.exception("knowledge build could not start for %s", source_id)
         logger.info(
             "ingested %s: %d pages, %d chunks, model=%s in %.1fs",
             source["file_name"],
@@ -135,6 +144,12 @@ def run_ingestion(services: Services, source_id: str) -> None:
 
 
 def delete_source(services: Services, source: Row) -> None:
+    from app.knowledge.build import remove_source_knowledge
+
+    try:
+        remove_source_knowledge(services, source)
+    except Exception:  # noqa: BLE001 - deleting a source must work even without the knowledge tables
+        logger.exception("could not clean up knowledge for %s", source["id"])
     services.vectors.delete_source(source["id"])
     services.storage.delete([source["storage_path"]])
     services.repo.delete_source(source["id"])  # chunks cascade

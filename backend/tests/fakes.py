@@ -3,11 +3,13 @@
 import hashlib
 import json
 import math
+import re
 from collections.abc import Iterator
 
 from pydantic import BaseModel
 
 from app.generation import schemas as s
+from app.knowledge.schemas import Extraction, Verdicts
 from app.llm.base import LLMJson, LLMText
 from app.text_utils import tokenize
 
@@ -75,6 +77,10 @@ class FakeLLM:
 
             outputs = iter(scripted)
             return LLMJson(generate_validated(lambda _p: next(outputs), prompt, schema), self.model_name)
+        if schema is Extraction:
+            return LLMJson(fake_extraction(prompt), self.model_name)
+        if schema is Verdicts:
+            return LLMJson(fake_verdicts(prompt), self.model_name)
         if schema not in SAMPLE_OUTPUTS:  # e.g. the LLM rerank: keep the given order
             return LLMJson(schema.model_validate({"ranked_ids": []}), self.model_name)
         return LLMJson(schema.model_validate(SAMPLE_OUTPUTS[schema]), self.model_name)
@@ -116,3 +122,43 @@ class FakeEmbedder:
 
 def json_of(schema: type[BaseModel]) -> str:
     return json.dumps(SAMPLE_OUTPUTS[schema])
+
+
+# ---------------------------------------------------------------- knowledge-model fakes
+# Terms the fake "recognises" in passages; each sentence mentioning one becomes a claim about it.
+FAKE_TERMS = {"index": "Index", "transaction": "Transaction", "deadlock": "Deadlock", "b-tree": "B-tree"}
+NEGATIONS = (" not ", " cannot ", " never ", " only one", " several ")
+PASSAGE = re.compile(r"\[P(\d+)\][^\n]*\n(.*?)(?=\n\n\[P\d+\]|\Z)", re.S)
+PAIR = re.compile(r"Pair (\d+):\nA: (.*)\nB: (.*)")
+
+
+def fake_extraction(prompt: str) -> Extraction:
+    concepts, claims = {}, []
+    for number, text in PASSAGE.findall(prompt):
+        for sentence in re.split(r"(?<=[.!?])\s+|\n+", text.strip()):
+            if not sentence.strip() or sentence.lstrip().startswith("#"):
+                continue  # headings are not claims
+            lower = sentence.lower()
+            for key, name in FAKE_TERMS.items():
+                if key in lower:
+                    concepts.setdefault(name, {"name": name, "kind": "term", "definition": sentence, "aliases": []})
+                    claims.append({"concept": name, "text": sentence, "passage": int(number)})
+    links = [{"from_concept": "B-tree", "to_concept": "Index", "kind": "part_of"}] if {"B-tree", "Index"} <= set(concepts) else []
+    return Extraction.model_validate({"concepts": list(concepts.values()), "claims": claims, "links": links})
+
+
+def fake_verdicts(prompt: str) -> Verdicts:
+    """same if the two statements are identical ignoring case; contradicts if exactly one of them
+    carries a negation/quantity word; otherwise unrelated."""
+    verdicts = []
+    for number, a, b in PAIR.findall(prompt):
+        neg_a = any(n in f" {a.lower()} " for n in NEGATIONS)
+        neg_b = any(n in f" {b.lower()} " for n in NEGATIONS)
+        if a.strip().lower() == b.strip().lower():
+            verdict = "same"
+        elif neg_a != neg_b:
+            verdict = "contradicts"
+        else:
+            verdict = "unrelated"
+        verdicts.append({"pair": int(number), "verdict": verdict})
+    return Verdicts.model_validate({"verdicts": verdicts})

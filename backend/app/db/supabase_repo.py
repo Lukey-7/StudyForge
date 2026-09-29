@@ -31,6 +31,35 @@ class SupabaseRepository:
     def _one(response) -> Row | None:
         return response.data[0] if response.data else None
 
+    # ------------------------------------------------ generic table access (knowledge model)
+    # The knowledge tables (migrations/002_knowledge.sql) are simple rows read by equality,
+    # so four generic methods cover them instead of one method per query.
+    def insert(self, table: str, row: Row) -> Row:
+        return self._t(table).insert(row).execute().data[0]
+
+    def select(self, table: str, **equals) -> list[Row]:
+        query = self._t(table).select("*")
+        for column, value in equals.items():
+            query = query.eq(column, value)
+        rows: list[Row] = []
+        offset = 0
+        while True:  # PostgREST returns at most 1000 rows per request
+            batch = query.order("created_at").range(offset, offset + 999).execute().data
+            rows.extend(batch)
+            if len(batch) < 1000:
+                return rows
+            offset += 1000
+
+    def update(self, table: str, row_id: str, fields: Row) -> Row:
+        extra = {"updated_at": _now()} if table in ("concepts", "knowledge_jobs") else {}
+        return self._t(table).update({**fields, **extra}).eq("id", row_id).execute().data[0]
+
+    def delete(self, table: str, **equals) -> None:
+        query = self._t(table).delete()
+        for column, value in equals.items():
+            query = query.eq(column, value)
+        query.execute()  # children go via ON DELETE CASCADE
+
     # --------------------------------------------------------------- profiles
     def ensure_profile(self, user_id: str, email: str | None) -> None:
         # The auth trigger normally creates it; this covers users created before the migration.
