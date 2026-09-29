@@ -218,3 +218,61 @@ export function ChapterQuiz({ notebookId, chapter, conceptNames, onClose }) {
     </div>
   )
 }
+
+// ---------------------------------------------------------------- charts from tables in the sources
+// A table of numbers a source contains, drawn by code: one series of horizontal bars (magnitude by
+// category), value at the end of each bar, a hover title per bar, and the table itself one click away.
+export function ChartFigure({ chart, onOpenEvidence }) {
+  const s = chart.series
+  const max = s ? Math.max(...s.values, 0) || 1 : 1
+  return (
+    <figure className="book-figure book-chart">
+      <figcaption className="small">
+        <strong>{chart.title}</strong>
+        {s && <span className="muted"> · {s.column}</span>}
+        {chart.evidence && (
+          <button className="evidence-chip" onClick={() => onOpenEvidence(chart.evidence, chart.title)}>
+            {chart.evidence.source_name}
+            {chart.evidence.page ? `, p. ${chart.evidence.page}` : ''}
+          </button>
+        )}
+      </figcaption>
+      {s && (
+        <div className="bars" role="img" aria-label={`${chart.title}: ${s.labels.map((l, i) => `${l} ${s.values[i]}`).join(', ')}`}>
+          {s.labels.map((label, i) => (
+            <div key={label} className="bar-row" title={`${label}: ${s.values[i].toLocaleString()} ${s.column}`}>
+              <span className="bar-label">{label}</span>
+              <span className="bar-track">
+                <span className="bar" style={{ '--w': `${Math.max((s.values[i] / max) * 100, 0.5)}%` }} />
+                <span className="bar-value">{s.values[i].toLocaleString()}</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+      <details className="disclosure" open={!s}>
+        <summary>Show as a table</summary>
+        <div className="compare-scroll">
+          <table className="compare-table">
+            <thead>
+              <tr>
+                {chart.columns.map((c) => (
+                  <th key={c}>{c}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {chart.rows.map((r, i) => (
+                <tr key={i}>
+                  {r.map((cell, j) => (
+                    <td key={j}>{cell}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
+    </figure>
+  )
+}

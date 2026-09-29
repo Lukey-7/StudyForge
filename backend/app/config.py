@@ -89,6 +89,7 @@ class Settings(BaseSettings):
     book_enabled: bool = True  # write the book from the knowledge model after every change
     book_max_passages_per_section: int = 12  # evidence passages given to the writer per section
     book_max_sections_per_day: int = 60  # free-tier cap on section writes per notebook (each is 2-4 calls)
+    book_search_min_similarity: float = 0.6  # below this, a section/concept matches only by words
 
     # --- Chat / generation guardrails --------------------------------------------
     chat_max_history_turns: int = 6

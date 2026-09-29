@@ -64,3 +64,43 @@ def comparisons(
             }
         )
     return tables
+
+
+def chapter_timeline(concept_ids: list[str], events: list[Row]) -> str | None:
+    """Mermaid timeline of the dated events of a chapter's concepts, oldest first (needs 2+)."""
+    own = set(concept_ids)
+    rows = sorted({(e["year"], e["date_text"], e["event"]) for e in events if e["concept_id"] in own})
+    if len(rows) < 2:
+        return None
+    lines = ["timeline"]
+    for _, date, event in rows:  # ':' separates entries in Mermaid's timeline syntax
+        lines.append(f"  {_label(date).replace(':', ' ')} : {_label(event).replace(':', ' -')}")
+    return "\n".join(lines)
+
+
+def _number(cell: str) -> float | None:
+    text = re.sub(r"[,\s%$~≈]", "", str(cell)).replace("−", "-")
+    try:
+        return float(text)
+    except ValueError:
+        return None
+
+
+def chart_data(table: Row) -> dict:
+    """A stored table plus, when it has one, the first all-numeric column as a bar series
+    (labels from the first column). Tables without numbers are shown as tables only."""
+    columns, rows = table["columns"], table["rows"]
+    series = None
+    for i in range(1, len(columns)):
+        values = [_number(r[i]) for r in rows]
+        if all(v is not None for v in values):
+            series = {"column": columns[i], "labels": [str(r[0]) for r in rows], "values": values}
+            break
+    return {
+        "id": table["id"],
+        "title": table["title"],
+        "columns": columns,
+        "rows": rows,
+        "chunk_id": table["chunk_id"],
+        "series": series,
+    }

@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 from app.api.deps import get_services, get_user, owned_notebook
 from app.auth import User
 from app.book import export as book_export
-from app.book.figures import chapter_map, comparisons
+from app.book.figures import chapter_map, chapter_timeline, chart_data, comparisons
 from app.book.learner import STYLES, explain_section, search
 from app.book.sync import after_knowledge_change
 from app.db.repository import Row
@@ -95,8 +95,11 @@ def book(notebook: Row = Depends(owned_notebook), services: Services = Depends(g
                 "concept_ids": s["concept_ids"],
             }
         )
+    events = _optional(services, "timeline_events", notebook["id"])
     for chapter in chapters:
-        chapter["map"] = chapter_map(chapter.pop("concept_ids"), concepts, links)
+        ids = chapter.pop("concept_ids")
+        chapter["map"] = chapter_map(ids, concepts, links)
+        chapter["timeline"] = chapter_timeline(ids, events)
     scores = reads.get("quiz_scores") or {}
     written = [s for s in sections if s["status"] == "current"]
     return {
@@ -180,6 +183,11 @@ def section(
         "concepts": [{"id": cid, "name": concepts[cid]["name"]} for cid in s["concept_ids"] if cid in concepts],
         "current_version": found[0]["version"],
         "comparisons": _comparisons(services, notebook["id"], s["concept_ids"], concepts),
+        "charts": [
+            {**chart_data(t), "evidence": evidence(t["chunk_id"])}
+            for t in _optional(services, "data_tables", notebook["id"])
+            if t["concept_id"] in s["concept_ids"]
+        ],
         "versions": [v["version"] for v in history],
         "support_rate": s.get("support_rate"),
         "paragraphs": [
@@ -351,3 +359,11 @@ def search_everything(
 ) -> list[dict]:
     """Concepts and book sections across every notebook of the user."""
     return search(services, user.id, q)
+
+
+def _optional(services: Services, table: str, notebook_id: str) -> list[Row]:
+    """Rows of a table added by a later migration; empty (not an error) until it is run."""
+    try:
+        return services.repo.select(table, notebook_id=notebook_id)
+    except Exception:  # noqa: BLE001
+        return []

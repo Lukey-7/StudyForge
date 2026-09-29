@@ -36,6 +36,8 @@ From the numbered passages, return:
 - claims: atomic, self-contained factual statements, each about one of the concepts, with the
   number of the passage it comes from. Rephrase pronouns into the concept's name.
 - links: requires / part_of / contrasts_with between the concepts.
+- events: only dates the passages state (a year at least), with what happened, for a timeline.
+- tables: only tables of numbers that appear in the passages, copied cell by cell, for a chart.
 Use only the passages. No outside knowledge. Skip trivia and page furniture."""
 
 VERIFY_SYSTEM = """For each numbered pair of statements, answer:
@@ -180,7 +182,7 @@ def remove_source_knowledge(services: Services, source: Row, keep_concepts: bool
     re-reading the source finds them again by name: concept ids, and so the book's outline, stay
     the same. prune_concepts() removes the ones still unsupported afterwards."""
     repo, notebook_id = services.repo, source["notebook_id"]
-    for table in ("claim_evidence", "conflicts", "knowledge_jobs"):
+    for table in ("claim_evidence", "conflicts", "knowledge_jobs", "timeline_events", "data_tables"):
         repo.delete(table, source_id=source["id"])
 
     supported = {e["claim_id"] for e in repo.select("claim_evidence", notebook_id=notebook_id)}
@@ -228,6 +230,8 @@ def apply_extraction(services: Services, source: Row, passages: list[Row], extra
                 "concept_links", {"notebook_id": source["notebook_id"], "from_id": a, "to_id": b, "kind": link.kind}
             )
             state.links.add((a, b, link.kind))
+
+    add_events_and_tables(services, source, passages, extraction, concept_id)
 
     claims = [(c, concept_id(c.concept)) for c in extraction.claims if 0 <= c.passage < len(passages)]
     # A concept the extractor named but made no claim about still has its definition as evidence;
@@ -365,3 +369,23 @@ def add_evidence(repo, state: NotebookState, claim_id: str, where_from: dict) ->
     if key not in state.evidence:  # the same passage never counts twice for one claim
         repo.insert("claim_evidence", {**where_from, "claim_id": claim_id})
         state.evidence.add(key)
+
+
+def add_events_and_tables(services: Services, source: Row, passages: list[Row], extraction: Extraction, concept_id) -> None:
+    """Dated events (timelines) and numeric tables (charts), each tied to its passage. Stored as
+    stated: figures are drawn from them by code, never by the LLM."""
+    repo = services.repo
+    for e in extraction.events:
+        cid = concept_id(e.concept)
+        if cid and 0 <= e.passage < len(passages) and e.event.strip() and 0 < e.year < 3000:
+            where = {"notebook_id": source["notebook_id"], "source_id": source["id"], "chunk_id": passages[e.passage]["id"]}
+            repo.insert(
+                "timeline_events",
+                {**where, "concept_id": cid, "date_text": e.date.strip(), "year": e.year, "event": e.event.strip()},
+            )
+    for t in extraction.tables:
+        cid = concept_id(t.concept)
+        rows = [r for r in t.rows if len(r) == len(t.columns)]
+        if cid and 0 <= t.passage < len(passages) and len(t.columns) >= 2 and len(rows) >= 2:
+            where = {"notebook_id": source["notebook_id"], "source_id": source["id"], "chunk_id": passages[t.passage]["id"]}
+            repo.insert("data_tables", {**where, "concept_id": cid, "title": t.title.strip(), "columns": t.columns, "rows": rows})

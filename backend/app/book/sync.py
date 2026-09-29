@@ -115,9 +115,38 @@ def sync_book(services: Services, notebook_id: str) -> None:
 def _sync(services: Services, notebook_id: str, job: Row) -> str:
     llm = CountingLLM(services.llm)
     try:
-        return _sync_with(services, llm, notebook_id, job)
+        detail = _sync_with(services, llm, notebook_id, job)
     finally:
         services.repo.update("knowledge_jobs", job["id"], {"llm_calls": llm.calls})
+    try:
+        index_sections(services, notebook_id)
+    except Exception:  # noqa: BLE001 - search falls back to word overlap; never fails the book
+        logger.exception("could not index book sections of %s", notebook_id)
+    return detail
+
+
+def section_text(section: Row) -> str:
+    return section["title"] + ". " + " ".join(p["text"] for p in section.get("paragraphs") or [])
+
+
+def index_sections(services: Services, notebook_id: str) -> int:
+    """Embeds written sections that are not indexed yet (new or rewritten) into the "sections"
+    collection, for "ask the book" and search by meaning. Returns how many were embedded."""
+    todo = [
+        s
+        for s in services.repo.select("book_sections", notebook_id=notebook_id)
+        if s["status"] == "current" and s.get("paragraphs") and not s.get("indexed")
+    ]
+    if not todo:
+        return 0
+    embedder = services.embedder
+    vectors = embedder.embed_documents([section_text(s) for s in todo])
+    services.vectors.upsert(
+        embedder.active_model, [s["id"] for s in todo], vectors, [{"notebook_id": notebook_id} for _ in todo], kind="sections"
+    )
+    for s in todo:
+        services.repo.update("book_sections", s["id"], {"indexed": True})
+    return len(todo)
 
 
 def _sync_with(services: Services, llm: CountingLLM, notebook_id: str, job: Row) -> str:
@@ -134,6 +163,7 @@ def _sync_with(services: Services, llm: CountingLLM, notebook_id: str, job: Row)
         else:
             repo.delete("book_sections", id=section["id"])
             removed.append(section["title"])
+            services.vectors.delete_ids(services.embedder.active_model, [section["id"]], "sections")
     placed = {cid for s in outline for cid in s["concept_ids"]}
     new = [c for c in model.concepts.values() if c["id"] not in placed]
     if new and not outline:
@@ -165,7 +195,13 @@ def _sync_with(services: Services, llm: CountingLLM, notebook_id: str, job: Row)
             repo.update(
                 "book_sections",
                 section["id"],
-                {**draft, "fingerprint": model.fingerprint(section["concept_ids"]), "status": "current", "version": version},
+                {
+                    **draft,
+                    "fingerprint": model.fingerprint(section["concept_ids"]),
+                    "status": "current",
+                    "version": version,
+                    "indexed": False,  # re-embedded after this sync
+                },
             )
             repo.insert(
                 "book_section_versions",

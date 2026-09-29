@@ -1,18 +1,13 @@
 import uuid
 
-import chromadb
 import pytest
-from chromadb.config import Settings as ChromaSettings
 from fastapi.testclient import TestClient
 
 from app.config import Settings
 from app.db.local_repo import LocalFileStorage, LocalRepository
 from app.main import create_app
 from app.services import Services
-from app.vector_store import ChromaVectorStore
-from tests.fakes import DIM, FakeEmbedder, FakeLLM
-
-_chroma = chromadb.EphemeralClient(settings=ChromaSettings(anonymized_telemetry=False))
+from tests.fakes import DIM, FakeEmbedder, FakeLLM, FakeVectorStore
 
 
 @pytest.fixture
@@ -39,7 +34,7 @@ def services(settings, tmp_path) -> Services:
         storage=LocalFileStorage(str(tmp_path / "uploads")),
         llm=FakeLLM(),
         embedder=FakeEmbedder(),
-        vectors=ChromaVectorStore(settings, client=_chroma),
+        vectors=FakeVectorStore(),
     )
 
 

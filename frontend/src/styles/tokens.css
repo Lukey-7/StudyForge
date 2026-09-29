@@ -27,6 +27,7 @@
   --goal-practise: #f09b7c; /* coral */
   --goal-revise: #e39bb6; /* rose */
   --goal-listen: #7fd1a1; /* mint */
+  --chart-bar: #3d8fe0; /* data marks in book charts; validated for the slate surface (dataviz validator) */
 
   /* Highlighter: ONLY for highlight meaning (citations, the cited passage, the selected format, selection) */
   --highlighter: #f4d35e;

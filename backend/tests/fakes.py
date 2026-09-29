@@ -205,3 +205,73 @@ def fake_support(prompt: str) -> SupportVerdicts:
 
 
 BOOK_FAKES = {Outline: fake_outline, Placement: fake_placement, SectionDraft: fake_section, SupportVerdicts: fake_support}
+
+
+# ---------------------------------------------------------------- vector store
+def _matches(meta: dict, where: dict) -> bool:
+    """The subset of Chroma's `where` language the app uses: equality, $and, $in, $gte, $lte."""
+    for key, cond in where.items():
+        if key == "$and":
+            if not all(_matches(meta, c) for c in cond):
+                return False
+        elif isinstance(cond, dict):
+            value = meta.get(key)
+            for op, arg in cond.items():
+                if op == "$in" and value not in arg:
+                    return False
+                if op == "$gte" and (value is None or value < arg):
+                    return False
+                if op == "$lte" and (value is None or value > arg):
+                    return False
+        elif meta.get(key) != cond:
+            return False
+    return True
+
+
+class FakeVectorStore:
+    """Exact, in-memory stand-in for ChromaVectorStore (same methods and filter semantics).
+
+    Unit tests used a shared in-memory Chroma; Chroma 1.5 failed there now and then with internal
+    errors ("Error finding id", "Nothing found on disk"), which made the suite flaky. Chroma itself
+    is not what these tests check, so they get an exact cosine search instead."""
+
+    def __init__(self) -> None:
+        self.items: dict[tuple[str, str], dict[str, tuple[list[float], dict]]] = {}  # (model, kind) -> id -> (vector, meta)
+
+    def _kind(self, model: str, kind: str) -> dict:
+        return self.items.setdefault((model, kind), {})
+
+    def upsert(self, model, ids, embeddings, metadatas, kind="chunks") -> None:
+        for i, v, m in zip(ids, embeddings, metadatas):
+            self._kind(model, kind)[i] = (list(v), dict(m))
+
+    def query(self, model, embedding, k, where, kind="chunks"):
+        norm_q = math.sqrt(sum(x * x for x in embedding)) or 1.0
+        scored = []
+        for item_id, (v, meta) in self._kind(model, kind).items():
+            if _matches(meta, where):
+                norm_v = math.sqrt(sum(x * x for x in v)) or 1.0
+                scored.append((item_id, sum(a * b for a, b in zip(embedding, v)) / (norm_q * norm_v)))
+        return sorted(scored, key=lambda x: -x[1])[:k]
+
+    def get_embeddings(self, model, ids):
+        chunks = self._kind(model, "chunks")
+        return {i: chunks[i][0] for i in ids if i in chunks}
+
+    def count(self, model, notebook_id) -> int:
+        return sum(1 for _, meta in self._kind(model, "chunks").values() if meta.get("notebook_id") == notebook_id)
+
+    def delete_ids(self, model, ids, kind) -> None:
+        for i in ids:
+            self._kind(model, kind).pop(i, None)
+
+    def _delete_everywhere(self, where: dict) -> None:
+        for items in self.items.values():
+            for i in [i for i, (_, meta) in items.items() if _matches(meta, where)]:
+                del items[i]
+
+    def delete_source(self, source_id: str) -> None:
+        self._delete_everywhere({"source_id": source_id})
+
+    def delete_notebook(self, notebook_id: str) -> None:
+        self._delete_everywhere({"notebook_id": notebook_id})

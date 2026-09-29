@@ -4,7 +4,7 @@ import { api } from '../lib/api'
 import { buildMatcher, linkTerms } from '../lib/glossary'
 import { changeSummary } from '../lib/bookChanges'
 import { ConflictsDrawer, HistoryDrawer } from './BookDrawers'
-import { ChapterMap, ChapterQuiz, ComparisonTables, ExplainBox, ExportMenu } from './BookExtras'
+import { ChapterMap, ChapterQuiz, ChartFigure, ComparisonTables, ExplainBox, ExportMenu } from './BookExtras'
 
 // The book itself (living textbook): contents on the left, one section at a time in the middle,
 // and beside every paragraph the passages it was written from (the evidence rail). Glossary terms
@@ -193,6 +193,7 @@ export default function BookReader({ notebookId, concepts, busy, requestedSectio
             onOpenConcept={onOpenConcept}
             onOpenEvidence={onOpenEvidence}
             chapterMap={data.chapters.find((ch) => ch.title === current.chapter)?.map}
+            chapterTimeline={data.chapters.find((ch) => ch.title === current.chapter)?.timeline}
             onQuiz={() => setQuizChapter(current.chapter)}
           />
         )}
@@ -305,6 +306,7 @@ function SectionView({
   onOpenConcept,
   onOpenEvidence,
   chapterMap,
+  chapterTimeline,
   onQuiz,
 }) {
   const queryClient = useQueryClient()
@@ -437,6 +439,13 @@ function SectionView({
       ))}
 
       {d && !old && <ComparisonTables tables={d.comparisons} onOpenConcept={onOpenConcept} />}
+      {d && !old && d.charts?.map((c) => <ChartFigure key={c.id} chart={c} onOpenEvidence={onOpenEvidence} />)}
+      {chapterTimeline && (
+        <details className="disclosure book-figure">
+          <summary>Timeline of this chapter</summary>
+          <ChapterMap code={chapterTimeline} />
+        </details>
+      )}
       {chapterMap && (
         <details className="disclosure book-figure">
           <summary>Concept map of this chapter</summary>

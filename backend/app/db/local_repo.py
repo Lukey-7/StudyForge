@@ -16,7 +16,16 @@ from app.db.repository import Row
 
 TABLES = ("profiles", "notebooks", "sources", "chunks", "generations", "chat_sessions", "chat_messages")
 # The knowledge model (migrations/002_knowledge.sql). Accessed through the generic table methods.
-KNOWLEDGE_TABLES = ("concepts", "concept_links", "claims", "claim_evidence", "conflicts", "knowledge_jobs")
+KNOWLEDGE_TABLES = (
+    "concepts",
+    "concept_links",
+    "claims",
+    "claim_evidence",
+    "conflicts",
+    "knowledge_jobs",
+    "timeline_events",
+    "data_tables",
+)
 # The book rendered from it (migrations/003_book.sql).
 BOOK_TABLES = ("books", "book_sections", "book_changes", "book_reads", "book_section_versions")
 # Tables with an updated_at column (set on insert and update).
@@ -85,6 +94,8 @@ class LocalRepository:
             # emulate ON DELETE CASCADE inside the knowledge model
             for row_id in ids:
                 if table == "concepts":
+                    self._delete_where("timeline_events", concept_id=row_id)
+                    self._delete_where("data_tables", concept_id=row_id)
                     for claim_id in self._delete_where("claims", concept_id=row_id):
                         self._delete_where("claim_evidence", claim_id=claim_id)
                         self._delete_where("conflicts", claim_id=claim_id)

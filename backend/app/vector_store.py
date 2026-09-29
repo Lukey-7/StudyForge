@@ -12,6 +12,7 @@ what the "scope filter" layer of retrieval filters on.
 """
 
 import logging
+import math
 import re
 
 import chromadb
@@ -29,7 +30,7 @@ HNSW_CONFIG = {"hnsw": {"space": "cosine", "ef_construction": 200, "ef_search": 
 
 # What a collection holds: passages (the search index), or the knowledge model's concepts and
 # claims (used to find "the same thing said before" when a new source arrives).
-KINDS = ("chunks", "concepts", "claims")
+KINDS = ("chunks", "concepts", "claims", "sections")
 
 
 def collection_name(model: str, dim: int, kind: str = "chunks") -> str:
@@ -65,11 +66,29 @@ class ChromaVectorStore:
     def query(self, model: str, embedding: list[float], k: int, where: dict, kind: str = "chunks") -> list[tuple[str, float]]:
         """Top-k nearest items as (id, cosine_similarity), best first."""
         collection = self._collection(model, kind)
-        result = collection.query(query_embeddings=[embedding], n_results=k, where=where, include=["distances"])
+        try:
+            result = collection.query(query_embeddings=[embedding], n_results=k, where=where, include=["distances"])
+        except chromadb.errors.InternalError as exc:
+            # Chroma's filtered HNSW query can fail after deletes ("Error finding id"), and keeps
+            # failing. Fall back to an exact search over the filtered vectors (a notebook's
+            # concepts/claims/sections are small): same answer, just computed in Python.
+            logger.warning("chroma query failed (%s); using exact search", exc)
+            return self._exact_query(collection, embedding, k, where)
         ids = result["ids"][0] if result["ids"] else []
         distances = result["distances"][0] if result.get("distances") else [0.0] * len(ids)
         # Chroma's cosine *distance* = 1 - cosine similarity
         return [(chunk_id, 1.0 - float(d)) for chunk_id, d in zip(ids, distances)]
+
+    @staticmethod
+    def _exact_query(collection, embedding: list[float], k: int, where: dict) -> list[tuple[str, float]]:
+        got = collection.get(where=where, include=["embeddings"])
+        norm_q = math.sqrt(sum(x * x for x in embedding)) or 1.0
+        scored = []
+        for item_id, vector in zip(got["ids"], got["embeddings"]):
+            dot = sum(a * b for a, b in zip(embedding, vector))
+            norm_v = math.sqrt(sum(float(b) * float(b) for b in vector)) or 1.0
+            scored.append((item_id, dot / (norm_q * norm_v)))
+        return sorted(scored, key=lambda x: -x[1])[:k]
 
     def get_embeddings(self, model: str, ids: list[str]) -> dict[str, list[float]]:
         if not ids:
