@@ -12,7 +12,21 @@
   /* Text. chalk-dim on slate = 6.4:1, on slate-raised = 5.5:1, on slate-high = 4.7:1 (all pass WCAG AA) */
   --chalk: #ece9df;
   --chalk-dim: #9da69d;
-  --ink: #1a2320; /* dark text on light fills (violet buttons, solid highlighter marks) */
+  --ink: #1a2320; /* dark text on light fills (violet buttons, solid highlighter marks, paper) */
+  --ink-dim: #4e5852; /* secondary text on paper: 6.3:1 */
+
+  /* Paper: the page of an exercise book. Used where the student's own notes are shown
+     (the landing notes page, the "how it works" band) so a page reads as a page. */
+  --paper: #f1ecdd;
+  --paper-rule: rgba(201, 120, 93, 0.6); /* the red margin line printed in a real exercise book */
+  --paper-lines: rgba(26, 35, 32, 0.08);
+
+  /* One colour per study goal, used wherever the four groups appear (landing, Studio):
+     a dot beside the group name and a stroke on the panel that shows the result. */
+  --goal-understand: #8db7e0; /* sky */
+  --goal-practise: #f09b7c; /* coral */
+  --goal-revise: #e39bb6; /* rose */
+  --goal-listen: #7fd1a1; /* mint */
 
   /* Highlighter: ONLY for highlight meaning (citations, the cited passage, the selected format, selection) */
   --highlighter: #f4d35e;

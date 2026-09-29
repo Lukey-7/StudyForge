@@ -26,8 +26,11 @@ export default function FormatPicker({ pipelines, selected, onSelect, disabled }
       {groups.length === 0 && <p className="muted small">No format matches “{filter}”.</p>}
 
       {groups.map((group) => (
-        <fieldset key={group.id} className="format-group" disabled={disabled}>
-          <legend>{group.label}</legend>
+        <fieldset key={group.id} className="format-group" disabled={disabled} style={{ '--goal': group.color }}>
+          <legend>
+            <span className="goal-dot" aria-hidden="true" />
+            {group.label}
+          </legend>
           {group.formats.map((f) => (
             <label key={f.name} className={`format-option ${selected === f.name ? 'is-selected' : ''}`}>
               {/* a real (visually hidden) radio input gives arrow-key navigation for free */}

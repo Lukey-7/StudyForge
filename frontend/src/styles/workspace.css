@@ -202,6 +202,16 @@ button.source-name:hover {
   font-weight: 650;
   color: var(--chalk-dim);
 }
+/* The group's colour, as a small dot before its name (the group sets --goal) */
+.goal-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  margin-right: 7px;
+  border-radius: 50%;
+  background: var(--goal, var(--chalk-dim));
+  vertical-align: 1px;
+}
 .format-option {
   display: flex;
   flex-direction: column;

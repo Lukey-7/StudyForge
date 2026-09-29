@@ -21,6 +21,8 @@ Tokens live in `src/styles/tokens.css`. Nothing else in the CSS should hard-code
 | `--chalk-dim` | `#9DA69D` | Secondary text. Contrast: 6.4:1 on slate, 5.5:1 on slate-raised, 4.7:1 on slate-high (all pass WCAG AA). |
 | `--highlighter` | `#F4D35E` | Highlight meaning only (see below). |
 | `--violet` / `--violet-deep` | `#9B8AFB` / `#8E7CF6` | Primary actions and the active nav item. Dark text on violet: 5.7:1 (4.9:1 on hover). |
+| `--paper` / `--ink` / `--ink-dim` | `#F1ECDD` / `#1A2320` / `#4E5852` | The page of an exercise book. Used where the student's own notes are shown: the landing notes page, the "how it works" band, the citation margin note. `--paper-rule` is the red margin line, `--paper-lines` the faint ruling. |
+| `--goal-understand` / `--goal-practise` / `--goal-revise` / `--goal-listen` | sky `#8DB7E0` / coral `#F09B7C` / rose `#E39BB6` / mint `#7FD1A1` | One colour per study goal, wherever the four format groups appear (landing demo and Studio): a dot beside the group name, a rule down the group's list, and the top edge of the panel showing the result. Colour here carries one meaning: which goal a format serves. |
 | `--success` | `#7FD1A1` | Correct answers, finished processing steps, "server online". |
 | `--danger` | `#F08A7E` | Errors, wrong answers, delete on hover. |
 | `--warning` | = highlighter | "AI key missing". |
@@ -68,6 +70,21 @@ Radii follow hierarchy instead of one value everywhere:
 Only floating things (modal, drawer, toast) get a shadow. The workspace side columns sit flat on the
 slate, separated by hairlines; the Studio's panels are raised because that's where the work happens.
 Generated output reads directly on the page. No glass, no blur, no gradient washes.
+
+## The landing page: bands
+
+The landing page is a sequence of full-width bands, each on its own surface, so the eye can tell
+sections apart without dividers or cards:
+
+1. chalkboard hero, with the notes page laid on it as cream paper (tilted one degree, like a page on a desk);
+2. chalkboard "sixteen ways to study", where the four goal colours appear;
+3. paper "how it works" (dark ink on cream, ruled lines);
+4. raised slate "answers that show their page", with the margin note on paper;
+5. chalkboard call to action;
+6. deep slate footer with three link columns.
+
+The header is sticky with links to the sections; the same links repeat in the footer, so on phones the
+header links can be hidden.
 
 ## Signature pieces
 

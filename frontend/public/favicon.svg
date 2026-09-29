@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- A chalkboard square with one highlighter stroke across a line of chalk: the whole product in a mark -->
+  <rect width="64" height="64" rx="12" fill="#1A2320"/>
+  <rect x="12" y="29" width="40" height="14" rx="2" fill="#F4D35E" transform="rotate(-6 32 36)"/>
+  <rect x="14" y="20" width="36" height="4" rx="2" fill="#ECE9DF"/>
+  <rect x="14" y="34" width="36" height="4" rx="2" fill="#1A2320"/>
+  <rect x="14" y="48" width="24" height="4" rx="2" fill="#ECE9DF"/>
+</svg>

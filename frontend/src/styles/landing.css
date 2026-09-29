@@ -1,24 +1,98 @@
-/* Landing page. The one orchestrated motion lives here: the highlighter swipe on the hero notes. */
+/* Landing page. Built as full-width bands, each on its own surface, so the page has a rhythm:
+   chalkboard hero (with a paper page on it) -> chalkboard formats -> paper "how it works"
+   -> raised "cited answers" -> chalkboard call to action -> deep footer.
+   The one orchestrated motion lives here too: the highlighter swipe on the hero notes. */
 
 .landing {
+  width: 100%;
+}
+.band-inner {
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 var(--space-5);
 }
+
+/* ---------------------------------------------------------------- header */
 .landing-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  background: rgba(26, 35, 32, 0.92); /* the slate, slightly see-through as the page scrolls under it */
+  border-bottom: 1px solid var(--line);
+}
+.landing-header-inner {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  height: 72px;
+  gap: var(--space-6);
+  height: 64px;
+}
+.landing-nav {
+  display: flex;
+  gap: var(--space-5);
+  margin-left: var(--space-4);
+}
+.landing-nav a {
+  color: var(--chalk-dim);
+  font-weight: 500;
+  text-decoration: none;
+  padding: var(--space-1) 0;
+  border-bottom: 2px solid transparent;
+}
+.landing-nav a:hover {
+  color: var(--chalk);
+  border-bottom-color: var(--line-strong);
+}
+.landing-account {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* ---------------------------------------------------------------- bands */
+.band {
+  padding: var(--space-8) 0;
+}
+.band-hero {
+  padding: var(--space-8) 0 var(--space-8);
+}
+.band-formats {
+  border-top: 1px solid var(--line);
+}
+.band-paper {
+  background: var(--paper);
+  color: var(--ink);
+  /* faint ruled lines, like the page of an exercise book */
+  background-image: repeating-linear-gradient(transparent 0 31px, var(--paper-lines) 31px 32px);
+}
+.band-raised {
+  background: var(--slate-raised);
+}
+.band-cta {
+  background: var(--slate);
+}
+.band > .band-inner > h2 {
+  font-size: var(--text-3xl);
+  font-weight: 750;
+  letter-spacing: -0.025em;
+  max-width: 22ch;
+}
+.section-lede {
+  max-width: 60ch;
+  margin: var(--space-3) 0 var(--space-6);
+  color: var(--chalk-dim);
+  font-size: var(--text-md);
+}
+.band-paper .section-lede {
+  color: var(--ink-dim);
 }
 
 /* ---------------------------------------------------------------- hero */
 .hero {
   display: grid;
   grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-  align-items: end;
+  align-items: center;
   gap: var(--space-7);
-  padding: var(--space-8) 0 var(--space-7);
 }
 .hero-copy {
   display: flex;
@@ -42,35 +116,45 @@
 .hero-actions {
   gap: var(--space-3);
 }
+.hero-formats {
+  font-size: var(--text-sm);
+  color: var(--chalk-dim);
+}
 
-/* A page from an exercise book: a ruled margin on the left holds the page label */
+/* A page torn from an exercise book: cream paper, dark ink, the red margin rule, faint ruled lines.
+   The highlighter swipe reads as a real highlighter because it sits on real-looking paper. */
 .notes-page {
   position: relative;
   margin: 0;
-  padding: var(--space-6) var(--space-5) var(--space-6) 76px;
-  background: var(--slate-raised);
+  padding: var(--space-6) var(--space-5) var(--space-6) 92px;
+  background: var(--paper);
+  background-image: repeating-linear-gradient(transparent 0 27px, var(--paper-lines) 27px 28px);
+  color: var(--ink);
   border-radius: 2px var(--radius-panel) var(--radius-panel) 2px;
+  box-shadow: var(--shadow-float);
   font-size: var(--text-md);
+  transform: rotate(-1deg); /* a page laid on the desk, not a UI card */
 }
 .notes-page::before {
   content: '';
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 60px;
-  border-left: 1px solid rgba(201, 120, 93, 0.55);
+  left: 76px;
+  border-left: 1.5px solid var(--paper-rule);
 }
 .notes-label {
   position: absolute;
   top: var(--space-6);
   left: var(--space-3);
-  width: 44px;
+  width: 58px; /* wide enough for "Lecture 7" on one line */
+  white-space: nowrap;
   display: flex;
   flex-direction: column;
   font-family: var(--font-ui);
   font-size: var(--text-xs);
   line-height: 1.3;
-  color: var(--chalk-dim);
+  color: var(--ink-dim);
 }
 
 /* The highlighter. box-decoration-break: slice (the default) lays the background out as if all
@@ -95,23 +179,9 @@
     animation: none;
     background-size: 100% 100%;
   }
-}
-
-/* ---------------------------------------------------------------- sections */
-.landing-section {
-  padding-top: var(--space-9);
-}
-.landing-section > h2 {
-  font-size: var(--text-3xl);
-  font-weight: 750;
-  letter-spacing: -0.025em;
-  max-width: 22ch;
-}
-.section-lede {
-  max-width: 60ch;
-  margin: var(--space-3) 0 var(--space-6);
-  color: var(--chalk-dim);
-  font-size: var(--text-md);
+  .notes-page {
+    transform: none;
+  }
 }
 
 /* ---------------------------------------------------------------- format demo */
@@ -127,11 +197,15 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-5) var(--space-4);
 }
+.demo-group {
+  padding-left: var(--space-3);
+  border-left: 2px solid var(--goal); /* the group's colour runs down its list */
+}
 .demo-group h3 {
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   font-weight: 650;
-  color: var(--chalk-dim);
-  margin-bottom: var(--space-1);
+  color: var(--chalk);
+  margin-bottom: var(--space-2);
 }
 .demo-group ul {
   list-style: none;
@@ -165,12 +239,20 @@
   padding: var(--space-6);
   background: var(--slate-raised);
   border-radius: var(--radius-panel);
+  border-top: 4px solid var(--goal, var(--line-strong)); /* takes the selected group's colour */
 }
 .demo-output-title {
-  font-size: var(--text-xs);
+  display: flex;
+  align-items: center;
+  font-size: var(--text-sm);
   font-weight: 650;
-  color: var(--chalk-dim);
+  color: var(--chalk);
   margin-bottom: var(--space-4);
+}
+.demo-output-group {
+  margin-left: auto;
+  font-weight: 500;
+  color: var(--chalk-dim);
 }
 .demo-output .reading {
   display: flex;
@@ -185,6 +267,7 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--space-6);
+  margin-top: var(--space-6);
 }
 .steps li {
   counter-increment: step;
@@ -192,7 +275,7 @@
   flex-direction: column;
   gap: var(--space-2);
   padding-top: var(--space-4);
-  border-top: 1px solid var(--line-strong);
+  border-top: 2px solid var(--ink);
 }
 .steps li::before {
   content: counter(step);
@@ -200,14 +283,15 @@
   font-weight: 300;
   font-variation-settings: 'opsz' 96;
   line-height: 1;
-  color: var(--chalk-dim);
+  color: var(--ink);
   margin-bottom: var(--space-2);
 }
 .steps h3 {
   font-size: var(--text-lg);
+  color: var(--ink);
 }
 .steps p {
-  color: var(--chalk-dim);
+  color: var(--ink-dim);
   max-width: 34ch;
 }
 
@@ -224,39 +308,109 @@
   gap: var(--space-4);
   max-width: 62ch;
 }
+/* On the raised band the bubbles need their own surfaces to stand out */
+.band-raised .msg-user {
+  background: var(--violet-soft);
+  border: 1px solid rgba(155, 138, 251, 0.35);
+}
+.band-raised .msg-answer {
+  padding: var(--space-4) var(--space-5);
+  background: var(--slate);
+  border-radius: var(--radius-panel);
+}
 .cited-note {
   position: sticky;
-  top: var(--space-5);
+  top: calc(64px + var(--space-5));
+}
+.band-raised .margin-note {
+  background: var(--paper);
+  color: var(--ink);
+  border-left-color: var(--paper-rule);
+}
+.band-raised .margin-note-title {
+  color: var(--ink-dim);
 }
 .cited-note .reading {
   font-size: var(--text-sm);
 }
 
+/* ---------------------------------------------------------------- call to action */
+.cta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-5);
+  padding-top: var(--space-6);
+  padding-bottom: var(--space-6);
+  border-top: 1px solid var(--line);
+}
+.cta h2 {
+  font-size: var(--text-2xl);
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  max-width: 24ch;
+  text-wrap: balance;
+}
+
 /* ---------------------------------------------------------------- footer */
 .landing-footer {
-  margin-top: var(--space-9);
-  padding: var(--space-6) 0 var(--space-7);
+  background: var(--slate-deep);
   border-top: 1px solid var(--line);
+  padding: var(--space-7) 0 var(--space-6);
+  color: var(--chalk-dim);
+  font-size: var(--text-sm);
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) repeat(3, minmax(0, 1fr));
+  gap: var(--space-7);
+}
+.footer-about {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  max-width: 40ch;
+}
+.footer-col {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  font-size: var(--text-xs);
-  color: var(--chalk-dim);
 }
-.landing-footer p {
-  max-width: 72ch;
+.footer-col h3 {
+  font-size: var(--text-sm);
+  font-weight: 650;
+  color: var(--chalk);
+  margin-bottom: var(--space-1);
+}
+.footer-col a {
+  color: var(--chalk-dim);
+  text-decoration: none;
+}
+.footer-col a:hover {
+  color: var(--chalk);
+  text-decoration: underline;
+}
+.footer-bottom {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-top: var(--space-7);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--line);
+  font-size: var(--text-xs);
 }
 
 /* ---------------------------------------------------------------- responsive */
 @media (max-width: 960px) {
   .hero {
     grid-template-columns: 1fr;
-    padding-top: var(--space-6);
+  }
+  .notes-page {
+    transform: none;
   }
   .format-demo {
     grid-template-columns: 1fr;
   }
-  /* Groups side by side, formats wrap like words in a sentence */
   .steps {
     grid-template-columns: 1fr;
     gap: var(--space-5);
@@ -267,14 +421,31 @@
   .cited-note {
     position: static;
   }
+  .footer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-6);
+  }
+  .footer-about {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 720px) {
+  .landing-nav {
+    display: none; /* the same links live in the footer */
+  }
 }
 
 @media (max-width: 520px) {
-  .landing {
+  .band-inner {
     padding: 0 var(--space-4);
   }
-  .landing-header {
+  .band {
+    padding: var(--space-7) 0;
+  }
+  .landing-header-inner {
     height: 60px;
+    gap: var(--space-3);
   }
   .notes-page {
     padding: var(--space-6) var(--space-4) var(--space-5);
@@ -294,13 +465,17 @@
     padding: var(--space-4);
     min-height: 0;
   }
-  .landing-section {
-    padding-top: var(--space-8);
-  }
-  .landing-section > h2 {
+  .band > .band-inner > h2 {
     font-size: var(--text-2xl);
   }
   .demo-format {
     font-size: var(--text-sm);
+  }
+  .footer-grid {
+    grid-template-columns: 1fr;
+  }
+  .footer-bottom {
+    flex-direction: column;
+    gap: var(--space-1);
   }
 }
