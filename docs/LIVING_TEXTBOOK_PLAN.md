@@ -192,12 +192,19 @@ which is a level above "RAG chatbot" and defensible line by line: extraction, en
 (merge), planning, grounded generation, verification, and evaluation each map to one stage and one
 table.
 
-## 10. Decisions needed before Phase 1
+## 10. Decisions (taken 2026-09-29)
 
-1. **Does the Book become the notebook's main tab**, with the 16 formats moved under "Study tools"? (The plan assumes yes.)
-2. **Concept granularity**: one concept per glossary-worthy term (recommended) or also every named
-   example and person? Affects cost and noise.
-3. **Budget per notebook** for background work on the free tier (e.g. cap extraction at N passages per
-   hour and queue the rest), or assume a paid key.
-4. **Conflicts**: shown to the user only (recommended), or should the book also pick a "preferred"
-   source per notebook?
+1. **The Book is the notebook's main tab**; the 16 formats move under "Study tools".
+2. **Concept granularity**: glossary-worthy terms *and* named examples (algorithms, people, systems,
+   worked examples that a source names). Examples are tagged `kind = example` so the glossary can
+   list terms first and examples after.
+3. **Budget**: free-tier cap by default: background extraction processes about 150 passages an hour
+   and queues the rest, with progress shown in the app. Remove the cap when a paid key is configured.
+4. **Incoming claims are triaged by similarity, then a one-line verification call**:
+   - *duplicate* (the book already states it): no new prose; the existing claim gains the new
+     source as extra evidence;
+   - *contradiction* (same subject, opposite statement): the book keeps its current statement and
+     records the disagreement with both passages in the Conflicts panel; nothing is silently dropped;
+   - *new*: placed into the outline.
+   The lookup is an embedding nearest-neighbour search in Chroma over existing claims; the
+   verification is a short "same / contradicts / unrelated" call. No separate model.
