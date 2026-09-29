@@ -13,9 +13,12 @@ from app.db.repository import Row
 EDGE_LABEL = {"requires": "requires", "part_of": "part of", "contrasts_with": "contrasts with"}
 
 
-def _label(text: str) -> str:
-    """Mermaid-safe node text: quotes and brackets would end the label."""
-    return re.sub(r'["\[\]{}()<>|#;]', " ", text).strip()[:60]
+def _label(text: str, limit: int = 80) -> str:
+    """Mermaid-safe text: quotes and brackets would end the label. Long text is cut at a word."""
+    clean = re.sub(r'["\[\]{}()<>|#;]', " ", text).strip()
+    if len(clean) <= limit:
+        return clean
+    return clean[:limit].rsplit(" ", 1)[0].rstrip(",.") + "…"
 
 
 def chapter_map(concept_ids: list[str], concepts: dict[str, Row], links: list[Row]) -> str | None:

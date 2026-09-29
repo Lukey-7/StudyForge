@@ -26,10 +26,10 @@
   - When a source is added, only the sections whose concepts changed are rewritten, and the reader shows "Since you last read: …". On a real notebook, adding a second source left 6 of 7 sections untouched, revised 1 and added a 4-section chapter.
   - Reader: contents, an evidence rail beside each paragraph, glossary terms with hover definitions, where the sources disagree, and the book's history. Plan and status: [docs/LIVING_TEXTBOOK_PLAN.md](docs/LIVING_TEXTBOOK_PLAN.md).
   - **Figures and export:**
-    - A concept map per chapter and comparison tables, both drawn by code from the knowledge map.
+    - Drawn by code from the knowledge map: a concept map per chapter, comparison tables, a timeline per chapter (from dates the sources state), and bar charts (from tables of numbers in the sources).
     - Export as Markdown (with footnote citations and a glossary) or EPUB, or print / save as PDF.
   - **Learning tools:** reading progress, "Quiz me on this chapter" (low scores become weak spots), "Explain this section" more simply or step by step, and a search across all your notebooks. Chat also searches the book and cites sections as `[B1]`; clicking one opens the section.
-  - **Support check:** a second call judges every paragraph against the passages it cites. Unsupported paragraphs are rewritten once, then kept with a visible mark. On the real notebook, 31 of 33 paragraphs were judged supported (94%), 2 partly ([eval/book_support.md](backend/eval/book_support.md); a self-check by the same model family).
+  - **Support check:** a second call judges every paragraph against the passages it cites. Unsupported paragraphs are rewritten once, then kept with a visible mark. On the real notebook, 37 of 39 paragraphs were judged supported (95%), 2 partly ([eval/book_support.md](backend/eval/book_support.md); a self-check by the same model family).
 - **RAG chat:** answers stream token by token over Server-Sent Events and cite every factual sentence. If the documents don't contain the answer, it says so. Click a citation to jump to the exact passage.
 - **Study tools:** interactive quiz with "Retry the ones I missed", flashcards with Got it / Again self-rating, Mermaid mind maps, Copy as Markdown / Download / Export for Anki, suggested questions from your notes' headings. Design system: [frontend/DESIGN.md](frontend/DESIGN.md).
 

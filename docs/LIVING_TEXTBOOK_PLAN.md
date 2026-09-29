@@ -12,9 +12,7 @@
 
 See `backend/app/knowledge`, `backend/app/book`, `migrations/002`–`005` and DECISIONS D27–D30. Measured: `backend/eval/book_support.md`.
 
-Not built:
-- timelines and charts (extraction doesn't capture dates or numeric tables);
-- semantic search over book sections (search and "ask the book" use word overlap).
+Also built: timelines and charts (from dated events and tables of numbers that extraction captures), and search / ask the book by meaning (embedded sections, D30).
 
 ## 1. What we are building, in one paragraph
 

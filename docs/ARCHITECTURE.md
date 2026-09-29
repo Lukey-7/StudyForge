@@ -134,7 +134,8 @@ Continues from (a) step 6, after `status=ready`. Plan and decisions: [LIVING_TEX
    - Drawers: `frontend/src/components/BookDrawers.jsx`.
    - `backend/eval/book_support.py` reports the support rate (`--check` checks paragraphs written before the check existed).
 5. **Figures, export, learner** (phases 4–5):
-   - **Figures:** `book/figures.py::chapter_map` (Mermaid from the concept links, returned as `chapters[].map` by `GET /book`) and `comparisons` (from `contrasts_with` links, returned per section). `BookExtras.jsx::ChapterMap` renders them with the mind map's Mermaid loader.
+   - **Figures:** `book/figures.py::chapter_map` (Mermaid from the concept links, returned as `chapters[].map` by `GET /book`) and `comparisons` (from `contrasts_with` links, returned per section). `chapter_timeline` (a Mermaid timeline from `timeline_events`) and `chart_data` (a bar series from the first all-number column of a `data_tables` row). `BookExtras.jsx::ChapterMap` renders the Mermaid figures with the mind map's loader, and `ChartFigure` draws the bars.
+   - **Semantic index:** after each sync, `book/sync.py::index_sections` embeds sections that are written but not yet indexed into the `sections` collection. `learner.similarities` queries it (and `concepts`) for "ask the book" and search.
    - **Export:** `GET /book/export?format=md|epub` → `book/export.py::assemble` → `to_markdown` / `to_epub`. "Print or save as PDF" renders the Markdown export into a print-only block and calls `window.print()`.
    - **Reading and quizzes:**
      - `POST /book/sections/{id}/read` stores `book_reads.read_sections`.

@@ -322,7 +322,7 @@ Why ranks and not scores: cosine (0–1) and BM25 (0–∞) aren't comparable. R
 
 ## 8. Shipping
 
-- **Tests (`backend/tests/`, 133 tests, no API key needed; plus 30 frontend tests with vitest):** chunker, RRF (exact values), MMR, BM25 (including the negative-IDF regression), scope, context assembly, all 16 schemas, the validation-repair loop, retries/rate limiter, JWT verification, and full API flows (upload → ready → idempotent re-upload, search layers, every pipeline + cache, chat SSE + citations + query rewrite) using `FakeLLM`/`FakeEmbedder` (`tests/fakes.py`).
+- **Tests (`backend/tests/`, 138 tests, no API key needed; plus 30 frontend tests with vitest):** chunker, RRF (exact values), MMR, BM25 (including the negative-IDF regression), scope, context assembly, all 16 schemas, the validation-repair loop, retries/rate limiter, JWT verification, and full API flows (upload → ready → idempotent re-upload, search layers, every pipeline + cache, chat SSE + citations + query rewrite) using `FakeLLM`/`FakeEmbedder` (`tests/fakes.py`).
 - **CI (`.github/workflows/ci.yml`):** on every push, `ruff check` + `pytest` for the backend and `npm ci && npm run build` for the frontend.
 - **Docker:** `backend/Dockerfile` is multi-stage (build wheels in stage 1, copy into a slim non-root runtime in stage 2). Local development doesn't need Docker (Chroma is embedded).
 - **Deploy:** [`DEPLOY_GCP.md`](DEPLOY_GCP.md) covers Cloud Build → Artifact Registry → Cloud Run, Secret Manager for keys, and three options for Chroma on an ephemeral filesystem.
@@ -358,7 +358,7 @@ source ready ─► EXTRACT (Gemini JSON per 6 passages: concepts, claims, links
   - Adding DBMS notes on transactions and concurrency: 20 new concepts. **6 of 7 sections were untouched**, "Detection and Recovery" was revised (the notes' paragraph on database deadlocks added evidence to it), and a new 4-section chapter was added.
   - After that: 11 sections, 23 paragraphs, **0 without a cited passage**; two sections cite both sources.
   - A third source (DBMS indexing notes): **all 11 existing sections untouched**, 5 new sections in a new chapter, 11 Gemini calls (1 placement + a write and a support check per section).
-  - **Support check** over the whole book: **31 of 33 paragraphs supported by their own passages (94%)**, 2 partial, 0 unsupported (`backend/eval/book_support.md`). One partial paragraph had added that the MMU is "a hardware unit", which its passage does not say: exactly the kind of drift the check exists to catch.
+  - **Support check** over the whole book: **37 of 39 paragraphs supported by their own passages (95%)**, 2 partial, 0 unsupported (`backend/eval/book_support.md`). One partial paragraph had added that the MMU is "a hardware unit", which its passage does not say: exactly the kind of drift the check exists to catch.
 
 - **Phases 4–5 on the same notebook:**
   - Concept maps for all 4 chapters, and 12 comparison tables (e.g. B+ Tree vs Hash Index).
@@ -366,16 +366,21 @@ source ready ─► EXTRACT (Gemini JSON per 6 passages: concepts, claims, links
   - Chat asked "why can't a hash index answer range queries?" answered citing `[S1][B1]`: a source passage *and* the book section.
   - Search for "hash index" ranked the concept, then its section, first.
   - A chapter quiz scored 1/5 was saved, and the chapter showed up under "Weak spots".
+  - **Timelines, charts and search by meaning** (a fourth source with dates and a table):
+    - a timeline for "Relational Databases and SQL" (1970 → 1986);
+    - a bar chart of page reads per lookup (10000 / 4 / 1);
+    - 3 new sections, 2 revised, the other 14 untouched; support check 37 of 39 (95%);
+    - search found *Deadlock Basics* for "two processes stuck waiting on each other forever".
 
 ### Trade-offs
 - **LLM calls vs quality:** merging and triage use embeddings to shortlist and the LLM only to judge near-matches, in one batched call per batch. Embeddings alone got it wrong on real notes: "Deadlock prevention" sat within 0.90 of "Coffman conditions" (D27).
 - **Stale detection is deterministic** (a hash), not an LLM decision: cheap, testable, explainable. The cost: a full "Rebuild knowledge map" re-extracts claims with slightly different wording, which changes most fingerprints. On the real notebook it kept the outline identical but rewrote 10 of 11 sections. Rebuild is a repair tool; normal growth goes through per-source builds.
 - **Free-tier budget:** 150 passages an hour, in-process (resets on restart; per process, not per user).
 - **Background tasks, not a queue:** FastAPI `BackgroundTasks` with a per-notebook lock. A restart kills running jobs, so they are marked failed at startup and the next sync rewrites what was left stale. A real queue (Cloud Tasks, Celery) is the production answer.
-- **Support check = a self-check.** The checker is the same model family as the writer, so 94% means "stays within its cited passages by Gemini's own judgement", not a human-verified accuracy. Unsupported paragraphs are rewritten once, then kept with a mark, never hidden (D29).
+- **Support check = a self-check.** The checker is the same model family as the writer, so 95% means "stays within its cited passages by Gemini's own judgement", not a human-verified accuracy. Unsupported paragraphs are rewritten once, then kept with a mark, never hidden (D29).
 - **Cost:** a section costs 2 calls (write + check), up to 4 with a rewrite. Calls are counted per job, section writes are capped at 60 per notebook per day, and one failed source can be re-read on its own instead of rebuilding everything.
 - **Figures by code, not by the model:** a concept map is a Mermaid graph of known links, so it can't invent structure. The cost: maps get wide when many concepts link to one, so they scroll sideways.
-- **Book retrieval is word overlap**, not embeddings: fine for tens of sections whose vocabulary is the concept names; semantic retrieval over sections is the upgrade (D30).
+- **Book retrieval is by meaning plus words:** sections are embedded (one call per written section), and exact word matches add a small bonus so exact terms still win (D30).
 - **PDF via the browser's print dialog:** no server-side PDF library; the trade-off is that print layout depends on the browser.
 - **History starts at phase 3:** section snapshots exist only from the version the support check arrived; older versions show their change record but not their text.
 
@@ -395,7 +400,7 @@ All three were invisible to the fake-LLM tests:
    - Sections are written only from their own claims' passages, and every paragraph stores the passage ids it used, shown beside it.
    - Concepts without evidence are excluded, and a section without passages isn't written.
    - A support check judges each paragraph against its cited passages. Unsupported paragraphs are rewritten once, then kept with a visible mark.
-   - On my notebook: 94% supported, 2 partial, 0 unsupported. It's a same-model self-check, so I report it as that, not as accuracy.
+   - On my notebook: 95% supported, 2 partial, 0 unsupported. It's a same-model self-check, so I report it as that, not as accuracy.
 
 **Self-check:** (8b-a) Why does the fingerprint use claim *text* rather than claim ids? (8b-b) What would break if a rebuild deleted concepts before re-reading the source? (8b-c) Why is the outline planned from names and links only?
 
@@ -425,7 +430,7 @@ All three were invisible to the fake-LLM tests:
 | knowledge graph / entity resolution (concepts, claims, evidence merged across sources) | `app/knowledge/build.py` (`resolve_concepts`, `triage_claims`), `app/knowledge/triage.py`, `migrations/002_knowledge.sql` | ✅ verified on a real notebook (2 sources, 36 concepts) |
 | incrementally updated, cited book ("living textbook") | `app/book/sync.py` (fingerprint → rewrite stale sections only), `app/book/outline.py`, `frontend/src/components/BookReader.jsx` | ✅ adding a source rewrote 1 of 7 sections and added 4; a third source left all 11 untouched and added 5 |
 | figures, export, learner tools | `app/book/{figures,export,learner}.py`, `frontend/src/components/BookExtras.jsx` | ✅ verified on one notebook: maps, 12 comparison tables, MD + EPUB export, `[B#]` book citations in chat, search, chapter quiz → weak spot |
-| citation support rate / hallucination check | `app/book/sync.py::check_support`, `eval/book_support.py` → `eval/book_support.md` | ✅ 94% (31/33) on one notebook: say "self-checked by the model", small sample |
+| citation support rate / hallucination check | `app/book/sync.py::check_support`, `eval/book_support.py` → `eval/book_support.md` | ✅ 95% (37/39) on one notebook: say "self-checked by the model", small sample |
 
 **Suggested accurate resume wording** (use whatever `/health` shows for the embedding model):
 
@@ -453,9 +458,9 @@ Interview story for the embedding change: "The project started on text-embedding
 
 **Generation (60 s).** "The 16 pipelines are one registry of configurations run by one runner. Each has a retrieval strategy: whole-notebook with map-reduce for summaries and outlines, top-k retrieval for quizzes and flashcards, or per-source for the textbook chapter. Difficulty, length and focus topic change the prompt. Gemini returns JSON constrained by a Pydantic schema. I validate it, including rules like 'the quiz answer index must exist', and retry once with the error if it fails. Results are cached by notebook, pipeline, parameters and a sources version that bumps whenever documents change."
 
-**The living textbook (45 s).** "On top of that, each notebook gets one book that grows with its sources. Every source is read into a knowledge map: concepts, atomic claims, and the passages behind each claim. It's merged across sources, so a term three sources define is one entry with three pieces of evidence, and a contradiction is recorded, not overwritten. The book's outline is planned from concept names only, and each section is written only from its own evidence. Every paragraph points at its passages. Each section stores a hash of what it was written from, so adding a source rewrites only what changed. On my own notes, adding a second source rewrote one of seven sections and added a new chapter. A second model call checks every paragraph against its cited passages: 94% were supported, and the rest are marked in the book, not hidden."
+**The living textbook (45 s).** "On top of that, each notebook gets one book that grows with its sources. Every source is read into a knowledge map: concepts, atomic claims, and the passages behind each claim. It's merged across sources, so a term three sources define is one entry with three pieces of evidence, and a contradiction is recorded, not overwritten. The book's outline is planned from concept names only, and each section is written only from its own evidence. Every paragraph points at its passages. Each section stores a hash of what it was written from, so adding a source rewrites only what changed. On my own notes, adding a second source rewrote one of seven sections and added a new chapter. A second model call checks every paragraph against its cited passages: 95% were supported, and the rest are marked in the book, not hidden."
 
-**Engineering (20 s).** "Every Gemini call goes through a rate limiter and backoff. There are 133 backend and 30 frontend tests that run without API keys, CI on every push, and Cloud Run deployment notes."
+**Engineering (20 s).** "Every Gemini call goes through a rate limiter and backoff. There are 138 backend and 30 frontend tests that run without API keys, CI on every push, and Cloud Run deployment notes."
 
 **History (15 s).** "The version I defended at my viva was Go with LangChainGo and keyword retrieval. v2 is the re-architecture with real embeddings and hybrid search. Both are in the repo."
 

@@ -58,7 +58,7 @@ What the book gives you:
 | | Supabase Auth | – | accounts and JWT access tokens |
 | | Supabase Storage | – | original uploaded files (bucket `sources`) |
 | Parsing | pymupdf / pymupdf4llm, python-docx | 1.28 / 1.2 | PDF → Markdown per page, DOCX |
-| Quality | pytest, ruff | – | 137 backend tests (no API key needed), lint/format |
+| Quality | pytest, ruff | – | 138 backend tests (no API key needed), lint/format |
 | CI | GitHub Actions | – | lint, test and build on every push |
 
 **No Docker is needed locally.** Chroma runs embedded inside the API process. A multi-stage `Dockerfile` exists for deployment ([DEPLOY_GCP.md](DEPLOY_GCP.md)).
@@ -222,7 +222,7 @@ Chroma collections, one set per embedding model:
 | Gemini rate limits | client-side rate limiter (`gemini_rpm`), retries with backoff, optional OpenAI fallback |
 | Free-tier cost | 150 extraction passages/hour; 60 section writes/notebook/day; Gemini calls counted per job and shown |
 | Wasted work | cached generations; sections rewritten only when their fingerprint changes; one source can be re-read without a full rebuild |
-| Hallucination | answers and paragraphs cite passages; concepts without evidence are left out of the book; support check with visible marks (94% supported on the real test notebook, a self-check) |
+| Hallucination | answers and paragraphs cite passages; concepts without evidence are left out of the book; support check with visible marks (95% supported on the real test notebook, a self-check) |
 | Disagreeing sources | recorded as conflicts with both passages; never silently overwritten |
 | Dropped connections | Supabase requests resent once on "Server disconnected" |
 | Restarts | jobs still "running" at startup are marked failed; the next sync rewrites what was left stale |
@@ -239,7 +239,7 @@ Chroma collections, one set per embedding model:
 # frontend (from frontend/)
 npm run dev          # http://localhost:5173
 # tests
-cd backend && .venv/Scripts/python -m pytest      # 137 tests, no API key
+cd backend && .venv/Scripts/python -m pytest      # 138 tests, no API key
 cd frontend && npm test                            # 30 tests
 # evaluation
 cd backend && .venv/Scripts/python eval/run_eval.py                    # retrieval quality -> eval/results.md
@@ -259,11 +259,15 @@ New Supabase projects run `backend/migrations/001` to `006` in order.
 - First edition: 16 concepts → 2 chapters, 7 sections.
 - Adding the transactions notes: 6 of 7 sections untouched, 1 revised, a new 4-section chapter.
 - Adding the indexing notes: all 11 sections untouched, a new 5-section chapter (11 Gemini calls).
+- Adding a note with dates and a table: 3 new sections, 2 revised, 14 untouched.
+  - The new chapter got a timeline (1970 → 1986).
+  - The table became a bar chart of page reads per lookup (10000 / 4 / 1).
 
 **Quality and features:**
-- **Support check:** 31 of 33 paragraphs backed by their own passages (94%), 2 partial, 0 unsupported.
+- **Support check:** 37 of 39 paragraphs backed by their own passages (95%), 2 partial, 0 unsupported.
 - **Figures:** a concept map for all 4 chapters, and 12 comparison tables.
 - **Export:** Markdown, and a valid EPUB of 27 KB.
 - **Chat** cited both `[S1]` and `[B1]`.
+- **Search by meaning:** "two processes stuck waiting on each other forever" found *Deadlock Basics* first.
 - **Chapter quiz:** a score of 1/5 became a weak spot.
 - **Retrieval evaluation:** `eval/results.md` (the LLM rerank layer took Recall@1 from 0.82 to 1.00 on 33 labelled questions).

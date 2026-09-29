@@ -190,3 +190,11 @@ def test_written_sections_are_embedded_once(client, services):
     sections = services.repo.select("book_sections", notebook_id=notebook["id"])
     assert sections and all(s["indexed"] for s in sections)
     assert index_sections(services, notebook["id"]) == 0  # nothing left to embed
+
+
+def test_long_figure_labels_are_cut_at_a_word():
+    from app.book.figures import _label
+
+    text = "Oracle released the first commercial relational database that used SQL in its product line"
+    assert _label(text, 60) == "Oracle released the first commercial relational database…"
+    assert _label("short") == "short"

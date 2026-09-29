@@ -116,8 +116,14 @@ Short records of each non-obvious choice: **decision → why → trade-off**.
 - **Export:**
   - Markdown with footnotes, and EPUB 3 built with `zipfile` (the `mimetype` entry is stored first, as the format requires).
   - PDF is the browser's print dialog over a print stylesheet: no PDF dependency on the server, and fonts and layout match the reader.
-- **Ask the book and search:**
-  - Book sections are picked by word overlap, with concept names weighted double: 2 sections per chat question, cited as `[B#]`.
-  - It's cheap and works because a book is small (tens of sections) and its vocabulary *is* the concept names.
-  - Semantic retrieval over sections is the upgrade path (embed each section into a Chroma collection).
+- **Ask the book and search, by meaning:**
+  - Written sections are embedded into a `sections` Chroma collection (again after every rewrite). Concepts already have one.
+  - The score is cosine similarity (≥ 0.6 counts as a match) plus 0.05 per matching query word, capped. Exact terms still win, and paraphrases are found too.
+  - On the real notebook, "two processes stuck waiting on each other forever" found *Deadlock Basics* first without the word "deadlock".
+  - Without embeddings it falls back to word overlap.
+- **Timelines and charts:**
+  - Extraction also returns dated events and tables of numbers, each tied to its passage (`timeline_events`, `data_tables`).
+  - A chapter with 2+ dated events gets a Mermaid timeline.
+  - A table whose column is all numbers gets a single-series bar chart (colour validated for the dark surface), with its table one click away. Nothing is drawn from numbers the sources don't state.
+- **Tests without Chroma:** unit tests use an exact in-memory `FakeVectorStore`. A shared in-memory Chroma 1.5 client failed now and then with internal errors ("Error finding id", "Nothing found on disk"). In the app, `ChromaVectorStore.query` falls back to an exact search if Chroma raises one.
 - **Quiz → weak spots:** "Quiz me on this chapter" reuses the existing quiz pipeline with a chapter focus. Only the first full attempt counts, and under 70% marks the chapter as a weak spot. Stored in `book_reads.quiz_scores`, with no new table.
