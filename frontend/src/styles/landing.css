@@ -479,3 +479,186 @@
     gap: var(--space-1);
   }
 }
+
+/* ---------------------------------------------------------------- public pages (formats, how it works, about, api, privacy) */
+.public-main {
+  padding: var(--space-7) 0 var(--space-9);
+  min-height: 60vh;
+}
+.prose {
+  max-width: calc(68ch + 2 * var(--space-5)); /* prose pages read at a comfortable measure */
+}
+.public-title {
+  font-size: var(--text-3xl);
+  font-weight: 750;
+  letter-spacing: -0.025em;
+  max-width: 20ch;
+  text-wrap: balance;
+}
+.public-lede {
+  margin-top: var(--space-3);
+  max-width: 60ch;
+  font-size: var(--text-md);
+  color: var(--chalk-dim);
+}
+.public-note {
+  margin-top: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--chalk-dim);
+  max-width: 68ch;
+}
+.public-section {
+  margin-top: var(--space-7);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.public-section h2 {
+  font-size: var(--text-xl);
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  scroll-margin-top: calc(64px + var(--space-4)); /* land below the sticky header when linked by #id */
+}
+.public-section p {
+  max-width: 68ch;
+}
+.public-section code,
+.api-table code {
+  font-family: var(--font-code);
+  font-size: 0.92em;
+  padding: 1px 5px;
+  border-radius: var(--radius-control);
+  background: var(--slate-deep);
+}
+.public-next {
+  margin-top: var(--space-8);
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+.section-more {
+  margin-top: var(--space-5);
+  font-weight: 600;
+}
+.band-paper .section-more a {
+  color: var(--ink);
+}
+.link-list {
+  list-style: none;
+  margin-top: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  font-size: var(--text-md);
+  font-weight: 600;
+}
+.landing-nav a.active {
+  color: var(--chalk);
+  border-bottom-color: var(--highlighter);
+}
+
+/* the stages on "how it works": a real sequence, numbered down the left */
+.stages {
+  list-style: none;
+  counter-reset: stage;
+  margin-top: var(--space-6);
+  display: flex;
+  flex-direction: column;
+}
+.stages li {
+  counter-increment: stage;
+  position: relative;
+  padding: var(--space-5) 0 var(--space-5) 64px;
+  border-top: 1px solid var(--line);
+  scroll-margin-top: calc(64px + var(--space-4));
+}
+.stages li::before {
+  content: counter(stage);
+  position: absolute;
+  left: 0;
+  top: var(--space-5);
+  font-size: var(--text-2xl);
+  font-weight: 300;
+  font-variation-settings: 'opsz' 96;
+  line-height: 1;
+  color: var(--chalk-dim);
+}
+.stages h2 {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  margin-bottom: var(--space-2);
+}
+.stages p {
+  max-width: 64ch;
+  color: var(--chalk);
+}
+
+/* the formats page: four groups, each with its colour, each format a row with an optional sample */
+.formats-group {
+  margin-top: var(--space-8);
+  padding-left: var(--space-5);
+  border-left: 3px solid var(--goal);
+}
+.formats-group-head h2 {
+  display: flex;
+  align-items: center;
+  font-size: var(--text-xl);
+  font-weight: 700;
+}
+.formats-group-head p {
+  margin-top: var(--space-1);
+  color: var(--chalk-dim);
+}
+.formats-list {
+  list-style: none;
+  margin-top: var(--space-4);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+.formats-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  background: var(--slate-raised);
+  border-radius: var(--radius-panel);
+  scroll-margin-top: calc(64px + var(--space-4));
+}
+.formats-item.is-open {
+  grid-column: 1 / -1; /* an open sample needs the full width */
+}
+.formats-item h3 {
+  font-size: var(--text-md);
+  font-weight: 700;
+}
+.formats-item-text p {
+  margin-top: var(--space-1);
+  color: var(--chalk-dim);
+  max-width: 52ch;
+}
+.formats-reads {
+  font-size: var(--text-xs);
+  color: var(--goal) !important; /* the group's colour says how this format reads the notes */
+}
+.formats-sample {
+  width: 100%;
+  min-height: 0;
+  margin-top: var(--space-2);
+  border-top-color: var(--goal);
+}
+.api-table td:first-child {
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .formats-list {
+    grid-template-columns: 1fr;
+  }
+  .stages li {
+    padding-left: 48px;
+  }
+  .public-title {
+    font-size: var(--text-2xl);
+  }
+}

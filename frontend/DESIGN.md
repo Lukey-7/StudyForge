@@ -83,8 +83,25 @@ sections apart without dividers or cards:
 5. chalkboard call to action;
 6. deep slate footer with three link columns.
 
-The header is sticky with links to the sections; the same links repeat in the footer, so on phones the
+The header is sticky with links to the public pages; the same links repeat in the footer, so on phones the
 header links can be hidden.
+
+## Public pages: no dead ends
+
+Every link in the header and footer goes to a real page, all framed by the same header and footer
+(`src/landing/PublicPage.jsx`):
+
+| Page | What it is for |
+|---|---|
+| `/formats` | all sixteen formats by goal, each with a description, how it reads the notes, and a live sample |
+| `/how-it-works` | the pipeline from upload to cited answer, numbered because it is a sequence |
+| `/about` | how it is built, what each technology does here, the measured search results, history, author |
+| `/api` | the endpoints in plain words, with a button to the server's interactive reference |
+| `/privacy` | where notes are stored, what is sent to Google, what is never done |
+| anything else | a "no page here" page with links onward |
+
+Prose pages use a 68ch measure; the formats and API pages are wide. Section headings carry
+`scroll-margin-top` so `#anchors` land below the sticky header.
 
 ## Signature pieces
 

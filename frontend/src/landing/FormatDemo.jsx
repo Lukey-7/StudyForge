@@ -7,7 +7,18 @@ import { SAMPLES } from './samples'
 // The format selector + a live sample. Uses the app's real renderers (so the quiz can be
 // answered and the flashcards flip), except the mind map, which is drawn with CSS here
 // so the landing page doesn't have to download mermaid.
-const LANDING_RENDERERS = { ...RENDERERS, mind_map: MindTree }
+export const LANDING_RENDERERS = { ...RENDERERS, mind_map: MindTree }
+
+// One format's sample, made from the landing notes paragraph. Used here and on the Formats page.
+export function FormatSample({ name }) {
+  const Renderer = LANDING_RENDERERS[name]
+  if (!Renderer || !SAMPLES[name]) return null
+  return (
+    <div className="reading">
+      <Renderer output={SAMPLES[name]} />
+    </div>
+  )
+}
 
 // `live` turns true when the hero highlight has finished; then the first sample appears.
 export default function FormatDemo({ live }) {

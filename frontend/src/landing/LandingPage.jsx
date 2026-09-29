@@ -4,11 +4,11 @@ import { isDemoMode } from '../lib/supabase'
 import CitedAnswer from './CitedAnswer'
 import FormatDemo from './FormatDemo'
 import { NOTES } from './samples'
+import SiteFooter from './SiteFooter'
+import SiteHeader from './SiteHeader'
 
 // Must match the highlighter animation in landing.css (400 ms delay + 700 ms swipe).
 const SWIPE_DONE_MS = 1100
-
-const REPO_URL = 'https://github.com/Lukey-7/StudyForge'
 
 // Public landing page. It is a sequence of full-width bands, each on its own surface:
 // chalkboard (hero, formats), paper (how it works), raised slate (cited answers), deep slate (footer).
@@ -30,34 +30,7 @@ export default function LandingPage({ signedIn }) {
 
   return (
     <div className="landing">
-      <header className="landing-header">
-        <div className="band-inner landing-header-inner">
-          <Link to="/welcome" className="wordmark">
-            StudyForge
-          </Link>
-          <nav className="landing-nav" aria-label="Sections">
-            <a href="#formats">Formats</a>
-            <a href="#how">How it works</a>
-            <a href="#cited">Cited answers</a>
-          </nav>
-          <div className="landing-account">
-            {canSignIn ? (
-              <>
-                <Link to="/login" className="btn btn-quiet">
-                  Sign in
-                </Link>
-                <Link to={startHref} className="btn btn-primary">
-                  Start studying
-                </Link>
-              </>
-            ) : (
-              <Link to="/notebooks" className="btn btn-primary">
-                Your notebooks
-              </Link>
-            )}
-          </div>
-        </div>
-      </header>
+      <SiteHeader signedIn={signedIn} />
 
       <main>
         <section className="band band-hero">
@@ -105,6 +78,9 @@ export default function LandingPage({ signedIn }) {
               on yours.
             </p>
             <FormatDemo live={swipeDone} />
+            <p className="section-more">
+              <Link to="/formats">Read about all sixteen formats</Link>
+            </p>
           </div>
         </section>
 
@@ -125,6 +101,9 @@ export default function LandingPage({ signedIn }) {
                 <p>Ask questions in your own words. Every answer points back to the passage it used.</p>
               </li>
             </ol>
+            <p className="section-more">
+              <Link to="/how-it-works">See what happens to your notes, step by step</Link>
+            </p>
           </div>
         </section>
 
@@ -148,48 +127,7 @@ export default function LandingPage({ signedIn }) {
         </section>
       </main>
 
-      <footer className="landing-footer">
-        <div className="band-inner footer-grid">
-          <div className="footer-about">
-            <Link to="/welcome" className="wordmark">
-              StudyForge
-            </Link>
-            <p>
-              Your notes are split into passages, found with a mix of keyword and meaning-based search, and answered by
-              Google's Gemini model using only those passages.
-            </p>
-          </div>
-          <nav className="footer-col" aria-label="Product">
-            <h3>Product</h3>
-            <a href="#formats">The sixteen formats</a>
-            <a href="#how">How it works</a>
-            <a href="#cited">Cited answers</a>
-            {canSignIn ? <Link to="/login">Sign in</Link> : <Link to="/notebooks">Your notebooks</Link>}
-          </nav>
-          <nav className="footer-col" aria-label="Project">
-            <h3>Project</h3>
-            <a href={REPO_URL} target="_blank" rel="noreferrer">
-              Source code on GitHub
-            </a>
-            <a href={`${REPO_URL}/blob/v2/docs/ARCHITECTURE.md`} target="_blank" rel="noreferrer">
-              How it is built
-            </a>
-            <a href={`${REPO_URL}/blob/v2/docs/API.md`} target="_blank" rel="noreferrer">
-              API reference
-            </a>
-          </nav>
-          <nav className="footer-col" aria-label="Built with">
-            <h3>Built with</h3>
-            <span>React and FastAPI</span>
-            <span>Gemini and ChromaDB</span>
-            <span>Supabase</span>
-          </nav>
-        </div>
-        <div className="band-inner footer-bottom">
-          <span>Made by Varun Darji</span>
-          <span>An open-source study project</span>
-        </div>
-      </footer>
+      <SiteFooter signedIn={signedIn} />
     </div>
   )
 }

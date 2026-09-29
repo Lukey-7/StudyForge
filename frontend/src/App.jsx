@@ -7,6 +7,12 @@ import LandingPage from './landing/LandingPage'
 import LoginPage from './pages/LoginPage'
 import NotebookPage from './pages/NotebookPage'
 import NotebooksPage from './pages/NotebooksPage'
+import AboutPage from './pages/public/AboutPage'
+import ApiPage from './pages/public/ApiPage'
+import FormatsPage from './pages/public/FormatsPage'
+import HowItWorksPage from './pages/public/HowItWorksPage'
+import NotFoundPage from './pages/public/NotFoundPage'
+import PrivacyPage from './pages/public/PrivacyPage'
 
 // One cache for all server data. retry: 1 because most failures here are real
 // errors (404, 409, 503) that won't fix themselves by retrying 3 times.
@@ -29,8 +35,10 @@ export default function App() {
 // Routes:
 //   /                 landing page when signed out, your notebooks when signed in
 //   /welcome          landing page, always (the "Home" link; useful in demo mode where you're always signed in)
+//   /formats, /how-it-works, /about, /api, /privacy   public pages, with or without a session
 //   /login            sign in / create account (?mode=signup opens the second one)
 //   /notebooks[/:id]  the app itself, only with a session
+//   anything else     a "no page here" page with links onward
 function AppRoutes() {
   const { session, loading, signOut } = useAuth()
 
@@ -42,17 +50,23 @@ function AppRoutes() {
   }
   // Wraps a page that needs a session: without one, go to the login screen.
   const requireSession = (page) => (session ? page : <Navigate to="/login" replace />)
+  const signedIn = Boolean(session)
 
   return (
     <Routes>
       <Route path="/" element={session ? <Navigate to="/notebooks" replace /> : <LandingPage signedIn={false} />} />
-      <Route path="/welcome" element={<LandingPage signedIn={Boolean(session)} />} />
+      <Route path="/welcome" element={<LandingPage signedIn={signedIn} />} />
+      <Route path="/formats" element={<FormatsPage signedIn={signedIn} />} />
+      <Route path="/how-it-works" element={<HowItWorksPage signedIn={signedIn} />} />
+      <Route path="/about" element={<AboutPage signedIn={signedIn} />} />
+      <Route path="/api" element={<ApiPage signedIn={signedIn} />} />
+      <Route path="/privacy" element={<PrivacyPage signedIn={signedIn} />} />
       <Route path="/login" element={session ? <Navigate to="/notebooks" replace /> : <LoginPage />} />
       <Route element={requireSession(<Layout email={session?.user?.email} onSignOut={onSignOut} />)}>
         <Route path="/notebooks" element={<NotebooksPage />} />
         <Route path="/notebooks/:notebookId" element={<NotebookPage />} />
       </Route>
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<NotFoundPage signedIn={signedIn} />} />
     </Routes>
   )
 }
