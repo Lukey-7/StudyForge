@@ -151,3 +151,102 @@ def test_a_section_added_and_then_rewritten_counts_once_as_new(client):
     changes = book(client, notebook["id"])["changes"]
     assert "Transaction" in [s["title"] for s in changes["added"]]
     assert "Transaction" not in [s["title"] for s in changes["revised"]]
+
+
+# ---------------------------------------------------------------- phase 3: trust and evolution
+def section_detail(client, notebook_id, section_id, version=None):
+    query = f"?version={version}" if version is not None else ""
+    return client.get(f"/notebooks/{notebook_id}/book/sections/{section_id}{query}")
+
+
+def test_every_paragraph_is_checked_and_the_support_rate_is_reported(client):
+    notebook = make_notebook(client)
+    upload(client, notebook["id"], name="lecture.md", data=LECTURE)
+    body = book(client, notebook["id"])
+    assert body["support"]["rate"] == 1.0 and body["support"]["unsupported"] == 0
+    assert body["job"]["llm_calls"] >= 3  # plan + (write + check) per section
+    index = sections_by_title(body)["Index"]
+    detail = section_detail(client, notebook["id"], index["id"]).json()
+    assert detail["support_rate"] == 1.0
+    assert all(p["support"] == "supported" for p in detail["paragraphs"])
+
+
+def test_an_unsupported_paragraph_is_rewritten_once_then_kept_with_a_mark(client, monkeypatch):
+    from app.book.schemas import SectionDraft, SupportVerdicts
+    from tests import fakes
+
+    drafts = []
+
+    def always_unsupported(prompt):
+        return SupportVerdicts.model_validate(
+            {"verdicts": [{"paragraph": 0, "verdict": "unsupported", "reason": "Not in the passage."}]}
+        )
+
+    def counting_section(prompt):
+        drafts.append(prompt)
+        return fakes.fake_section(prompt)
+
+    monkeypatch.setitem(fakes.BOOK_FAKES, SupportVerdicts, always_unsupported)
+    monkeypatch.setitem(fakes.BOOK_FAKES, SectionDraft, counting_section)
+    notebook = make_notebook(client)
+    upload(client, notebook["id"], name="lecture.md", data=LECTURE)
+
+    body = book(client, notebook["id"])
+    sections = sections_by_title(body)
+    assert len(drafts) == 2 * len(sections)  # one draft + one rewrite per section, never more
+    assert "found paragraphs not backed" in drafts[1].lower()
+    first = section_detail(client, notebook["id"], sections["Index"]["id"]).json()["paragraphs"][0]
+    assert first["support"] == "unsupported" and first["support_note"] == "Not in the passage."  # kept, marked
+    assert body["support"]["unsupported"] >= 1 and body["support"]["rate"] < 1
+
+
+def test_older_versions_of_a_section_can_be_read(client):
+    notebook = make_notebook(client)
+    upload(client, notebook["id"], name="lecture.md", data=LECTURE)
+    index_id = sections_by_title(book(client, notebook["id"]))["Index"]["id"]
+    before = section_detail(client, notebook["id"], index_id).json()
+    upload(client, notebook["id"], name="textbook.md", data=TEXTBOOK)
+
+    now = section_detail(client, notebook["id"], index_id).json()
+    assert now["versions"] == [1, 2] and now["version"] == 2
+    old = section_detail(client, notebook["id"], index_id, version=1).json()
+    assert old["version"] == 1 and old["current_version"] == 2
+    assert [p["text"] for p in old["paragraphs"]] == [p["text"] for p in before["paragraphs"]]
+    assert section_detail(client, notebook["id"], index_id, version=7).status_code == 404
+
+    history = client.get(f"/notebooks/{notebook['id']}/book/history").json()
+    assert [h["version"] for h in history] == [2, 1]
+    assert history[0]["changes"]["new_concepts"] == ["Transaction"]
+
+
+def test_conflicts_are_listed_with_both_passages_and_their_section(client):
+    from tests.test_knowledge import BLOG
+
+    notebook = make_notebook(client)
+    upload(client, notebook["id"], name="lecture.md", data=LECTURE)
+    upload(client, notebook["id"], name="blog.md", data=BLOG)
+    conflicts = client.get(f"/notebooks/{notebook['id']}/conflicts").json()
+    assert len(conflicts) == 1
+    c = conflicts[0]
+    assert c["concept"]["name"] == "Index" and c["section"]["title"] == "Index"
+    assert c["claim_evidence"][0]["source_name"] == "lecture.md"
+    assert c["contradicting_evidence"]["source_name"] == "blog.md"
+    assert sections_by_title(book(client, notebook["id"]))["Index"]["disputed"]
+
+
+def test_the_daily_limit_leaves_sections_waiting(client, services):
+    services.settings.book_max_sections_per_day = 1
+    notebook = make_notebook(client)
+    upload(client, notebook["id"], name="lecture.md", data=LECTURE)
+    body = book(client, notebook["id"])
+    statuses = sorted(s["status"] for s in sections_by_title(body).values())
+    assert statuses == ["current", "stale"]
+    assert "daily limit" in body["job"]["detail"]
+
+
+def test_one_source_can_be_re_read_without_a_full_rebuild(client, services):
+    notebook = make_notebook(client)
+    source = upload(client, notebook["id"], name="lecture.md", data=LECTURE)["source"]
+    assert client.post(f"/sources/{source['id']}/knowledge/retry").status_code == 202
+    km = client.get(f"/notebooks/{notebook['id']}/knowledge").json()
+    assert km["job"]["status"] == "done" and km["job"]["llm_calls"] >= 1

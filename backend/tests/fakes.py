@@ -8,7 +8,7 @@ from collections.abc import Iterator
 
 from pydantic import BaseModel
 
-from app.book.schemas import Outline, Placement, SectionDraft
+from app.book.schemas import Outline, Placement, SectionDraft, SupportVerdicts
 from app.generation import schemas as s
 from app.knowledge.schemas import Extraction, Verdicts
 from app.llm.base import LLMJson, LLMText
@@ -195,4 +195,13 @@ def fake_section(prompt: str) -> SectionDraft:
     return SectionDraft.model_validate({"paragraphs": paragraphs or [{"text": "Nothing yet.", "passages": []}], "see_also": []})
 
 
-BOOK_FAKES = {Outline: fake_outline, Placement: fake_placement, SectionDraft: fake_section}
+PARAGRAPH_LINE = re.compile(r"^\[Q(\d+)\]", re.M)
+
+
+def fake_support(prompt: str) -> SupportVerdicts:
+    """Every paragraph judged supported (the fake sections quote their passages)."""
+    verdicts = [{"paragraph": int(i), "verdict": "supported", "reason": ""} for i in PARAGRAPH_LINE.findall(prompt)]
+    return SupportVerdicts.model_validate({"verdicts": verdicts})
+
+
+BOOK_FAKES = {Outline: fake_outline, Placement: fake_placement, SectionDraft: fake_section, SupportVerdicts: fake_support}

@@ -16,6 +16,7 @@ import hashlib
 import logging
 import threading
 from collections import defaultdict
+from datetime import UTC, datetime, timedelta
 
 from app.book.outline import (
     PLACE_SYSTEM,
@@ -26,8 +27,9 @@ from app.book.outline import (
     place_prompt,
     plan_prompt,
 )
-from app.book.schemas import Outline, Placement, SectionDraft
+from app.book.schemas import Outline, Placement, SectionDraft, SupportVerdicts
 from app.db.repository import Row
+from app.llm.counting import CountingLLM
 from app.services import Services
 
 logger = logging.getLogger(__name__)
@@ -38,6 +40,16 @@ Use only the facts and passages given; never add outside knowledge. For every pa
 passage numbers [P#] it relies on. Use the concept names exactly as given. Define a term the first
 time it appears. No headings, no lists, no Markdown, and do not mention "the passages" or "the
 sources". For see_also, name up to 3 of the other concepts listed that a reader should look at next."""
+
+SUPPORT_SYSTEM = """You check a textbook section against its sources. For each numbered paragraph [Q#],
+judge it ONLY against the passages it relies on (listed after it), never outside knowledge:
+- supported: every factual statement is stated in, or directly follows from, those passages;
+- partial: the main point is there, but some detail is not;
+- unsupported: its main statements are not in those passages.
+For partial and unsupported, give the reason in one short sentence."""
+
+REWRITE_NOTE = """A CHECK OF YOUR DRAFT FOUND PARAGRAPHS NOT BACKED BY THEIR PASSAGES. Rewrite the whole
+section so that every paragraph states only what its listed passages say. The problems:"""
 
 _locks: dict[str, threading.Lock] = defaultdict(threading.Lock)
 _locks_guard = threading.Lock()
@@ -101,6 +113,14 @@ def sync_book(services: Services, notebook_id: str) -> None:
 
 
 def _sync(services: Services, notebook_id: str, job: Row) -> str:
+    llm = CountingLLM(services.llm)
+    try:
+        return _sync_with(services, llm, notebook_id, job)
+    finally:
+        services.repo.update("knowledge_jobs", job["id"], {"llm_calls": llm.calls})
+
+
+def _sync_with(services: Services, llm: CountingLLM, notebook_id: str, job: Row) -> str:
     repo = services.repo
     model = Model(services, notebook_id)
     stored = sorted(repo.select("book_sections", notebook_id=notebook_id), key=lambda s: (s["chapter_index"], s["section_index"]))
@@ -117,10 +137,10 @@ def _sync(services: Services, notebook_id: str, job: Row) -> str:
     placed = {cid for s in outline for cid in s["concept_ids"]}
     new = [c for c in model.concepts.values() if c["id"] not in placed]
     if new and not outline:
-        plan = services.llm.generate_json(plan_prompt(new, model.links), Outline, system=PLAN_SYSTEM).data
+        plan = llm.generate_json(plan_prompt(new, model.links), Outline, system=PLAN_SYSTEM).data
         outline = order_outline(outline_from_plan(plan, new), model.links)
     elif new:
-        placement = services.llm.generate_json(place_prompt(outline, new), Placement, system=PLACE_SYSTEM, fast=True).data
+        placement = llm.generate_json(place_prompt(outline, new), Placement, system=PLACE_SYSTEM, fast=True).data
         outline = apply_placement(outline, new, placement)
     outline = _save_outline(repo, notebook_id, outline)
 
@@ -131,19 +151,32 @@ def _sync(services: Services, notebook_id: str, job: Row) -> str:
     for section in stale:
         repo.update("book_sections", section["id"], {"status": "stale"})
 
-    # 3. WRITE the stale sections, 4. VERSION the result.
+    # 3. WRITE the stale sections (within the daily cap), each checked against its passages.
+    allowance = max(0, services.settings.book_max_sections_per_day - _written_today(repo, notebook_id))
+    to_write, waiting = stale[:allowance], stale[allowance:]
     book = _book(repo, notebook_id)
     version = book["version"] + 1
     sources = {s["id"]: s for s in repo.list_sources(notebook_id)}
     added, revised = [], []
-    for number, section in enumerate(stale, start=1):
+    for number, section in enumerate(to_write, start=1):
         repo.update("book_sections", section["id"], {"status": "writing"})
         try:
-            draft = write_section(services, model, section, outline, sources)
+            draft = write_section(services, llm, model, section, outline, sources)
             repo.update(
                 "book_sections",
                 section["id"],
                 {**draft, "fingerprint": model.fingerprint(section["concept_ids"]), "status": "current", "version": version},
+            )
+            repo.insert(
+                "book_section_versions",
+                {
+                    "notebook_id": notebook_id,
+                    "section_id": section["id"],
+                    "version": version,
+                    "title": section["title"],
+                    "paragraphs": draft["paragraphs"],
+                    "support_rate": draft["support_rate"],
+                },
             )
             (revised if section.get("version") else added).append({"id": section["id"], "title": section["title"]})
         except Exception as exc:  # noqa: BLE001 - one section failing never stops the others
@@ -151,12 +184,25 @@ def _sync(services: Services, notebook_id: str, job: Row) -> str:
             repo.update("book_sections", section["id"], {"status": "failed"})
             if len(stale) == 1:
                 raise RuntimeError(f"could not write '{section['title']}': {exc}") from exc
-        repo.update("knowledge_jobs", job["id"], {"progress": int(100 * number / len(stale))})
+        repo.update("knowledge_jobs", job["id"], {"progress": int(100 * number / len(to_write)), "llm_calls": llm.calls})
 
+    # 4. VERSION the result.
+    wait_note = f"; {len(waiting)} wait for tomorrow (daily limit)" if waiting else ""
+    if not added and not revised and not removed:
+        return f"No sections written{wait_note}"
     changes = {"new_concepts": [c["name"] for c in new], "added": added, "revised": revised, "removed": removed}
     repo.insert("book_changes", {"notebook_id": notebook_id, "version": version, "changes": changes})
     repo.update("books", book["id"], {"version": version})
-    return f"{len(added) + len(revised)} of {len(outline)} sections written"
+    return f"{len(added) + len(revised)} of {len(outline)} sections written{wait_note}"
+
+
+def _written_today(repo, notebook_id: str) -> int:
+    since = datetime.now(UTC) - timedelta(days=1)
+    return sum(
+        1
+        for v in repo.select("book_section_versions", notebook_id=notebook_id)
+        if datetime.fromisoformat(v["created_at"]) > since
+    )
 
 
 def _book(repo, notebook_id: str) -> Row:
@@ -179,7 +225,12 @@ def _save_outline(repo, notebook_id: str, outline: list[dict]) -> list[Row]:
         }
         counters[chapter_index] += 1
         if "id" not in section:
-            saved.append(repo.insert("book_sections", {**fields, "notebook_id": notebook_id, "status": "stale", "version": 0}))
+            saved.append(
+                repo.insert(
+                    "book_sections",
+                    {**fields, "notebook_id": notebook_id, "status": "stale", "version": 0, "paragraphs": [], "see_also": []},
+                )
+            )
         elif any(section.get(k) != v for k, v in fields.items()):
             saved.append(repo.update("book_sections", section["id"], fields))
         else:
@@ -217,14 +268,35 @@ def write_prompt(section: Row, model: Model, passages: list[Row], sources: dict[
     return "\n".join(lines)
 
 
-def write_section(services: Services, model: Model, section: Row, outline: list[Row], sources: dict[str, Row]) -> dict:
+def write_section(services: Services, llm, model: Model, section: Row, outline: list[Row], sources: dict[str, Row]) -> dict:
+    """Draft, check every paragraph against its own passages, and if any paragraph is unsupported
+    rewrite the section once with that feedback. The better-supported draft is kept; paragraphs that
+    are still unsupported stay, marked, never silently dropped."""
     passages = section_passages(services, model, section["concept_ids"])
     if not passages:
         raise ValueError("no passages to write from")
     own = set(section["concept_ids"])
     others = [model.concepts[cid]["name"] for s in outline for cid in s["concept_ids"] if cid not in own][:60]
     prompt = write_prompt(section, model, passages, sources, others)
-    draft = services.llm.generate_json(prompt, SectionDraft, system=WRITE_SYSTEM).data
+
+    draft = llm.generate_json(prompt, SectionDraft, system=WRITE_SYSTEM).data
+    paragraphs = check_support(llm, _paragraphs(draft, passages), passages)
+    problems = [p for p in paragraphs if p["support"] == "unsupported"]
+    if problems:
+        notes = "\n".join(f'- "{p["text"][:160]}...": {p["support_note"] or "not backed by its passages"}' for p in problems)
+        retry = llm.generate_json(f"{prompt}\n\n{REWRITE_NOTE}\n{notes}", SectionDraft, system=WRITE_SYSTEM).data
+        second = check_support(llm, _paragraphs(retry, passages), passages)
+        if support_rate(second) >= support_rate(paragraphs):
+            draft, paragraphs = retry, second
+    known = {n.lower() for n in others}
+    return {
+        "paragraphs": paragraphs,
+        "see_also": [n for n in dict.fromkeys(draft.see_also) if n.lower() in known][:3],
+        "support_rate": support_rate(paragraphs),
+    }
+
+
+def _paragraphs(draft: SectionDraft, passages: list[Row]) -> list[dict]:
     paragraphs = [
         {
             "text": p.text.strip(),
@@ -235,5 +307,39 @@ def write_section(services: Services, model: Model, section: Row, outline: list[
     ]
     if not paragraphs:
         raise ValueError("the model returned an empty section")
-    known = {n.lower() for n in others}
-    return {"paragraphs": paragraphs, "see_also": [n for n in dict.fromkeys(draft.see_also) if n.lower() in known][:3]}
+    return paragraphs
+
+
+def support_prompt(paragraphs: list[dict], passages: list[Row]) -> str:
+    number = {p["id"]: i for i, p in enumerate(passages)}
+    lines = ["PASSAGES:"]
+    for i, p in enumerate(passages):
+        lines += [f"[P{i}]", p["text"], ""]
+    lines.append("PARAGRAPHS:")
+    for i, p in enumerate(paragraphs):
+        cited = ", ".join(f"P{number[c]}" for c in p["chunk_ids"] if c in number)
+        lines += [f"[Q{i}] (relies on {cited})", p["text"], ""]
+    return "\n".join(lines)
+
+
+def check_support(llm, paragraphs: list[dict], passages: list[Row]) -> list[dict]:
+    """One call judges every paragraph against the passages it cites. A paragraph citing nothing is
+    unsupported without asking; one the answer skipped is "unchecked" (never counted as supported)."""
+    cited = [i for i, p in enumerate(paragraphs) if p["chunk_ids"]]
+    verdicts: dict[int, tuple[str, str]] = {}
+    if cited:
+        result = llm.generate_json(support_prompt(paragraphs, passages), SupportVerdicts, system=SUPPORT_SYSTEM, fast=True).data
+        verdicts = {v.paragraph: (v.verdict, v.reason.strip()) for v in result.verdicts if v.paragraph in cited}
+    checked = []
+    for i, p in enumerate(paragraphs):
+        if not p["chunk_ids"]:
+            support, note = "unsupported", "cites no passage"
+        else:
+            support, note = verdicts.get(i, ("unchecked", ""))
+        checked.append({**p, "support": support, "support_note": note if support != "supported" else ""})
+    return checked
+
+
+def support_rate(paragraphs: list[dict]) -> float:
+    """Share of paragraphs judged supported by their own passages (partial counts as not supported)."""
+    return round(sum(p["support"] == "supported" for p in paragraphs) / len(paragraphs), 3) if paragraphs else 0.0

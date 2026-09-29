@@ -36,6 +36,11 @@ export default function BookPanel({ notebookId, onOpenEvidence }) {
     wasReading.current = Boolean(stillReading)
   }, [stillReading, notebookId, queryClient])
 
+  // Re-reads one source (after a failed or queued build) instead of rebuilding the whole map.
+  const retry = useMutation({
+    mutationFn: (sourceId) => api(`/sources/${sourceId}/knowledge/retry`, { method: 'POST' }),
+    onSuccess: () => setTimeout(() => queryClient.invalidateQueries({ queryKey: ['knowledge', notebookId] }), 1500),
+  })
   const rebuild = useMutation({
     mutationFn: () => api(`/notebooks/${notebookId}/knowledge/rebuild`, { method: 'POST' }),
     onSuccess: () =>
@@ -118,10 +123,14 @@ export default function BookPanel({ notebookId, onOpenEvidence }) {
               <span className="book-progress-bar" style={{ '--p': `${job.progress}%` }} />
             </div>
           )}
-          {job?.queued?.length > 0 && <p className="muted small">{job.queued[0]}</p>}
-          {job?.failed?.length > 0 && (
-            <p className="error-text small">Part of the map could not be built: {job.failed[0]}. Try Rebuild knowledge map.</p>
-          )}
+          {[...(job?.queued || []), ...(job?.failed || [])].map((j) => (
+            <p key={j.source_id} className={`small ${job.failed.includes(j) ? 'error-text' : 'muted'}`}>
+              {job.failed.includes(j) ? `Reading ${j.source_name} into the map failed: ${j.detail}. ` : `${j.source_name}: ${j.detail} `}
+              <button className="btn-link" onClick={() => retry.mutate(j.source_id)} disabled={retry.isPending}>
+                Retry this source
+              </button>
+            </p>
+          ))}
 
           {data && data.concepts.length === 0 && job?.status !== 'running' && (
             <div className="book-empty">

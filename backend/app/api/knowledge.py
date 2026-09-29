@@ -4,7 +4,7 @@ from collections import defaultdict
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 
-from app.api.deps import get_services, owned_notebook
+from app.api.deps import get_services, owned_notebook, owned_source
 from app.book.sync import after_knowledge_change
 from app.db.repository import Row
 from app.knowledge.build import build_for_source
@@ -38,7 +38,7 @@ def _evidence_view(evidence: Row, sources: dict[str, Row]) -> dict:
     }
 
 
-def _job_summary(jobs: list[Row]) -> dict | None:
+def _job_summary(jobs: list[Row], sources: dict[str, Row] | None = None) -> dict | None:
     """Overall progress of the latest build of each source."""
     latest: dict[str, Row] = {}
     for job in jobs:  # oldest first, so later rows win
@@ -50,9 +50,15 @@ def _job_summary(jobs: list[Row]) -> dict | None:
     return {
         "status": "running" if running else ("queued" if any(j["status"] == "queued" for j in rows) else "done"),
         "progress": round(sum(j["progress"] for j in rows) / len(rows)),
-        "failed": [j.get("detail") for j in rows if j["status"] == "failed"],
-        "queued": [j.get("detail") for j in rows if j["status"] == "queued"],
+        "failed": [_job_source(j, sources) for j in rows if j["status"] == "failed"],
+        "queued": [_job_source(j, sources) for j in rows if j["status"] == "queued"],
+        "llm_calls": sum(j.get("llm_calls", 0) for j in rows),
     }
+
+
+def _job_source(job: Row, sources: dict[str, Row] | None) -> dict:
+    source = (sources or {}).get(job.get("source_id"), {})
+    return {"source_id": job.get("source_id"), "source_name": source.get("file_name", "a source"), "detail": job.get("detail")}
 
 
 @router.get("/notebooks/{notebook_id}/knowledge")
@@ -94,7 +100,7 @@ def knowledge_map(notebook: Row = Depends(owned_notebook), services: Services = 
         ],
         "conflict_count": len(data["conflicts"]),
         "concepts_with_conflicts": sorted({concept_of_claim.get(c["claim_id"]) for c in data["conflicts"]} - {None}),
-        "job": _job_summary(data["jobs"]),
+        "job": _job_summary(data["jobs"], data["sources"]),
     }
 
 
@@ -156,4 +162,22 @@ def rebuild(
     if services.embedder is None:
         raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "AI is not configured (GEMINI_API_KEY missing)")
     background.add_task(_rebuild, services, notebook["id"])
+    return {"status": "started"}
+
+
+def _retry_source(services: Services, source_id: str, notebook_id: str) -> None:
+    build_for_source(services, source_id)
+    after_knowledge_change(services, notebook_id)
+
+
+@router.post("/sources/{source_id}/knowledge/retry", status_code=status.HTTP_202_ACCEPTED)
+def retry_source_knowledge(
+    background: BackgroundTasks, source: Row = Depends(owned_source), services: Services = Depends(get_services)
+) -> dict:
+    """Re-reads one source into the map (e.g. after a failed or queued build) without a full rebuild."""
+    if services.embedder is None:
+        raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "AI is not configured (GEMINI_API_KEY missing)")
+    if source["status"] != "ready":
+        raise HTTPException(status.HTTP_409_CONFLICT, f"source is not ready ({source['status']})")
+    background.add_task(_retry_source, services, source["id"], source["notebook_id"])
     return {"status": "started"}

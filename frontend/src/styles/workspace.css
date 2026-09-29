@@ -1194,3 +1194,78 @@ button.cite-mark:hover:not(:disabled),
 .book-toc[hidden] {
   display: none;
 }
+
+/* ---------------------------------------------------------------- the Book: trust (phase 3) */
+.book-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2) var(--space-3);
+}
+.book-toolbar p {
+  margin: 0;
+}
+.book-toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+.book-support {
+  color: var(--chalk-dim);
+}
+.book-support strong {
+  color: var(--chalk);
+  font-weight: 600;
+}
+.book-support-warn {
+  color: var(--danger);
+}
+.book-section-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-4);
+}
+.input-sm {
+  width: auto;
+  padding: 2px var(--space-2);
+  font-size: var(--text-sm);
+}
+.book-old-version {
+  margin: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--slate-deep);
+}
+.book-para-text {
+  min-width: 0;
+}
+/* A paragraph the support check could not back up: kept, never hidden, but marked */
+.book-para.is-unsupported .book-para-text,
+.book-para.is-partial .book-para-text {
+  padding-left: var(--space-3);
+  border-left: 2px dashed var(--danger);
+}
+.book-para.is-partial .book-para-text {
+  border-left-color: var(--chalk-dim);
+}
+.book-support-note {
+  margin: var(--space-1) 0 0;
+  color: var(--danger);
+}
+.book-para.is-partial .book-support-note {
+  color: var(--chalk-dim);
+}
+.book-history {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.book-history p {
+  margin: 0 0 var(--space-1);
+}

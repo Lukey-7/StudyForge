@@ -1,5 +1,7 @@
 """What Gemini returns when it plans the outline and writes a section (structured output)."""
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -37,3 +39,13 @@ class DraftParagraph(BaseModel):
 class SectionDraft(BaseModel):
     paragraphs: list[DraftParagraph]
     see_also: list[str] = Field(description="Names of other listed concepts a reader should look at next")
+
+
+class ParagraphSupport(BaseModel):
+    paragraph: int = Field(description="Number [Q#] of the paragraph judged")
+    verdict: Literal["supported", "partial", "unsupported"]
+    reason: str = Field(description="For partial or unsupported: what the passages do not back up (one short sentence)")
+
+
+class SupportVerdicts(BaseModel):
+    verdicts: list[ParagraphSupport]

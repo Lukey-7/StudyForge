@@ -18,7 +18,7 @@ TABLES = ("profiles", "notebooks", "sources", "chunks", "generations", "chat_ses
 # The knowledge model (migrations/002_knowledge.sql). Accessed through the generic table methods.
 KNOWLEDGE_TABLES = ("concepts", "concept_links", "claims", "claim_evidence", "conflicts", "knowledge_jobs")
 # The book rendered from it (migrations/003_book.sql).
-BOOK_TABLES = ("books", "book_sections", "book_changes", "book_reads")
+BOOK_TABLES = ("books", "book_sections", "book_changes", "book_reads", "book_section_versions")
 # Tables with an updated_at column (set on insert and update).
 TIMESTAMPED = ("concepts", "knowledge_jobs", "books", "book_sections", "book_reads")
 
@@ -90,6 +90,8 @@ class LocalRepository:
                         self._delete_where("conflicts", claim_id=claim_id)
                     self._delete_where("concept_links", from_id=row_id)
                     self._delete_where("concept_links", to_id=row_id)
+                elif table == "book_sections":
+                    self._delete_where("book_section_versions", section_id=row_id)
                 elif table == "claims":
                     self._delete_where("claim_evidence", claim_id=row_id)
                     self._delete_where("conflicts", claim_id=row_id)

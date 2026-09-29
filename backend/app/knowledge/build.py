@@ -22,6 +22,7 @@ from dataclasses import dataclass, field
 from app.db.repository import Row
 from app.knowledge.schemas import ExtractedClaim, Extraction, Verdicts
 from app.knowledge.triage import decide_claim, is_same_concept, match_concept, normalise
+from app.llm.counting import CountingLLM
 from app.services import Services
 
 logger = logging.getLogger(__name__)
@@ -93,6 +94,7 @@ class NotebookState:
     claim_text: dict[str, str] = field(default_factory=dict)
     links: set[tuple[str, str, str]] = field(default_factory=set)
     evidence: set[tuple[str, str]] = field(default_factory=set)  # (claim_id, chunk_id)
+    llm: CountingLLM | None = None  # the job's LLM, counting its calls
 
     @classmethod
     def load(cls, services: Services, notebook_id: str) -> "NotebookState":
@@ -148,14 +150,19 @@ def build_for_source(services: Services, source_id: str) -> None:
             )
             return
         state = NotebookState.load(services, notebook_id)
+        state.llm = llm = CountingLLM(llm)
         groups = batches(passages, services.settings.knowledge_batch_passages)
         for number, group in enumerate(groups, start=1):
             extraction = llm.generate_json(extraction_prompt(group), Extraction, system=EXTRACT_SYSTEM, fast=True).data
             apply_extraction(services, source, group, extraction, state)
-            repo.update("knowledge_jobs", job["id"], {"progress": int(100 * number / len(groups))})
+            repo.update("knowledge_jobs", job["id"], {"progress": int(100 * number / len(groups)), "llm_calls": llm.calls})
         orphans = prune_concepts(services, notebook_id)  # concepts this source no longer supports
         services.vectors.delete_ids(embedder.active_model, orphans, "concepts")
-        repo.update("knowledge_jobs", job["id"], {"status": "done", "progress": 100, "detail": f"{len(passages)} passages read"})
+        repo.update(
+            "knowledge_jobs",
+            job["id"],
+            {"status": "done", "progress": 100, "llm_calls": llm.calls, "detail": f"{len(passages)} passages read"},
+        )
         logger.info(
             "knowledge built for %s: %d passages, %d concepts in notebook",
             source["file_name"],
@@ -265,7 +272,7 @@ def resolve_concepts(services: Services, source: Row, extraction: Extraction, st
     if near:
         keys = list(near)
         pairs = [(concept_text(state.concepts[near[i]]), f"{unmatched[i].name}: {unmatched[i].definition}") for i in keys]
-        result = services.llm.generate_json(verify_prompt(pairs), Verdicts, system=SAME_CONCEPT_SYSTEM, fast=True).data
+        result = state.llm.generate_json(verify_prompt(pairs), Verdicts, system=SAME_CONCEPT_SYSTEM, fast=True).data
         same = {keys[v.pair] for v in result.verdicts if 0 <= v.pair < len(keys) and v.verdict != "unrelated"}
 
     for i, (concept, vector) in enumerate(zip(unmatched, vectors)):
@@ -324,7 +331,7 @@ def triage_claims(services: Services, source: Row, passages: list[Row], claims: 
     verdicts: dict[tuple[int, str], str] = {}
     if pair_keys:
         pairs = [(state.claim_text[cid], claims[i][0].text) for i, cid in pair_keys]
-        result = services.llm.generate_json(verify_prompt(pairs), Verdicts, system=VERIFY_SYSTEM, fast=True).data
+        result = state.llm.generate_json(verify_prompt(pairs), Verdicts, system=VERIFY_SYSTEM, fast=True).data
         for v in result.verdicts:
             if 0 <= v.pair < len(pair_keys):
                 verdicts[pair_keys[v.pair]] = v.verdict

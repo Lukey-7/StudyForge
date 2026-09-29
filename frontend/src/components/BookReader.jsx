@@ -1,15 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
 import { api } from '../lib/api'
-import { plural } from '../lib/format'
 import { buildMatcher, linkTerms } from '../lib/glossary'
+import { changeSummary } from '../lib/bookChanges'
+import { ConflictsDrawer, HistoryDrawer } from './BookDrawers'
 
-// The book itself (living textbook, phase 2): contents on the left, one section at a time in the
-// middle, and beside every paragraph the passages it was written from (the evidence rail).
-// Glossary terms in the text show their definition on hover and open the concept on click.
+// The book itself (living textbook): contents on the left, one section at a time in the middle,
+// and beside every paragraph the passages it was written from (the evidence rail). Glossary terms
+// show their definition on hover. Phase 3 adds trust: every paragraph was checked against its
+// passages (unsupported ones are marked, never hidden), where the sources disagree, and history.
 export default function BookReader({ notebookId, concepts, busy, onOpenConcept, onOpenEvidence }) {
   const queryClient = useQueryClient()
   const [openSection, setOpenSection] = useState(null)
+  const [openVersion, setOpenVersion] = useState(null) // an older version of the open section
+  const [drawer, setDrawer] = useState(null) // 'conflicts' | 'history'
   const [tocOpen, setTocOpen] = useState(false)
   const [layoutRef, wide] = useWiderThan(760)
 
@@ -28,6 +32,17 @@ export default function BookReader({ notebookId, concepts, busy, onOpenConcept, 
     mutationFn: () => api(`/notebooks/${notebookId}/book/write`, { method: 'POST' }),
     onSuccess: () => setTimeout(() => queryClient.invalidateQueries({ queryKey: ['book', notebookId] }), 1500),
   })
+  const conflicts = useQuery({
+    queryKey: ['conflicts', notebookId, book.data?.version],
+    queryFn: () => api(`/notebooks/${notebookId}/conflicts`),
+    enabled: Boolean(book.data),
+  })
+  const open = (id, version = null) => {
+    setOpenSection(id)
+    setOpenVersion(version)
+    setDrawer(null)
+  }
+
   const seen = useMutation({
     mutationFn: () => api(`/notebooks/${notebookId}/book/seen`, { method: 'POST' }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['book', notebookId] }),
@@ -70,7 +85,20 @@ export default function BookReader({ notebookId, concepts, busy, onOpenConcept, 
   return (
     <div className="book-reader">
       {writing && <Progress job={job} />}
-      <ChangesBanner changes={data.changes} sections={sections} onOpen={setOpenSection} onDismiss={() => seen.mutate()} />
+      <ChangesBanner changes={data.changes} sections={sections} onOpen={open} onDismiss={() => seen.mutate()} />
+      <div className="book-toolbar">
+        <SupportSummary support={data.support} />
+        <div className="book-toolbar-actions">
+          {conflicts.data?.length > 0 && (
+            <button className="btn btn-quiet btn-sm" onClick={() => setDrawer('conflicts')}>
+              Where sources disagree ({conflicts.data.length})
+            </button>
+          )}
+          <button className="btn btn-quiet btn-sm" onClick={() => setDrawer('history')}>
+            History
+          </button>
+        </div>
+      </div>
       {failed && !writing && (
         <p className="error-text small">
           Some sections could not be written.{' '}
@@ -100,13 +128,14 @@ export default function BookReader({ notebookId, concepts, busy, onOpenConcept, 
                       className="toc-section"
                       aria-current={current?.id === s.id ? 'page' : undefined}
                       onClick={() => {
-                        setOpenSection(s.id)
+                        open(s.id)
                         setTocOpen(false)
                       }}
                     >
                       <span>{s.title}</span>
                       {s.revised && <span className="toc-revised" title="Revised since you last read" aria-label="revised" />}
                       {s.status !== 'current' && <span className="toc-status">{STATUS[s.status]}</span>}
+                      {s.status === 'current' && s.disputed && <span className="toc-status">sources disagree</span>}
                     </button>
                   </li>
                 ))}
@@ -117,18 +146,45 @@ export default function BookReader({ notebookId, concepts, busy, onOpenConcept, 
 
         {current && (
           <SectionView
-            key={current.id}
+            key={`${current.id}-${openVersion}`}
             notebookId={notebookId}
             section={current}
+            version={openVersion}
+            onVersion={(v) => setOpenVersion(v)}
             concepts={concepts}
             neighbours={neighbours(sections, current.id)}
-            onOpenSection={setOpenSection}
+            onOpenSection={open}
             onOpenConcept={onOpenConcept}
             onOpenEvidence={onOpenEvidence}
           />
         )}
       </div>
+
+      {drawer === 'conflicts' && (
+        <ConflictsDrawer
+          conflicts={conflicts.data || []}
+          onClose={() => setDrawer(null)}
+          onOpenConcept={onOpenConcept}
+          onOpenSection={open}
+          onOpenEvidence={onOpenEvidence}
+        />
+      )}
+      {drawer === 'history' && <HistoryDrawer notebookId={notebookId} onClose={() => setDrawer(null)} onOpenSection={open} />}
     </div>
+  )
+}
+
+// "Support check: 21 of 23 paragraphs backed by their passages (91%)"
+function SupportSummary({ support }) {
+  if (!support?.paragraphs) return <span />
+  const checked = support.paragraphs - support.unchecked
+  if (checked === 0) return <p className="muted small">Written before the support check existed.</p>
+  return (
+    <p className="small book-support" title="A second model call checks each paragraph against the passages it cites.">
+      <strong>Support check:</strong> {support.supported} of {checked} paragraphs backed by their passages ({Math.round(support.rate * 100)}
+      %)
+      {support.unsupported > 0 && <span className="book-support-warn"> · {support.unsupported} marked</span>}
+    </p>
   )
 }
 
@@ -165,16 +221,10 @@ function Progress({ job }) {
 function ChangesBanner({ changes, sections, onOpen, onDismiss }) {
   const changed = [...changes.revised, ...changes.added].filter((c) => sections.some((s) => s.id === c.id))
   if (changed.length === 0 && changes.removed.length === 0 && changes.new_concepts.length === 0) return null
-  const parts = [
-    changes.new_concepts.length && plural(changes.new_concepts.length, 'new concept'),
-    changes.added.length && plural(changes.added.length, 'new section'),
-    changes.revised.length && `${plural(changes.revised.length, 'section')} revised`,
-    changes.removed.length && `${plural(changes.removed.length, 'section')} removed`,
-  ].filter(Boolean)
   return (
     <div className="book-changes" role="status">
       <p>
-        <strong>Since you last read:</strong> {parts.join(', ')}.
+        <strong>Since you last read:</strong> {changeSummary(changes)}.
       </p>
       {changed.length > 0 && (
         <div className="book-changes-links">
@@ -192,12 +242,13 @@ function ChangesBanner({ changes, sections, onOpen, onDismiss }) {
   )
 }
 
-function SectionView({ notebookId, section, concepts, neighbours, onOpenSection, onOpenConcept, onOpenEvidence }) {
+function SectionView({ notebookId, section, version, onVersion, concepts, neighbours, onOpenSection, onOpenConcept, onOpenEvidence }) {
   const [activePara, setActivePara] = useState(null)
   const detail = useQuery({
-    queryKey: ['book-section', notebookId, section.id, section.version, section.status],
-    queryFn: () => api(`/notebooks/${notebookId}/book/sections/${section.id}`),
+    queryKey: ['book-section', notebookId, section.id, section.version, section.status, version],
+    queryFn: () => api(`/notebooks/${notebookId}/book/sections/${section.id}${version ? `?version=${version}` : ''}`),
   })
+  const old = detail.data && detail.data.version !== detail.data.current_version
   const d = detail.data
   const matcher = useMemo(() => buildMatcher(concepts), [concepts])
 
@@ -216,7 +267,38 @@ function SectionView({ notebookId, section, concepts, neighbours, onOpenSection,
     <article className="book-section" aria-label={section.title}>
       <header className="book-section-header">
         <p className="book-chapter-name">{section.chapter}</p>
-        <h3>{section.title}</h3>
+        <h3>{d?.title || section.title}</h3>
+        {d && (d.versions.length > 1 || d.support_rate != null) && (
+          <div className="book-section-meta small">
+            {d.support_rate != null && (
+              <span className="muted">{Math.round(d.support_rate * 100)}% of paragraphs backed by their passages</span>
+            )}
+            {d.versions.length > 1 && (
+              <label className="muted">
+                Version{' '}
+                <select
+                  className="input input-sm"
+                  value={d.version}
+                  onChange={(e) => onVersion(Number(e.target.value) === d.current_version ? null : Number(e.target.value))}
+                >
+                  {d.versions.map((v) => (
+                    <option key={v} value={v}>
+                      {v === d.current_version ? `${v} (current)` : v}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </div>
+        )}
+        {old && (
+          <p className="book-old-version small" role="status">
+            You are reading this section as it was in version {d.version}.{' '}
+            <button className="btn-link" onClick={() => onVersion(null)}>
+              Back to the current text
+            </button>
+          </p>
+        )}
         {d && d.concepts.length > 0 && (
           <div className="related">
             {d.concepts.map((c) => (
@@ -239,15 +321,23 @@ function SectionView({ notebookId, section, concepts, neighbours, onOpenSection,
       {paragraphs.map((p, i) => (
         <div
           key={i}
-          className={`book-para${activePara === i ? ' is-active' : ''}`}
+          className={`book-para${activePara === i ? ' is-active' : ''}${p.support === 'unsupported' || p.support === 'partial' ? ` is-${p.support}` : ''}`}
           onMouseEnter={() => setActivePara(i)}
           onMouseLeave={() => setActivePara(null)}
         >
-          <p className="reading">
-            {p.pieces.map((piece, k) =>
-              piece.concept ? <Term key={k} piece={piece} onOpen={onOpenConcept} /> : <span key={k}>{piece.text}</span>,
+          <div className="book-para-text">
+            <p className="reading">
+              {p.pieces.map((piece, k) =>
+                piece.concept ? <Term key={k} piece={piece} onOpen={onOpenConcept} /> : <span key={k}>{piece.text}</span>,
+              )}
+            </p>
+            {(p.support === 'unsupported' || p.support === 'partial') && (
+              <p className="book-support-note small">
+                {p.support === 'unsupported' ? 'Not backed by its passages' : 'Partly backed by its passages'}
+                {p.support_note ? `: ${p.support_note}` : ''}
+              </p>
             )}
-          </p>
+          </div>
           <aside className="book-rail" aria-label="Where this paragraph comes from">
             {p.evidence.length === 0 ? (
               <span className="book-rail-none">No passage cited</span>

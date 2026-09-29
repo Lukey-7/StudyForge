@@ -50,7 +50,12 @@ def _job(services: Services, notebook_id: str) -> Row | None:
     if not jobs:
         return None
     job = jobs[-1]
-    return {"status": job["status"], "progress": job["progress"], "detail": job.get("detail")}
+    return {
+        "status": job["status"],
+        "progress": job["progress"],
+        "detail": job.get("detail"),
+        "llm_calls": job.get("llm_calls", 0),
+    }
 
 
 @router.get("/notebooks/{notebook_id}/book")
@@ -59,6 +64,7 @@ def book(notebook: Row = Depends(owned_notebook), services: Services = Depends(g
         services.repo.select("book_sections", notebook_id=notebook["id"]), key=lambda s: (s["chapter_index"], s["section_index"])
     )
     seen = _read_row(services, notebook)["last_seen_version"]
+    disputed = _disputed_concepts(services, notebook["id"])
     chapters: list[dict] = []
     for s in sections:
         if not chapters or chapters[-1]["index"] != s["chapter_index"]:
@@ -70,6 +76,8 @@ def book(notebook: Row = Depends(owned_notebook), services: Services = Depends(g
                 "status": s["status"],
                 "version": s["version"],
                 "revised": s["status"] == "current" and s["version"] > seen,
+                "support_rate": s.get("support_rate"),
+                "disputed": any(cid in disputed for cid in s["concept_ids"]),
             }
         )
     return {
@@ -78,16 +86,49 @@ def book(notebook: Row = Depends(owned_notebook), services: Services = Depends(g
         "chapters": chapters,
         "changes": _changes_since(services, notebook["id"], seen),
         "job": _job(services, notebook["id"]),
+        "support": _support_summary(sections),
     }
 
 
+def _support_summary(sections: list[Row]) -> dict:
+    """Book-wide: how many paragraphs a check found supported by their own passages."""
+    counts = {"supported": 0, "partial": 0, "unsupported": 0, "unchecked": 0}
+    for s in sections:
+        for p in s["paragraphs"]:
+            counts[p.get("support", "unchecked")] = counts.get(p.get("support", "unchecked"), 0) + 1
+    total = sum(counts.values())
+    return {**counts, "paragraphs": total, "rate": round(counts["supported"] / total, 3) if total else None}
+
+
+def _disputed_concepts(services: Services, notebook_id: str) -> set[str]:
+    return {c["id"] for c in services.repo.select("concepts", notebook_id=notebook_id, status="conflicted")}
+
+
 @router.get("/notebooks/{notebook_id}/book/sections/{section_id}")
-def section(section_id: str, notebook: Row = Depends(owned_notebook), services: Services = Depends(get_services)) -> dict:
+def section(
+    section_id: str,
+    version: int | None = None,
+    notebook: Row = Depends(owned_notebook),
+    services: Services = Depends(get_services),
+) -> dict:
+    """The section as it is now, or with ?version=n as it was written in book version n."""
     repo = services.repo
     found = repo.select("book_sections", id=section_id, notebook_id=notebook["id"])
     if not found:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "section not found")
     s = found[0]
+    history = sorted(repo.select("book_section_versions", section_id=section_id), key=lambda v: v["version"])
+    if version is not None and version != s["version"]:
+        snapshot = next((v for v in history if v["version"] == version), None)
+        if snapshot is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "this section was not written in that version")
+        s = {
+            **s,
+            "title": snapshot["title"],
+            "paragraphs": snapshot["paragraphs"],
+            "version": version,
+            "support_rate": snapshot["support_rate"],
+        }
     chunk_ids = list(dict.fromkeys(cid for p in s["paragraphs"] for cid in p.get("chunk_ids", [])))
     chunks = {c["id"]: c for c in repo.get_chunks(chunk_ids)}
     sources = {src["id"]: src for src in repo.list_sources(notebook["id"])}
@@ -111,8 +152,17 @@ def section(section_id: str, notebook: Row = Depends(owned_notebook), services: 
         "status": s["status"],
         "version": s["version"],
         "concepts": [{"id": cid, "name": concepts[cid]["name"]} for cid in s["concept_ids"] if cid in concepts],
+        "current_version": found[0]["version"],
+        "versions": [v["version"] for v in history],
+        "support_rate": s.get("support_rate"),
         "paragraphs": [
-            {"text": p["text"], "evidence": [e for e in map(evidence, p.get("chunk_ids", [])) if e]} for p in s["paragraphs"]
+            {
+                "text": p["text"],
+                "evidence": [e for e in map(evidence, p.get("chunk_ids", [])) if e],
+                "support": p.get("support", "unchecked"),
+                "support_note": p.get("support_note", ""),
+            }
+            for p in s["paragraphs"]
         ],
         "see_also": [
             {"id": c["id"], "name": c["name"]}
@@ -140,3 +190,54 @@ def seen(notebook: Row = Depends(owned_notebook), services: Services = Depends(g
     version = _version(services, notebook["id"])
     services.repo.update("book_reads", row["id"], {"last_seen_version": version})
     return {"last_seen_version": version}
+
+
+@router.get("/notebooks/{notebook_id}/book/history")
+def history(notebook: Row = Depends(owned_notebook), services: Services = Depends(get_services)) -> list[dict]:
+    """Every version of the book and what it changed, newest first."""
+    rows = services.repo.select("book_changes", notebook_id=notebook["id"])
+    return [{"version": r["version"], "created_at": r["created_at"], "changes": r["changes"]} for r in reversed(rows)]
+
+
+@router.get("/notebooks/{notebook_id}/conflicts")
+def conflicts(notebook: Row = Depends(owned_notebook), services: Services = Depends(get_services)) -> list[dict]:
+    """Every place where a source contradicts what the book says, with both passages."""
+    repo, notebook_id = services.repo, notebook["id"]
+    rows = repo.select("conflicts", notebook_id=notebook_id)
+    if not rows:
+        return []
+    claims = {c["id"]: c for c in repo.select("claims", notebook_id=notebook_id)}
+    concepts = {c["id"]: c for c in repo.select("concepts", notebook_id=notebook_id)}
+    sources = {s["id"]: s for s in repo.list_sources(notebook_id)}
+    evidence_of: dict[str, list[Row]] = {}
+    for e in repo.select("claim_evidence", notebook_id=notebook_id):
+        evidence_of.setdefault(e["claim_id"], []).append(e)
+    section_of = {cid: s for s in repo.select("book_sections", notebook_id=notebook_id) for cid in s["concept_ids"]}
+
+    def view(e: Row) -> dict:
+        return {
+            "chunk_id": e["chunk_id"],
+            "source_id": e["source_id"],
+            "source_name": sources.get(e["source_id"], {}).get("file_name", "source"),
+            "page": e.get("page"),
+        }
+
+    out = []
+    for c in rows:
+        claim = claims.get(c["claim_id"])
+        if claim is None:
+            continue
+        concept = concepts.get(claim["concept_id"], {})
+        section = section_of.get(claim["concept_id"])
+        out.append(
+            {
+                "id": c["id"],
+                "concept": {"id": claim["concept_id"], "name": concept.get("name", "")},
+                "section": {"id": section["id"], "title": section["title"]} if section else None,
+                "claim_text": claim["text"],
+                "claim_evidence": [view(e) for e in evidence_of.get(claim["id"], [])],
+                "contradicting_text": c["contradicting_text"],
+                "contradicting_evidence": view(c),
+            }
+        )
+    return out
