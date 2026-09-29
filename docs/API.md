@@ -60,7 +60,33 @@ Built in the background for each source once it is `ready` (see docs/LIVING_TEXT
 |---|---|---|
 | GET | `/notebooks/{id}/knowledge` | `{concepts[{id, name, kind term\|example, definition, aliases, status current\|conflicted, claim_count, evidence_count, source_count}], links[{from_id, to_id, kind}], conflict_count, concepts_with_conflicts[], job{status running\|queued\|done, progress, failed[], queued[]}}` |
 | GET | `/notebooks/{id}/concepts/{concept_id}` | `{concept, claims[{id, text, evidence[{chunk_id, source_id, source_name, page}]}], conflicts[{claim_text, claim_evidence[], contradicting_text, contradicting_evidence}], related[{id, name, kind, direction}]}` |
-| POST | `/notebooks/{id}/knowledge/rebuild` | `202`. Re-reads every ready source (idempotent) |
+| POST | `/notebooks/{id}/knowledge/rebuild` | `202`. Re-reads every ready source (idempotent; concept ids are kept) |
+| POST | `/sources/{source_id}/knowledge/retry` | `202`. Re-reads one ready source (after a failed or queued build), then updates the book |
+
+`job.failed[]` / `job.queued[]` are `{source_id, source_name, detail}`; `job.llm_calls` is the number of Gemini calls of the latest builds.
+
+## The book
+
+Written automatically from the knowledge map after every change. Sections are rewritten only when their fingerprint changes.
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| GET | `/notebooks/{id}/book` | – | `{version, last_seen_version, chapters[{index, title, map (Mermaid or null), timeline (Mermaid or null), sections[{id, title, status current\|stale\|writing\|failed, version, revised, support_rate, disputed, read, concept_ids}]}], changes{new_concepts[], added[], revised[], removed[]} (since last read), job{status, progress, detail, llm_calls}, support{supported, partial, unsupported, unchecked, paragraphs, rate}, progress{read, total}, quiz_scores{}, weak_spots[{chapter, section_id, score, total}]}` |
+| GET | `/notebooks/{id}/book/sections/{sid}?version=n` | – | `{id, chapter_title, title, status, version, current_version, versions[], support_rate, concepts[{id, name}], paragraphs[{text, evidence[{chunk_id, source_id, source_name, page}], support, support_note}], comparisons[{columns[{id, name, definition, facts[]}]}], charts[{id, title, columns[], rows[][], series{column, labels[], values[]} or null, evidence}], see_also[{id, name}]}`. `?version=n` returns the saved text of that version (404 if not kept) |
+| POST | `/notebooks/{id}/book/write` | – | `202`. Brings the book up to date (normally automatic) |
+| POST | `/notebooks/{id}/book/seen` | – | `{last_seen_version}`: resets "since you last read" |
+| GET | `/notebooks/{id}/book/history` | – | `[{version, created_at, changes}]` newest first |
+| GET | `/notebooks/{id}/conflicts` | – | `[{id, concept{id, name}, section{id, title}, claim_text, claim_evidence[], contradicting_text, contradicting_evidence}]` |
+| GET | `/notebooks/{id}/book/export?format=md\|epub` | – | the book as a Markdown file (footnote citations, glossary) or an EPUB 3 file |
+| POST | `/notebooks/{id}/book/sections/{sid}/read` | `{read: bool}` | `{read_sections[]}` |
+| POST | `/notebooks/{id}/book/quiz-result` | `{chapter, score, total}` | `{quiz_scores}`; under 70% the chapter becomes a weak spot |
+| POST | `/notebooks/{id}/book/sections/{sid}/explain` | `{style: simpler\|steps}` | `{style, text}`, explained again from the section's own passages |
+
+## Search
+
+| Method | Path | Returns |
+|---|---|---|
+| GET | `/search?q=` | `[{kind concept\|section, score, notebook{id, title}, id, title, snippet}]` across all of the user's notebooks, ranked by embedding similarity plus a small bonus for exact word matches |
 
 ## Generation (16 pipelines)
 

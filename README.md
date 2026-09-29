@@ -91,6 +91,7 @@ Tests (no API key needed): `cd backend && pytest` · `cd frontend && npm test`
 
 | Doc | What's in it |
 |---|---|
+| [docs/HOW_IT_WORKS.md](docs/HOW_IT_WORKS.md) | **Start here:** the whole app, tech stack, code layout, data model, what happens step by step |
 | [docs/SETUP.md](docs/SETUP.md) | Keys, Supabase setup, running, troubleshooting |
 | [docs/STUDY_GUIDE.md](docs/STUDY_GUIDE.md) | How every part works, trade-offs, interview Q&A, viva script |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Request flows with file/function names |
