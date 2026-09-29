@@ -31,7 +31,7 @@ Browser (React)
 FastAPI backend
   ├─ upload ─► Supabase Storage (original file)
   │           └─ background task: extract text → chunk → embed ─► Postgres (chunk text) + Chroma (vectors)
-  ├─ search/chat ─► 6-layer retriever ─► Gemini 2.5 Flash (streamed answer with [S1] citations)
+  ├─ search/chat ─► 6-layer retriever ─► Gemini 3.8 Flash (streamed answer with [S1] citations)
   └─ generate ─► pipeline registry (16) ─► Gemini JSON output ─► validate ─► cache in Postgres
 ```
 
@@ -206,6 +206,10 @@ Why ranks and not scores: cosine (0–1) and BM25 (0–∞) aren't comparable. R
 - Modes compared: dense, BM25, hybrid (RRF), hybrid + MMR, hybrid + MMR + LLM rerank.
 - *Recall@5*: the share of questions whose answer is somewhere in the top 5. *MRR (Mean Reciprocal Rank)*: the average of 1/rank of the first correct chunk (rank 1 → 1.0, rank 2 → 0.5, missing → 0). Recall measures "did we find it"; MRR measures "how high".
 - Run it with `cd backend && python -m eval.run_eval`. It prints the markdown table and saves `eval/results.md`. **Only numbers from that file go in the README or on the resume.**
+- **Real results (2026-09-29, `backend/eval/results.md`):**
+  - Dense MRR 0.89, BM25 0.94, hybrid 0.90.
+  - Hybrid + MMR + **LLM rerank: 1.00** (Recall@1 went from 0.82 to 1.00).
+  - Honest reading: on this small set BM25 alone beat dense (the notes use exact textbook terms), and RRF fixed dense's one top-5 miss but not rank 1. The reranker is what fixed rank 1. The benchmark is small and near its ceiling, so say "the rerank took Recall@1 from 0.82 to 1.00 on my 33-question benchmark", never "retrieval is 100% accurate".
 - The eval uses 200-token chunks by default because the three documents are short: at 600 tokens they make only about 12 chunks, and every method looks perfect. Say this if asked: "I shrank the chunks for the benchmark so it could discriminate between methods. At production size the corpus was too small to be meaningful."
 
 ### 5 interview questions
@@ -346,7 +350,7 @@ Why ranks and not scores: cosine (0–1) and BM25 (0–∞) aren't comparable. R
 | Presented and defended at the master's viva | v1 (`legacy-go/`, tag `v1-go`) | ✅ for v1: say "v1 at the viva, later re-architected" |
 | React.js | `frontend/` (React 19 + Vite) | ✅ |
 | FastAPI | `backend/app/main.py`, `app/api/*` | ✅ |
-| Google Gemini 2.5 Flash | `LLM_MODEL=gemini-2.5-flash` in `app/config.py`, used by `app/llm/gemini.py` | ✅ |
+| Google Gemini Flash | `LLM_MODEL=gemini-3.8-flash` (default) in `app/config.py`, used by `app/llm/gemini.py`; also verified end-to-end on `gemini-2.5-flash` | ✅ Resume: "Gemini 3.8 Flash" (or "Gemini Flash") |
 | **LangChainGo** | only in v1 (`legacy-go/`, `go.mod`: `tmc/langchaingo v0.1.14`) | ✅ historically; v2 does **not** use it. Say "v1 used LangChainGo; v2 moved to Python" |
 | ChromaDB | above | ✅ |
 | Supabase | Postgres schema + RLS (`migrations/001_init.sql`), Auth (`app/auth.py` verifies tokens with `auth.get_user`), Storage (`app/db/supabase_repo.py::SupabaseFileStorage`) | ✅ once you create the project and run the migration |
@@ -354,7 +358,7 @@ Why ranks and not scores: cosine (0–1) and BM25 (0–∞) aren't comparable. R
 
 **Suggested accurate resume wording** (use whatever `/health` shows for the embedding model):
 
-> **StudyForge: AI-Powered Document-to-Learning Platform** · React, FastAPI, Gemini 2.5 Flash, ChromaDB, Supabase (Postgres/Auth/Storage)
+> **StudyForge: AI-Powered Document-to-Learning Platform** · React, FastAPI, Gemini 3.8 Flash, ChromaDB, Supabase (Postgres/Auth/Storage)
 > - Built a RAG platform that turns PDFs, DOCX, slides-as-images and audio into **16 personalized study pipelines** (quizzes, flashcards, mind maps, study guides…) using schema-validated structured LLM output and map-reduce for long documents.
 > - Designed a **6-layer hybrid retrieval pipeline** (metadata scoping → Gemini embeddings in ChromaDB + BM25 → Reciprocal Rank Fusion → MMR → cited context assembly), evaluated on a labelled set with Recall@5 = **X** and MRR = **Y** *(fill in from eval/results.md)*.
 > - v1 (Go + LangChainGo) presented and defended at the M.Sc. viva; re-architected as v2 with streaming cited chat, idempotent ingestion, RLS-secured Postgres and CI.
@@ -369,11 +373,11 @@ Interview story for the embedding change: "The project started on text-embedding
 
 **Problem (30 s).** "Students have PDFs, slides and lecture recordings, but what they need for exams is quizzes, flashcards, summaries and answers they can trust. StudyForge turns a notebook of documents into 16 kinds of study material and a chat that answers only from those documents, with page-level citations."
 
-**Architecture (60 s).** "A React front end talks to a FastAPI back end. Supabase provides Postgres, authentication and file storage. Chunk vectors live in ChromaDB, and Gemini 2.5 Flash does generation, OCR and transcription, with Gemini embeddings for search. Postgres is the source of truth for chunk text; Chroma is a rebuildable search index. Every table has row-level security, so a user can only ever read their own notebooks."
+**Architecture (60 s).** "A React front end talks to a FastAPI back end. Supabase provides Postgres, authentication and file storage. Chunk vectors live in ChromaDB, and Gemini 3.8 Flash does generation, OCR and transcription, with Gemini embeddings for search. Postgres is the source of truth for chunk text; Chroma is a rebuildable search index. Every table has row-level security, so a user can only ever read their own notebooks."
 
 **Ingestion (45 s).** "Upload returns immediately with 202 and a background task takes over. It extracts text page by page (pymupdf4llm for PDFs, Gemini vision for scanned pages), then splits it with a recursive chunker into ~600-token chunks with 15% overlap. Each chunk keeps its page and section heading. Chunks are embedded in batches and upserted into Chroma with deterministic ids, so re-uploading the same file (same SHA-256) never creates duplicates. The UI polls a status field."
 
-**Retrieval (90 s): slow down here.** "Retrieval has six layers. First, a scope filter restricts to the notebook, and optionally to some documents or pages. Then two retrievers run: dense search with query embeddings in Chroma, which catches paraphrases, and BM25, which catches exact terms like acronyms. Their scores aren't comparable, so I fuse the rankings with Reciprocal Rank Fusion: each document scores the sum of 1/(60 + rank). Then Maximal Marginal Relevance removes near-duplicates, which overlapping chunks create, and context assembly fits a token budget and labels each chunk S1, S2 with its source and page. For chat, follow-up questions are first rewritten into standalone queries. I evaluated this on 33 labelled questions: [quote Recall@5 / MRR for dense vs BM25 vs hybrid from eval/results.md]."
+**Retrieval (90 s): slow down here.** "Retrieval has six layers. First, a scope filter restricts to the notebook, and optionally to some documents or pages. Then two retrievers run: dense search with query embeddings in Chroma, which catches paraphrases, and BM25, which catches exact terms like acronyms. Their scores aren't comparable, so I fuse the rankings with Reciprocal Rank Fusion: each document scores the sum of 1/(60 + rank). Then Maximal Marginal Relevance removes near-duplicates, which overlapping chunks create, and context assembly fits a token budget and labels each chunk S1, S2 with its source and page. For chat, follow-up questions are first rewritten into standalone queries. I evaluated this on 33 labelled questions: On my 33-question benchmark, dense retrieval put the right chunk first 82% of the time; adding the LLM rerank layer made it 100%, with MRR going from 0.90 to 1.00. It's a small set, so I use it to compare layers, not as an absolute score."
 
 **Generation (60 s).** "The 16 pipelines are one registry of configurations run by one runner. Each has a retrieval strategy: whole-notebook with map-reduce for summaries and outlines, top-k retrieval for quizzes and flashcards, or per-source for the textbook chapter. Difficulty, length and focus topic change the prompt. Gemini returns JSON constrained by a Pydantic schema. I validate it, including rules like 'the quiz answer index must exist', and retry once with the error if it fails. Results are cached by notebook, pipeline, parameters and a sources version that bumps whenever documents change."
 

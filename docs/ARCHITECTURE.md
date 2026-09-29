@@ -18,7 +18,7 @@ flowchart LR
     CHAT[chat/rag_chat.py<br/>SSE streaming]
     CH[(ChromaDB<br/>embedded)]
   end
-  GEM[Gemini API<br/>2.5 Flash + gemini-embedding-001]
+  GEM[Gemini API<br/>3.8 Flash + gemini-embedding-001]
 
   UI -- login --> AUTH
   UI -- REST + SSE, Bearer token --> API
@@ -86,7 +86,7 @@ Every file/function named below is in `backend/app/` unless it starts with `fron
       - `GeminiClient.embed_query` (RETRIEVAL_QUERY) → `dense.py::dense_search` → Chroma top-20 by cosine;
       - `keyword.py::BM25Cache.get` (built from `repo.list_chunks`, keyed by `sources_version`) → `keyword_search` top-20;
       - `fusion.py::reciprocal_rank_fusion` (k = 60) → top 30;
-      - `rerank.py::mmr` (λ = 0.7, relevance = scaled RRF score, redundancy = cosine between chunk vectors from `vectors.get_embeddings`), plus `llm_rerank` if `RERANK_WITH_LLM`;
+      - `rerank.py::mmr` (λ = 0.7, relevance = scaled RRF score, redundancy = cosine between chunk vectors from `vectors.get_embeddings`), then `llm_rerank` (on by default, `RERANK_WITH_LLM`);
       - `context.py::assemble_context`: 6k-token budget, ordered by source then page, labelled `[S1]…`, with the citation map.
    4. `yield sse("meta", {session_id, rewritten_query, citations})`.
    5. `build_chat_prompt(context, history, question)` + `CHAT_SYSTEM_PROMPT` → `FallbackLLM.stream_text` → `yield sse("token", {text})` per piece, with a deadline at `LLM_TIMEOUT_S`.

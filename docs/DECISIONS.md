@@ -85,5 +85,9 @@ Short records of each non-obvious choice: **decision → why → trade-off**.
 ### D25. Kept ChromaDB rather than Supabase pgvector
 - pgvector would remove the second store: vectors would sit next to the rows, delete cascades would be automatic, and there'd be no sync step. ChromaDB is kept because it's on the resume and the Postgres-first design makes Chroma fully rebuildable. pgvector is the first thing to change for a multi-instance deployment (also the answer to "what would you change?").
 
+### D26. Default LLM `gemini-3.8-flash`; LLM rerank ON by default (decided by measurement)
+- **Model:** all 16 pipelines + chat were run end-to-end on both `gemini-2.5-flash` and `gemini-3.8-flash` (2026-09-29). Both gave 16/16 valid outputs; 3.8 was faster (~8 s vs ~14 s average per pipeline). It stays a config value (`LLM_MODEL`), so switching back is one line.
+- **Rerank:** the eval showed the LLM rerank layer gave the biggest quality jump of all layers (see `backend/eval/results.md`), so it is on by default. Cost: one extra fast LLM call per query; `RERANK_WITH_LLM=false` turns it off when quota is tight.
+
 ### D20. React without TypeScript or a UI kit
 - **Why:** less to explain in an interview. Plain CSS variables carry the v1 design system over. React Query handles server state (caching, polling, refetch) and `useState` handles UI state.

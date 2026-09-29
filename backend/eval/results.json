@@ -1,0 +1,872 @@
+{
+  "embedding_model": "gemini-embedding-001",
+  "summary": {
+    "dense": {
+      "recall@1": 0.818,
+      "recall@5": 0.97,
+      "mrr@10": 0.894,
+      "n": 33
+    },
+    "bm25": {
+      "recall@1": 0.909,
+      "recall@5": 0.97,
+      "mrr@10": 0.936,
+      "n": 33
+    },
+    "hybrid": {
+      "recall@1": 0.818,
+      "recall@5": 1.0,
+      "mrr@10": 0.904,
+      "n": 33
+    },
+    "hybrid_mmr": {
+      "recall@1": 0.818,
+      "recall@5": 1.0,
+      "mrr@10": 0.896,
+      "n": 33
+    },
+    "hybrid_mmr_rerank": {
+      "recall@1": 1.0,
+      "recall@5": 1.0,
+      "mrr@10": 1.0,
+      "n": 33
+    }
+  },
+  "per_question": {
+    "dense": [
+      {
+        "id": "db1",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "db2",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "db3",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "db4",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "db5",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "db6",
+        "kind": "keyword",
+        "rank": 2
+      },
+      {
+        "id": "db7",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "db8",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "db9",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "db10",
+        "kind": "keyword",
+        "rank": 2
+      },
+      {
+        "id": "db11",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "db12",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "os1",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "os2",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "os3",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "os4",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "os5",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "os6",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "os7",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "os8",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "os9",
+        "kind": "paraphrase",
+        "rank": 2
+      },
+      {
+        "id": "os10",
+        "kind": "paraphrase",
+        "rank": 2
+      },
+      {
+        "id": "os11",
+        "kind": "keyword",
+        "rank": null
+      },
+      {
+        "id": "net1",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "net2",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "net3",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "net4",
+        "kind": "paraphrase",
+        "rank": 2
+      },
+      {
+        "id": "net5",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "net6",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "net7",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "net8",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "net9",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "net10",
+        "kind": "keyword",
+        "rank": 1
+      }
+    ],
+    "bm25": [
+      {
+        "id": "db1",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "db2",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "db3",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "db4",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "db5",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "db6",
+        "kind": "keyword",
+        "rank": 2
+      },
+      {
+        "id": "db7",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "db8",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "db9",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "db10",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "db11",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "db12",
+        "kind": "paraphrase",
+        "rank": 7
+      },
+      {
+        "id": "os1",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "os2",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "os3",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "os4",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "os5",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "os6",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "os7",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "os8",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "os9",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "os10",
+        "kind": "paraphrase",
+        "rank": 4
+      },
+      {
+        "id": "os11",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "net1",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "net2",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "net3",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "net4",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "net5",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "net6",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "net7",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "net8",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "net9",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "net10",
+        "kind": "keyword",
+        "rank": 1
+      }
+    ],
+    "hybrid": [
+      {
+        "id": "db1",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "db2",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "db3",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "db4",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "db5",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "db6",
+        "kind": "keyword",
+        "rank": 2
+      },
+      {
+        "id": "db7",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "db8",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "db9",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "db10",
+        "kind": "keyword",
+        "rank": 2
+      },
+      {
+        "id": "db11",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "db12",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "os1",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "os2",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "os3",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "os4",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "os5",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "os6",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "os7",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "os8",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "os9",
+        "kind": "paraphrase",
+        "rank": 2
+      },
+      {
+        "id": "os10",
+        "kind": "paraphrase",
+        "rank": 2
+      },
+      {
+        "id": "os11",
+        "kind": "keyword",
+        "rank": 3
+      },
+      {
+        "id": "net1",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "net2",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "net3",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "net4",
+        "kind": "paraphrase",
+        "rank": 2
+      },
+      {
+        "id": "net5",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "net6",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "net7",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "net8",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "net9",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "net10",
+        "kind": "keyword",
+        "rank": 1
+      }
+    ],
+    "hybrid_mmr": [
+      {
+        "id": "db1",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "db2",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "db3",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "db4",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "db5",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "db6",
+        "kind": "keyword",
+        "rank": 2
+      },
+      {
+        "id": "db7",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "db8",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "db9",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "db10",
+        "kind": "keyword",
+        "rank": 3
+      },
+      {
+        "id": "db11",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "db12",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "os1",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "os2",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "os3",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "os4",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "os5",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "os6",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "os7",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "os8",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "os9",
+        "kind": "paraphrase",
+        "rank": 2
+      },
+      {
+        "id": "os10",
+        "kind": "paraphrase",
+        "rank": 2
+      },
+      {
+        "id": "os11",
+        "kind": "keyword",
+        "rank": 4
+      },
+      {
+        "id": "net1",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "net2",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "net3",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "net4",
+        "kind": "paraphrase",
+        "rank": 2
+      },
+      {
+        "id": "net5",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "net6",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "net7",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "net8",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "net9",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "net10",
+        "kind": "keyword",
+        "rank": 1
+      }
+    ],
+    "hybrid_mmr_rerank": [
+      {
+        "id": "db1",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "db2",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "db3",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "db4",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "db5",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "db6",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "db7",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "db8",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "db9",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "db10",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "db11",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "db12",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "os1",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "os2",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "os3",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "os4",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "os5",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "os6",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "os7",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "os8",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "os9",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "os10",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "os11",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "net1",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "net2",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "net3",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "net4",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "net5",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "net6",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "net7",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "net8",
+        "kind": "keyword",
+        "rank": 1
+      },
+      {
+        "id": "net9",
+        "kind": "paraphrase",
+        "rank": 1
+      },
+      {
+        "id": "net10",
+        "kind": "keyword",
+        "rank": 1
+      }
+    ]
+  }
+}

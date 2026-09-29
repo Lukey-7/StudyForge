@@ -105,12 +105,12 @@ npm test && npm run build
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `LLM_MODEL` | `gemini-2.5-flash` | Generation/chat model (any current Gemini Flash name) |
+| `LLM_MODEL` | `gemini-3.8-flash` | Generation/chat model (any current Gemini Flash name) |
 | `EMBEDDING_MODEL` | `gemini-embedding-001` | Embedding model. Changing it needs `scripts.reindex` |
 | `EMBEDDING_FALLBACK_MODEL` | *(empty)* | Tried automatically if the first model is rejected |
 | `EMBEDDING_DIM` | `768` | Vector size (768/1536/3072) |
 | `GEMINI_RPM` / `EMBED_RPM` | `10` / `100` | Client-side rate limits (free tier) |
-| `RERANK_WITH_LLM` | `false` | Adds an LLM rerank of the top 10 (one extra call per query) |
+| `RERANK_WITH_LLM` | `true` | LLM rerank of the top 10 (one extra call per query; raised MRR in the eval). Set `false` to save quota |
 | `CHUNK_TARGET_TOKENS` / `CHUNK_OVERLAP_RATIO` | `600` / `0.15` | Chunking |
 | `GENERATION_SINGLE_PASS_TOKENS` | `150000` | Above this, pipelines use map-reduce |
 | `CHROMA_MODE` | `embedded` | `http` to use a Chroma server (`CHROMA_HOST`, `CHROMA_PORT`) |

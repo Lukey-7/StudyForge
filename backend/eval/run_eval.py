@@ -187,7 +187,7 @@ def main() -> None:
 
     table = markdown_table(results)
     header = (
-        f"Embedding model: `{model}`{' (FAKE - not a real result)' if args.fake else ''} | "
+        f"Embedding model: `{model}` | rerank LLM: `{cfg.llm_model}`{' (FAKE - not a real result)' if args.fake else ''} | "
         f"{len(spec['questions'])} questions over {len(spec['documents'])} documents ({chunk_count} chunks) | "
         f"chunk target {cfg.chunk_target_tokens} tokens, {int(cfg.chunk_overlap_ratio * 100)}% overlap | "
         f"k_dense={cfg.dense_k}, k_bm25={cfg.keyword_k}, RRF k={cfg.rrf_k}, MMR lambda={cfg.mmr_lambda} | "

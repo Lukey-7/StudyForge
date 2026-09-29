@@ -59,7 +59,7 @@ Returns a `Generation`:
 ```json
 { "id": "...", "notebook_id": "...", "pipeline_name": "quiz", "params": {...},
   "output": { ...pipeline-specific JSON..., "_meta": {"strategy": "...", "chunks_used": 12, "map_calls": 0} },
-  "model": "gemini-2.5-flash", "latency_ms": 8123, "created_at": "...", "cached": false }
+  "model": "gemini-3.8-flash", "latency_ms": 8123, "created_at": "...", "cached": false }
 ```
 This call is synchronous and can take 10–90 s for big notebooks (map-reduce + free-tier rate limit).
 
