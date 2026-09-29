@@ -22,6 +22,9 @@
   - Each is personalised by difficulty, length and focus topic.
   - Output is schema-validated JSON with one automatic repair.
   - Results are cached per (notebook, pipeline, params, sources version).
+- **The living textbook (Book tab):** StudyForge reads every source into a **knowledge map**: concepts (glossary terms and named examples), atomic claims, and the passages behind each claim. Concepts are merged across sources, so a term defined by three sources is one entry with three pieces of evidence. A claim stated again becomes extra evidence, and a contradiction is recorded as a conflict rather than overwriting. From that map it writes **one book per notebook**: chapters ordered so prerequisites come first, every paragraph pointing at the passages it came from.
+  - When a source is added, only the sections whose concepts changed are rewritten, and the reader shows "Since you last read: …". On a real notebook, adding a second source left 6 of 7 sections untouched, revised 1 and added a 4-section chapter.
+  - Reader: contents, an evidence rail beside each paragraph, glossary terms with hover definitions. Plan and status: [docs/LIVING_TEXTBOOK_PLAN.md](docs/LIVING_TEXTBOOK_PLAN.md).
 - **RAG chat:** answers stream token by token over Server-Sent Events and cite every factual sentence. If the documents don't contain the answer, it says so. Click a citation to jump to the exact passage.
 - **Study tools:** interactive quiz with "Retry the ones I missed", flashcards with Got it / Again self-rating, Mermaid mind maps, Copy as Markdown / Download / Export for Anki, suggested questions from your notes' headings. Design system: [frontend/DESIGN.md](frontend/DESIGN.md).
 
@@ -32,10 +35,11 @@ flowchart LR
   UI[React] -- REST + SSE --> API[FastAPI]
   UI -- login --> AUTH[Supabase Auth]
   API --> ING[Ingestion] & RET[6-layer retrieval] & GEN[16 pipelines] & CHAT[RAG chat]
+  ING --> KM[Knowledge map] --> BOOK[Book]
   ING --> ST[(Supabase Storage)]
-  ING & RET & GEN & CHAT --> PG[(Supabase Postgres)]
-  ING & RET --> CH[(ChromaDB)]
-  ING & RET & GEN & CHAT --> GEM[Gemini]
+  ING & RET & GEN & CHAT & KM & BOOK --> PG[(Supabase Postgres)]
+  ING & RET & KM --> CH[(ChromaDB)]
+  ING & RET & GEN & CHAT & KM & BOOK --> GEM[Gemini]
 ```
 
 Step-by-step request flows: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · API: [docs/API.md](docs/API.md) · Design decisions: [docs/DECISIONS.md](docs/DECISIONS.md)
@@ -87,6 +91,7 @@ Tests (no API key needed): `cd backend && pytest` · `cd frontend && npm test`
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Request flows with file/function names |
 | [docs/DECISIONS.md](docs/DECISIONS.md) | Why each technology/design was chosen |
 | [docs/API.md](docs/API.md) | REST + SSE contract |
+| [docs/LIVING_TEXTBOOK_PLAN.md](docs/LIVING_TEXTBOOK_PLAN.md) | The knowledge map and book: design, phases, decisions |
 | [docs/DEPLOY_GCP.md](docs/DEPLOY_GCP.md) | Cloud Run deployment notes |
 | [docs/V1_AUDIT.md](docs/V1_AUDIT.md) | What v1 did and what v2 changed |
 

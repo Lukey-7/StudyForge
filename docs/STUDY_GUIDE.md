@@ -322,7 +322,7 @@ Why ranks and not scores: cosine (0–1) and BM25 (0–∞) aren't comparable. R
 
 ## 8. Shipping
 
-- **Tests (`backend/tests/`, 88 tests, no API key needed):** chunker, RRF (exact values), MMR, BM25 (including the negative-IDF regression), scope, context assembly, all 16 schemas, the validation-repair loop, retries/rate limiter, JWT verification, and full API flows (upload → ready → idempotent re-upload, search layers, every pipeline + cache, chat SSE + citations + query rewrite) using `FakeLLM`/`FakeEmbedder` (`tests/fakes.py`).
+- **Tests (`backend/tests/`, 117 tests, no API key needed; plus 28 frontend tests with vitest):** chunker, RRF (exact values), MMR, BM25 (including the negative-IDF regression), scope, context assembly, all 16 schemas, the validation-repair loop, retries/rate limiter, JWT verification, and full API flows (upload → ready → idempotent re-upload, search layers, every pipeline + cache, chat SSE + citations + query rewrite) using `FakeLLM`/`FakeEmbedder` (`tests/fakes.py`).
 - **CI (`.github/workflows/ci.yml`):** on every push, `ruff check` + `pytest` for the backend and `npm ci && npm run build` for the frontend.
 - **Docker:** `backend/Dockerfile` is multi-stage (build wheels in stage 1, copy into a slim non-root runtime in stage 2). Local development doesn't need Docker (Chroma is embedded).
 - **Deploy:** [`DEPLOY_GCP.md`](DEPLOY_GCP.md) covers Cloud Build → Artifact Registry → Cloud Run, Secret Manager for keys, and three options for Chroma on an ephemeral filesystem.
@@ -335,6 +335,50 @@ Why ranks and not scores: cosine (0–1) and BM25 (0–∞) aren't comparable. R
 5. **What would you monitor in production?** Ingestion failure rate and duration, generation latency (stored per row), 429 counts, cache hit rate, chat time-to-first-token, and a nightly eval run to catch retrieval regressions.
 
 **Self-check:** (8a) Name two things `FakeEmbedder` must guarantee for tests to be meaningful. (8b) Why is the Supabase anon key safe in the browser but the service-role key isn't? (8c) Which setting keeps BackgroundTasks alive on Cloud Run?
+
+## 8b. The living textbook: knowledge map + book
+
+The idea (blackbook future scope 7.3.1, taken further): a notebook is a course, and StudyForge writes **one book** for it that **grows** as sources are added instead of being regenerated. The book is rendered from a structured **knowledge model**, because structure can be updated piece by piece and text can only be rewritten. Full design: [`LIVING_TEXTBOOK_PLAN.md`](LIVING_TEXTBOOK_PLAN.md). Step-by-step flow with function names: [`ARCHITECTURE.md` (d)](ARCHITECTURE.md).
+
+### How it works
+```
+source ready ─► EXTRACT (Gemini JSON per 6 passages: concepts, claims, links)
+             ─► MERGE concepts: same name/alias, or embedding ≥ 0.88 AND the LLM says "same"
+             ─► TRIAGE claims vs the 3 nearest of the same concept (≥ 0.80, one LLM verdict call):
+                   same → extra evidence · contradicts → conflict (ours kept) · else → new claim
+             ─► BOOK: outline (planned once from names + links, later only new concepts placed)
+                   ─► fingerprint per section (definitions + claim texts + evidence ids)
+                   ─► rewrite only sections whose fingerprint changed (1 Gemini call each)
+                   ─► version + change record ─► "Since you last read" in the reader
+```
+- **Tables** (`migrations/002_knowledge.sql`, `003_book.sql`): `concepts`, `concept_links`, `claims`, `claim_evidence` (one row per source that states a claim), `conflicts`, `knowledge_jobs`, `books`, `book_sections` (the outline *and* the text), `book_changes`, `book_reads`.
+- **Code:** `app/knowledge/{build,triage,schemas}.py`, `app/book/{outline,sync,schemas}.py`, `app/api/{knowledge,book}.py`, `frontend/src/components/{BookPanel,BookReader}.jsx`, `frontend/src/lib/glossary.js`.
+- **Measured on a real notebook** (Supabase + Gemini, 2026-09-29):
+  - One OS lecture → 16 concepts → a 2-chapter, 7-section book.
+  - Adding DBMS notes on transactions and concurrency: 20 new concepts. **6 of 7 sections were untouched**, "Detection and Recovery" was revised (the notes' paragraph on database deadlocks added evidence to it), and a new 4-section chapter was added.
+  - After that: 11 sections, 23 paragraphs, **0 without a cited passage**; two sections cite both sources.
+
+### Trade-offs
+- **LLM calls vs quality:** merging and triage use embeddings to shortlist and the LLM only to judge near-matches, in one batched call per batch. Embeddings alone got it wrong on real notes: "Deadlock prevention" sat within 0.90 of "Coffman conditions" (D27).
+- **Stale detection is deterministic** (a hash), not an LLM decision: cheap, testable, explainable. The cost: a full "Rebuild knowledge map" re-extracts claims with slightly different wording, which changes most fingerprints. On the real notebook it kept the outline identical but rewrote 10 of 11 sections. Rebuild is a repair tool; normal growth goes through per-source builds.
+- **Free-tier budget:** 150 passages an hour, in-process (resets on restart; per process, not per user).
+- **Background tasks, not a queue:** FastAPI `BackgroundTasks` with a per-notebook lock. A restart kills running jobs, so they are marked failed at startup and the next sync rewrites what was left stale. A real queue (Cloud Tasks, Celery) is the production answer.
+- **Not built yet (phase 3):** a per-paragraph support check and support rate, a conflicts panel beyond the concept drawer, version browsing. Today every paragraph lists the passages the model *says* it used; nothing yet verifies that they support it.
+
+### What real testing found (worth telling in an interview)
+All three were invisible to the fake-LLM tests:
+- **Dropped connections:** Supabase drops idle keep-alive connections, and a build died with "Server disconnected". Fix: an httpx transport that resends once (`db/supabase_repo.py::RetryStaleConnection`).
+- **Sections with no evidence:** the half-finished build left concepts without claims, and the book wrote four sections from definitions alone. Fix: only concepts with evidence enter the book, and a section with no passages is never written.
+- **Rebuild changed concept ids:** a rebuild re-created concepts with new ids, which would have torn down the outline. Fix: concepts are kept while a source is re-read and pruned afterwards.
+
+### 5 interview questions
+1. **Why not just ask the LLM to write a book from all the sources?** It hits the context limit (v1's limitation 7.2), and text can't be updated incrementally, only regenerated. With a knowledge model, the outline step sees only concept names, a section sees only its own evidence, and adding a source touches only the sections whose concepts changed.
+2. **How do you stop thirty sources producing thirty "normalisation" entries?** This is entity resolution. An exact name or alias match comes first; after that, embeddings shortlist the nearest existing concept, and an LLM judges "same or not" only for near-matches. A merge adds aliases, and a repeated claim becomes one more `claim_evidence` row. So one glossary entry carries evidence from every source.
+3. **How do you know which sections to rewrite?** Each section stores a hash of what it was written from: its concepts' definitions, claim texts and evidence passage ids. Recomputing the hashes after a change is pure Python; only mismatches are rewritten. It's the per-section version of v1's `sources_version` stale check.
+4. **What happens when two sources disagree?** The claim triage calls it "contradicts". The book keeps its current statement, and a `conflicts` row stores the other source's statement and passage. The concept is marked conflicted and the drawer shows both sides. Nothing is silently overwritten (decision 10.4 in the plan).
+5. **How do you control hallucination in the book?** Sections are written only from their own claims' passages. Every paragraph stores the passage ids it used, and the reader shows them beside the paragraph. Concepts without evidence are excluded, and a section without passages isn't written. Honest gap: the model *declares* its passages. The planned phase-3 support check will verify each paragraph against them and report a support rate.
+
+**Self-check:** (8b-a) Why does the fingerprint use claim *text* rather than claim ids? (8b-b) What would break if a rebuild deleted concepts before re-reading the source? (8b-c) Why is the outline planned from names and links only?
 
 ---
 
@@ -359,12 +403,15 @@ Why ranks and not scores: cosine (0–1) and BM25 (0–∞) aren't comparable. R
 | ChromaDB | above | ✅ |
 | Supabase | Postgres schema + RLS (`migrations/001_init.sql`), Auth (`app/auth.py` verifies tokens with `auth.get_user`), Storage (`app/db/supabase_repo.py::SupabaseFileStorage`) | ✅ once you create the project and run the migration |
 | RAG, Semantic Search | dense retrieval with Gemini embeddings + Chroma | ✅ |
+| knowledge graph / entity resolution (concepts, claims, evidence merged across sources) | `app/knowledge/build.py` (`resolve_concepts`, `triage_claims`), `app/knowledge/triage.py`, `migrations/002_knowledge.sql` | ✅ verified on a real notebook (2 sources, 36 concepts) |
+| incrementally updated, cited book ("living textbook") | `app/book/sync.py` (fingerprint → rewrite stale sections only), `app/book/outline.py`, `frontend/src/components/BookReader.jsx` | ✅ adding a source rewrote 1 of 7 sections and added 4; ❌ don't claim a measured "citation support rate" yet (phase 3) |
 
 **Suggested accurate resume wording** (use whatever `/health` shows for the embedding model):
 
 > **StudyForge: AI-Powered Document-to-Learning Platform** · React, FastAPI, Gemini 3.8 Flash, ChromaDB, Supabase (Postgres/Auth/Storage)
 > - Built a RAG platform that turns PDFs, DOCX, slides-as-images and audio into **16 personalized study pipelines** (quizzes, flashcards, mind maps, study guides…) using schema-validated structured LLM output and map-reduce for long documents.
 > - Designed a **6-layer hybrid retrieval pipeline** (metadata scoping → Gemini embeddings in ChromaDB + BM25 → Reciprocal Rank Fusion → MMR → cited context assembly), evaluated on a labelled set with Recall@5 = **X** and MRR = **Y** *(fill in from eval/results.md)*.
+> - Built a **living textbook**: a knowledge model (concepts, claims, evidence) extracted from every source and merged across them (embedding shortlist + LLM adjudication), from which a versioned, cited book is written and **updated incrementally**: adding a source rewrites only the sections it affects.
 > - v1 (Go + LangChainGo) presented and defended at the M.Sc. viva; re-architected as v2 with streaming cited chat, idempotent ingestion, RLS-secured Postgres and CI.
 
 Interview story for the embedding change: "The project started on text-embedding-004. Google deprecated it, so v2 uses gemini-embedding-001. The model is a config value, vectors live in a collection named after the model so different models are never mixed, and `scripts/reindex.py` re-embeds everything from Postgres without re-parsing files."
@@ -373,7 +420,7 @@ Interview story for the embedding change: "The project started on text-embedding
 
 ## 10. Viva in 5 minutes
 
-*(About 650 words ≈ 5 minutes spoken. Draw the section-0 diagram while you talk.)*
+*(About 750 words ≈ 5½ minutes spoken; drop "History" if you are short. Draw the section-0 diagram while you talk.)*
 
 **Problem (30 s).** "Students have PDFs, slides and lecture recordings, but what they need for exams is quizzes, flashcards, summaries and answers they can trust. StudyForge turns a notebook of documents into 16 kinds of study material and a chat that answers only from those documents, with page-level citations."
 
@@ -385,7 +432,9 @@ Interview story for the embedding change: "The project started on text-embedding
 
 **Generation (60 s).** "The 16 pipelines are one registry of configurations run by one runner. Each has a retrieval strategy: whole-notebook with map-reduce for summaries and outlines, top-k retrieval for quizzes and flashcards, or per-source for the textbook chapter. Difficulty, length and focus topic change the prompt. Gemini returns JSON constrained by a Pydantic schema. I validate it, including rules like 'the quiz answer index must exist', and retry once with the error if it fails. Results are cached by notebook, pipeline, parameters and a sources version that bumps whenever documents change."
 
-**Engineering (30 s).** "Every Gemini call goes through a rate limiter and exponential backoff, with an optional OpenAI fallback. There are 88 tests that run without API keys using fake models, CI on every push, a multi-stage Dockerfile and Cloud Run deployment notes."
+**The living textbook (45 s).** "On top of that, each notebook gets one book that grows with its sources. Every source is read into a knowledge map: concepts, atomic claims, and the passages behind each claim. It's merged across sources, so a term three sources define is one entry with three pieces of evidence, and a contradiction is recorded, not overwritten. The book's outline is planned from concept names only, and each section is written only from its own evidence. Every paragraph points at its passages. Each section stores a hash of what it was written from, so adding a source rewrites only what changed. On my own notes, adding a second source rewrote one of seven sections and added a new chapter."
+
+**Engineering (20 s).** "Every Gemini call goes through a rate limiter and backoff. There are 117 backend and 28 frontend tests that run without API keys, CI on every push, and Cloud Run deployment notes."
 
 **History (15 s).** "The version I defended at my viva was Go with LangChainGo and keyword retrieval. v2 is the re-architecture with real embeddings and hybrid search. Both are in the repo."
 

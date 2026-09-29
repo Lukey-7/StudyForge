@@ -16,6 +16,8 @@ flowchart LR
     RET[retrieval/*<br/>scope → dense + BM25 → RRF → MMR → context]
     GEN[generation/*<br/>registry of 16 pipelines]
     CHAT[chat/rag_chat.py<br/>SSE streaming]
+    KM[knowledge/build.py<br/>extract → merge → triage]
+    BOOK[book/sync.py<br/>outline → stale → write]
     CH[(ChromaDB<br/>embedded)]
   end
   GEM[Gemini API<br/>3.8 Flash + gemini-embedding-001]
@@ -28,11 +30,14 @@ flowchart LR
   RET --> CH & PG & GEM
   GEN --> RET & PG & GEM
   CHAT --> RET & PG & GEM
+  ING --> KM --> BOOK
+  KM --> PG & CH & GEM
+  BOOK --> PG & GEM
 ```
 
 **Responsibilities**
 - **Postgres:** source of truth: notebooks, sources, chunk text, generations, chat.
-- **Chroma:** vectors + filter metadata only (rebuildable with `scripts/reindex.py`).
+- **Chroma:** vectors + filter metadata only (rebuildable with `scripts/reindex.py`). The knowledge map adds two collections per embedding model: concept embeddings (for merging) and claim embeddings (for duplicate/contradiction checks).
 - **Storage:** original files.
 - **Gemini:** generation, OCR, transcription and embeddings.
 
@@ -93,3 +98,28 @@ Every file/function named below is in `backend/app/` unless it starts with `fron
    6. `used_citations(answer)` (regex `[S\d+]`) → `repo.add_chat_message(role="assistant", citations=used)` → `touch_chat_session` → `yield sse("done", …)`.
    7. Any exception: `yield sse("error", {message: friendly_error(exc)})`.
 4. **Browser:** appends each `token` text to the live bubble, shows `[S#]` chips that open a citation card (source, page, snippet), then refetches the session messages on `done`.
+
+## (d) A source is added → knowledge map → book sections updated
+
+Continues from (a) step 6, after `status=ready`. Plan and decisions: [LIVING_TEXTBOOK_PLAN.md](LIVING_TEXTBOOK_PLAN.md), DECISIONS D27–D28.
+
+1. **Knowledge map:** `ingest/pipeline.py::run_ingestion` → `knowledge/build.py::build_for_source` (a failure never fails the source).
+   1. `remove_source_knowledge(keep_concepts=True)`: drops this source's old evidence and conflicts but keeps concepts, so re-reading the source finds the same concept ids.
+   2. `PassageBudget.take`: at most 150 passages an hour (free tier). Over the cap the job is `queued`.
+   3. Per batch of 6 passages: `llm.generate_json(…, Extraction)` → concepts (term / example, definition, aliases, defining passage), claims (each with its passage number), links (requires / part_of / contrasts_with).
+   4. `resolve_concepts`: exact name or alias match (`triage.py::normalise`), else embed `name: definition` and query the `concepts` Chroma collection. A hit ≥ 0.88 is judged by one batched LLM call (`SAME_CONCEPT_SYSTEM`: same / unrelated); otherwise it is a new `concepts` row.
+   5. `triage_claims`: embed the claims, find the 3 nearest existing claims of the same concept (`claims` collection, ≥ 0.80), one batched verdict call, then `triage.py::decide_claim`: **duplicate** → a `claim_evidence` row on the existing claim; **contradicts** → a `conflicts` row, concept `status=conflicted`, the existing claim stays; **new** → `claims` + `claim_evidence`. A concept named without claims keeps its definition as a claim.
+   6. `prune_concepts`: concepts no source supports any more are deleted. The `knowledge_jobs` row goes to `done`.
+2. **Book:** `book/sync.py::after_knowledge_change` → `sync_book` (one lock per notebook; a `knowledge_jobs` row with `kind=book` carries progress).
+   1. `Model`: loads concepts, claims and evidence, keeping only concepts that have evidence.
+   2. **Outline:** sections lose concepts that are gone (empty sections are deleted). First time: `outline.py::plan_prompt` (names, kinds, links only) → `Outline` → `order_outline` (prerequisites first, stable topological order). Later: `place_prompt` → `Placement` → `apply_placement` puts only the new concepts into existing or new sections. `_save_outline` numbers chapters and sections in `book_sections`.
+   3. **Stale:** `Model.fingerprint` hashes each section's concept definitions, claim texts and evidence passage ids. A section whose hash differs (or that isn't `current`) is stale; no LLM call is involved.
+   4. **Write:** per stale section, `section_passages` (up to 12 passages, best-supported claims first) → `write_prompt` → `generate_json(…, SectionDraft)` → paragraphs, each with the passage ids it relied on. A section with no passages is not written.
+   5. **Version:** `books.version + 1`; `book_changes` records new concepts and added / revised / removed sections.
+3. **Reader:** `frontend/src/components/BookReader.jsx`.
+   - It polls `GET /notebooks/{id}/book` while sources are processing or a job runs.
+   - `GET /book/sections/{id}` returns paragraphs with evidence (`source_name`, `page`).
+   - The rail's chips open `SourceReader` at the passage.
+   - `lib/glossary.js::linkTerms` links concept names and aliases.
+   - `POST /book/seen` moves the reader's `book_reads.last_seen_version`, which drives the "Since you last read" banner and the revised marks.
+4. **Removing a source:** `api/sources.py::remove_source` → `delete_source` (removes its evidence, then orphaned claims and concepts) → background `after_knowledge_change`. Sections that lose all their concepts are removed; sections that lose evidence are rewritten.
