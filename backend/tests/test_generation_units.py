@@ -115,3 +115,19 @@ def test_rate_limiter_allows_up_to_rpm_without_waiting():
     for _ in range(3):
         limiter.acquire()
     assert len(limiter._calls) == 3
+
+
+def test_bad_gemini_key_is_reported_clearly_not_as_schema_or_model_error():
+    from google.genai import errors
+
+    from app.llm.gemini import is_auth_error, translate_error
+
+    bad_key = errors.ClientError(
+        400, {"error": {"code": 400, "message": "API key not valid. Please pass a valid API key.", "status": "INVALID_ARGUMENT"}}
+    )
+    other_400 = errors.ClientError(400, {"error": {"code": 400, "message": "Invalid JSON schema", "status": "INVALID_ARGUMENT"}})
+    missing_model = errors.ClientError(404, {"error": {"code": 404, "message": "models/x is not found", "status": "NOT_FOUND"}})
+    assert is_auth_error(bad_key) and not is_auth_error(other_400)
+    assert "GEMINI_API_KEY" in str(translate_error(bad_key, "m"))
+    assert "not found" in str(translate_error(missing_model, "x"))
+    assert translate_error(other_400, "m") is other_400

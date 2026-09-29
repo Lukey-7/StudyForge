@@ -130,6 +130,6 @@ def friendly_error(exc: Exception) -> str:
     text = str(exc)
     if "429" in text or "RESOURCE_EXHAUSTED" in text or "quota" in text.lower():
         return "The AI service is rate-limited right now (free tier). Please wait a minute and try again."
-    if "not configured" in text:
-        return text
+    if "not configured" in text or "API key" in text or "model" in text and "not found" in text:
+        return text.split(": ", 1)[-1] if "failed on all providers" in text else text
     return "Something went wrong while answering. Please try again."

@@ -18,7 +18,7 @@ from google.genai import types
 from pydantic import BaseModel
 
 from app.config import Settings
-from app.llm.base import LLMJson, LLMText
+from app.llm.base import LLMJson, LLMText, LLMUnavailableError
 from app.llm.json_output import generate_validated, schema_hint
 from app.llm.rate_limit import RateLimiter, with_retries
 
@@ -33,6 +33,23 @@ def is_retryable(exc: Exception) -> bool:
     if isinstance(exc, genai_errors.APIError):
         return exc.code in RETRYABLE_STATUS
     return isinstance(exc, (httpx.TimeoutException, httpx.TransportError))
+
+
+def is_auth_error(exc: Exception) -> bool:
+    """A bad/unauthorised key comes back as 400 INVALID_ARGUMENT (not 401), so check the text too."""
+    if not isinstance(exc, genai_errors.ClientError):
+        return False
+    text = f"{exc.message} {exc.details}"
+    return exc.code in (401, 403) or "API_KEY_INVALID" in text or "API key not valid" in text
+
+
+def translate_error(exc: Exception, model: str) -> Exception:
+    """Turn configuration problems into one clear message instead of a raw API dump."""
+    if is_auth_error(exc):
+        return LLMUnavailableError("Gemini API key is invalid or not authorised - check GEMINI_API_KEY")
+    if isinstance(exc, genai_errors.ClientError) and exc.code == 404:
+        return LLMUnavailableError(f"Gemini model {model!r} was not found - check the model name in .env")
+    return exc
 
 
 def l2_normalize(vector: list[float]) -> list[float]:
@@ -53,6 +70,8 @@ class GeminiClient:
             api_key=settings.gemini_api_key,
             http_options=types.HttpOptions(timeout=settings.llm_timeout_s * 1000),
         )
+        # We never pass tools, so turn off the SDK's automatic function calling (and its warning).
+        self._no_afc = types.AutomaticFunctionCallingConfig(disable=True)
         self.gen_limiter = RateLimiter(settings.gemini_rpm)
         self.embed_limiter = RateLimiter(settings.embed_rpm)
         self._embedding_model = settings.embedding_model
@@ -66,7 +85,13 @@ class GeminiClient:
 
     def _config(self, system: str | None, fast: bool, **extra) -> types.GenerateContentConfig:
         thinking = types.ThinkingConfig(thinking_budget=0) if fast else None
-        return types.GenerateContentConfig(system_instruction=system, temperature=0.3, thinking_config=thinking, **extra)
+        return types.GenerateContentConfig(
+            system_instruction=system,
+            temperature=0.3,
+            thinking_config=thinking,
+            automatic_function_calling=self._no_afc,
+            **extra,
+        )
 
     def _generate(self, contents, config: types.GenerateContentConfig) -> str:
         def call() -> str:
@@ -74,7 +99,10 @@ class GeminiClient:
             response = self.client.models.generate_content(model=self.settings.llm_model, contents=contents, config=config)
             return response.text or ""
 
-        return with_retries(call, is_retryable=is_retryable)
+        try:
+            return with_retries(call, is_retryable=is_retryable)
+        except Exception as exc:
+            raise translate_error(exc, self.settings.llm_model) from exc
 
     def generate_text(self, prompt: str, *, system: str | None = None, fast: bool = False) -> LLMText:
         return LLMText(self._generate(prompt, self._config(system, fast)), self.model_name)
@@ -101,15 +129,15 @@ class GeminiClient:
 
     def stream_text(self, prompt: str, *, system: str | None = None) -> Iterator[str]:
         self.gen_limiter.acquire()
-        stream = with_retries(
-            lambda: self.client.models.generate_content_stream(
+        try:
+            stream = self.client.models.generate_content_stream(
                 model=self.settings.llm_model, contents=prompt, config=self._config(system, fast=True)
-            ),
-            is_retryable=is_retryable,
-        )
-        for chunk in stream:
-            if chunk.text:
-                yield chunk.text
+            )
+            for chunk in stream:
+                if chunk.text:
+                    yield chunk.text
+        except Exception as exc:
+            raise translate_error(exc, self.settings.llm_model) from exc
 
     def read_media(self, data: bytes, mime_type: str, instruction: str) -> LLMText:
         """OCR for images / scanned pages, transcription for audio."""
@@ -133,7 +161,12 @@ class GeminiClient:
             )
             return [l2_normalize(list(e.values or [])) for e in response.embeddings or []]
 
-        return with_retries(call, is_retryable=is_retryable)
+        try:
+            return with_retries(call, is_retryable=is_retryable)
+        except genai_errors.ClientError as exc:
+            if is_auth_error(exc):  # never mistake a bad key for a retired model
+                raise translate_error(exc, model) from exc
+            raise
 
     def _embed(self, texts: list[str], task_type: str) -> list[list[float]]:
         """Try the configured model; if Google has retired it, switch to the fallback ONCE."""
