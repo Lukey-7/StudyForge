@@ -1,12 +1,15 @@
 import { useQuery } from '@tanstack/react-query'
 import { useEffect, useRef } from 'react'
 import { api } from '../lib/api'
+import { splitSentences, supportingSentences } from '../lib/citationMatch'
 import { plural } from '../lib/format'
 
 // A drawer that shows a source the way the AI sees it: the list of chunks (passages)
-// with their page and heading. When opened from a citation, that chunk is highlighted
-// and scrolled into view, so the student can check the answer against their own notes.
-export default function SourceReader({ sourceId, highlightChunkId, onClose }) {
+// with their page and heading. When opened from a citation, the cited passage is marked
+// with a highlighter bar in the margin and scrolled into view, and inside it only the
+// sentence(s) that back up the answer's claims get the highlighter stroke, the way you
+// would mark a textbook, so the student can check the answer against their own notes.
+export default function SourceReader({ sourceId, highlightChunkId, citeLabel, claims, onClose }) {
   const panelRef = useRef(null)
   const markedRef = useRef(null)
 
@@ -21,9 +24,15 @@ export default function SourceReader({ sourceId, highlightChunkId, onClose }) {
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  // Once the chunks are on screen, bring the cited one into view.
+  // Once the chunks are on screen, bring the cited passage into view: its start when it fits,
+  // otherwise the first highlighted sentence, which is what the student came to check.
   useEffect(() => {
-    markedRef.current?.scrollIntoView({ block: 'center' })
+    const passage = markedRef.current
+    if (!passage) return
+    const firstMark = passage.querySelector('mark.support')
+    const tall = passage.offsetHeight > (passage.parentElement?.clientHeight || 0) * 0.8
+    if (firstMark && tall) firstMark.scrollIntoView({ block: 'center' })
+    else passage.scrollIntoView({ block: 'start' })
   }, [chunks.data, highlightChunkId])
 
   const title = source.data?.file_name || 'Source'
@@ -65,18 +74,22 @@ export default function SourceReader({ sourceId, highlightChunkId, onClose }) {
 
           {chunks.data?.map((chunk) => {
             const marked = chunk.id === highlightChunkId
+            const support = marked ? supportingSentences(chunk.text.replace(/^#+\s*/gm, ''), claims) : null
             return (
               <article key={chunk.id} className={`passage ${marked ? 'is-cited' : ''}`} ref={marked ? markedRef : null}>
                 <p className="passage-label">
                   {pageLabel(chunk)}
                   {chunk.heading && <span className="passage-heading">{chunk.heading}</span>}
+                  {marked && <span className="passage-cited-tag">{citeLabel ? `Cited as ${citeLabel}` : 'Cited'}</span>}
                 </p>
                 {paragraphs(chunk.text).map((para, i) => (
                   <p key={i} className={`passage-text ${para.isHeading ? 'passage-subhead' : ''}`}>
-                    {/* the inline span lets the highlighter background wrap line by line */}
-                    <span>{para.text}</span>
+                    {support && !para.isHeading ? <Sentences text={para.text} support={support} /> : para.text}
                   </p>
                 ))}
+                {marked && support?.size === 0 && claims?.length > 0 && (
+                  <p className="passage-note">The answer draws on this passage as a whole.</p>
+                )}
               </article>
             )
           })}
@@ -84,6 +97,17 @@ export default function SourceReader({ sourceId, highlightChunkId, onClose }) {
       </aside>
     </div>
   )
+}
+
+// A paragraph with its supporting sentences marked. The inline <mark> lets the highlighter
+// stroke wrap line by line across a sentence that spans several lines.
+function Sentences({ text, support }) {
+  return splitSentences(text).map((sentence, i) => (
+    <span key={i}>
+      {i > 0 && ' '}
+      {support.has(sentence) ? <mark className="support">{sentence}</mark> : sentence}
+    </span>
+  ))
 }
 
 // Split a chunk into paragraphs (blank lines) and turn Markdown "# Heading" lines into plain headings,

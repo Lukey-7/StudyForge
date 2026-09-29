@@ -542,16 +542,46 @@ button.cite-mark:hover:not(:disabled),
   font-family: var(--font-ui);
   font-weight: 650;
 }
-/* The cited passage: a highlighter stroke under every line (clone paints each line separately) */
-.passage.is-cited .passage-text span {
+/* The cited passage is marked the way you would mark a textbook page:
+   a highlighter bar down the margin for "this passage", and the highlighter stroke only on the
+   sentence(s) that back up the claim. The rest of the passage stays plain so the stroke means something. */
+.passage.is-cited {
+  position: relative;
+  margin: 0 calc(-1 * var(--space-3));
+  padding-left: var(--space-5);
+  padding-right: var(--space-3);
+  background: rgba(244, 211, 94, 0.05);
+  border-radius: 0 var(--radius-control) var(--radius-control) 0;
+}
+.passage.is-cited::before {
+  content: '';
+  position: absolute;
+  top: var(--space-3);
+  bottom: var(--space-3);
+  left: 0;
+  width: 4px;
+  border-radius: 2px;
+  background: var(--highlighter);
+}
+.passage-cited-tag {
+  padding: 0 6px;
+  border-radius: 2px;
+  background: var(--highlighter);
+  color: var(--ink);
+  font-weight: 650;
+}
+.passage .support {
+  background: none;
   background-image: var(--swipe);
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
+  color: inherit;
 }
-.passage.is-cited .passage-label::after {
-  content: 'Cited in the answer';
-  color: var(--highlighter);
-  font-weight: 600;
+.passage-note {
+  margin-top: var(--space-2);
+  font-family: var(--font-ui);
+  font-size: var(--text-xs);
+  color: var(--chalk-dim);
 }
 
 /* ---------------------------------------------------------------- retrieval debugger */

@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import ChatPanel from '../components/ChatPanel'
 import SourceReader from '../components/SourceReader'
+import { claimsFor } from '../lib/citationMatch'
 import SourcesPanel from '../components/SourcesPanel'
 import StudioPanel from '../components/StudioPanel'
 import { api } from '../lib/api'
@@ -22,7 +23,7 @@ const TABS = [
 export default function NotebookPage() {
   const { notebookId } = useParams()
   const [activeTab, setActiveTab] = useState('studio')
-  const [reader, setReader] = useState(null) // { sourceId, chunkId? } or null when closed
+  const [reader, setReader] = useState(null) // { sourceId, chunkId?, label?, claims? } or null when closed
   const notebook = useQuery({ queryKey: ['notebook', notebookId], queryFn: () => api(`/notebooks/${notebookId}`) })
 
   if (notebook.isPending) return <div className="page muted">Opening notebook…</div>
@@ -68,13 +69,21 @@ export default function NotebookPage() {
         <section className={`column column-chat ${activeTab === 'chat' ? 'active' : ''}`} aria-label="Chat">
           <ChatPanel
             notebookId={notebookId}
-            onOpenCitation={(c) => setReader({ sourceId: c.source_id, chunkId: c.chunk_id })}
+            onOpenCitation={(c, answer) =>
+              setReader({ sourceId: c.source_id, chunkId: c.chunk_id, label: c.label, claims: claimsFor(answer, c.label) })
+            }
           />
         </section>
       </div>
 
       {reader && (
-        <SourceReader sourceId={reader.sourceId} highlightChunkId={reader.chunkId} onClose={() => setReader(null)} />
+        <SourceReader
+          sourceId={reader.sourceId}
+          highlightChunkId={reader.chunkId}
+          citeLabel={reader.label}
+          claims={reader.claims}
+          onClose={() => setReader(null)}
+        />
       )}
     </div>
   )

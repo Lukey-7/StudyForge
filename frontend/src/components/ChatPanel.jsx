@@ -315,7 +315,7 @@ function ChatMessage({ role, content, citations = [], rewrittenQuery, onCitation
           disabled={!citation}
           title={citation ? `Open ${where}` : label}
           aria-label={citation ? `Source ${label}: ${where}` : label}
-          onClick={() => onCitation(citation)}
+          onClick={() => onCitation(citation, content)}
         >
           {label}
         </button>

@@ -32,7 +32,7 @@ Tokens live in `src/styles/tokens.css`. Nothing else in the CSS should hard-code
 Yellow is never decoration. It is used for exactly these things:
 
 - citation marks in chat answers (`S1`), as a small solid mark with dark text;
-- the cited passage in the source reader, marked line by line with dark text;
+- in the source reader, a highlighter bar down the margin of the cited passage, and the highlighter stroke only on the sentence(s) that back up the answer (matched by word overlap in `src/lib/citationMatch.js`; if nothing matches clearly, only the bar);
 - the format that is currently selected (a marker stroke behind its name);
 - the one sentence swiped on the landing page, and the passage in the landing margin note;
 - text selection (`::selection`) and keyboard focus inside reading content.
