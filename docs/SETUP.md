@@ -91,7 +91,7 @@ Open http://localhost:5173. In demo mode there's no login and a "Demo mode" badg
 
 ```bash
 cd backend
-pytest                      # 90+ tests, no API key needed (fake LLM + fake embeddings)
+pytest                      # 88 tests, no API key needed (fake LLM + fake embeddings)
 ruff check app tests eval scripts
 python -m eval.run_eval     # real retrieval metrics (needs GEMINI_API_KEY); writes eval/results.md
 python -m eval.run_eval --skip-rerank   # faster: skips the LLM-rerank row

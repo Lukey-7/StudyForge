@@ -314,7 +314,7 @@ Why ranks and not scores: cosine (0–1) and BM25 (0–∞) aren't comparable. R
 
 ## 8. Shipping
 
-- **Tests (`backend/tests/`, 90+ tests, no API key needed):** chunker, RRF (exact values), MMR, BM25 (including the negative-IDF regression), scope, context assembly, all 16 schemas, the validation-repair loop, retries/rate limiter, JWT verification, and full API flows (upload → ready → idempotent re-upload, search layers, every pipeline + cache, chat SSE + citations + query rewrite) using `FakeLLM`/`FakeEmbedder` (`tests/fakes.py`).
+- **Tests (`backend/tests/`, 88 tests, no API key needed):** chunker, RRF (exact values), MMR, BM25 (including the negative-IDF regression), scope, context assembly, all 16 schemas, the validation-repair loop, retries/rate limiter, JWT verification, and full API flows (upload → ready → idempotent re-upload, search layers, every pipeline + cache, chat SSE + citations + query rewrite) using `FakeLLM`/`FakeEmbedder` (`tests/fakes.py`).
 - **CI (`.github/workflows/ci.yml`):** on every push, `ruff check` + `pytest` for the backend and `npm ci && npm run build` for the frontend.
 - **Docker:** `backend/Dockerfile` is multi-stage (build wheels in stage 1, copy into a slim non-root runtime in stage 2). Local development doesn't need Docker (Chroma is embedded).
 - **Deploy:** [`DEPLOY_GCP.md`](DEPLOY_GCP.md) covers Cloud Build → Artifact Registry → Cloud Run, Secret Manager for keys, and three options for Chroma on an ephemeral filesystem.
@@ -377,7 +377,7 @@ Interview story for the embedding change: "The project started on text-embedding
 
 **Generation (60 s).** "The 16 pipelines are one registry of configurations run by one runner. Each has a retrieval strategy: whole-notebook with map-reduce for summaries and outlines, top-k retrieval for quizzes and flashcards, or per-source for the textbook chapter. Difficulty, length and focus topic change the prompt. Gemini returns JSON constrained by a Pydantic schema. I validate it, including rules like 'the quiz answer index must exist', and retry once with the error if it fails. Results are cached by notebook, pipeline, parameters and a sources version that bumps whenever documents change."
 
-**Engineering (30 s).** "Every Gemini call goes through a rate limiter and exponential backoff, with an optional OpenAI fallback. There are 90+ tests that run without API keys using fake models, CI on every push, a multi-stage Dockerfile and Cloud Run deployment notes."
+**Engineering (30 s).** "Every Gemini call goes through a rate limiter and exponential backoff, with an optional OpenAI fallback. There are 88 tests that run without API keys using fake models, CI on every push, a multi-stage Dockerfile and Cloud Run deployment notes."
 
 **History (15 s).** "The version I defended at my viva was Go with LangChainGo and keyword retrieval. v2 is the re-architecture with real embeddings and hybrid search. Both are in the repo."
 
