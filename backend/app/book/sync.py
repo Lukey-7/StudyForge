@@ -142,7 +142,7 @@ def _sync_with(services: Services, llm: CountingLLM, notebook_id: str, job: Row)
     elif new:
         placement = llm.generate_json(place_prompt(outline, new), Placement, system=PLACE_SYSTEM, fast=True).data
         outline = apply_placement(outline, new, placement)
-    outline = _save_outline(repo, notebook_id, outline)
+    outline = _save_outline(repo, notebook_id, outline, {r["id"]: r for r in stored})
 
     # 2. STALE: a section is rewritten only when what it is built from changed.
     stale = [s for s in outline if s["status"] != "current" or s.get("fingerprint") != model.fingerprint(s["concept_ids"])]
@@ -210,8 +210,9 @@ def _book(repo, notebook_id: str) -> Row:
     return rows[0] if rows else repo.insert("books", {"notebook_id": notebook_id, "version": 0})
 
 
-def _save_outline(repo, notebook_id: str, outline: list[dict]) -> list[Row]:
-    """Numbers chapters and sections in reading order and stores what changed."""
+def _save_outline(repo, notebook_id: str, outline: list[dict], stored: dict[str, Row]) -> list[Row]:
+    """Numbers chapters and sections in reading order and stores what changed. Compares with the
+    rows as stored: the outline's dicts have already been edited in place (placement, pruning)."""
     chapters = list(dict.fromkeys(s["chapter_title"] for s in outline))
     saved, counters = [], defaultdict(int)
     for section in outline:
@@ -231,7 +232,7 @@ def _save_outline(repo, notebook_id: str, outline: list[dict]) -> list[Row]:
                     {**fields, "notebook_id": notebook_id, "status": "stale", "version": 0, "paragraphs": [], "see_also": []},
                 )
             )
-        elif any(section.get(k) != v for k, v in fields.items()):
+        elif any(stored.get(section["id"], {}).get(k) != v for k, v in fields.items()):
             saved.append(repo.update("book_sections", section["id"], fields))
         else:
             saved.append(section)

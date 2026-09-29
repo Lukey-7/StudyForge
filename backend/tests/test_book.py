@@ -250,3 +250,27 @@ def test_one_source_can_be_re_read_without_a_full_rebuild(client, services):
     assert client.post(f"/sources/{source['id']}/knowledge/retry").status_code == 202
     km = client.get(f"/notebooks/{notebook['id']}/knowledge").json()
     assert km["job"]["status"] == "done" and km["job"]["llm_calls"] >= 1
+
+
+def test_a_concept_placed_into_an_existing_section_is_saved_there(client, monkeypatch):
+    from app.book.schemas import Placement
+    from tests import fakes
+
+    def into_first_section(prompt):
+        return Placement.model_validate(
+            {"placements": [{"concept": 0, "section": 0, "chapter": 0, "new_section_title": "", "new_chapter_title": ""}]}
+        )
+
+    notebook = make_notebook(client)
+    upload(client, notebook["id"], name="lecture.md", data=LECTURE)
+    monkeypatch.setitem(fakes.BOOK_FAKES, Placement, into_first_section)
+    upload(client, notebook["id"], name="textbook.md", data=TEXTBOOK)  # Transaction goes into an existing section
+
+    body = book(client, notebook["id"])
+    assert "Transaction" not in sections_by_title(body)  # no section of its own
+    client.post(f"/notebooks/{notebook['id']}/book/write")
+    again = book(client, notebook["id"])
+    assert again["version"] == body["version"]
+    first = again["chapters"][0]["sections"][0]
+    concepts = client.get(f"/notebooks/{notebook['id']}/book/sections/{first['id']}").json()["concepts"]
+    assert "Transaction" in [c["name"] for c in concepts]  # stored in that section, not "new" on every sync

@@ -100,3 +100,9 @@ Short records of each non-obvious choice: **decision → why → trade-off**.
 - **Outline:** planned once from concept names and links (prerequisites first, a stable topological sort with the planner's order as tie-break); later only new concepts are placed. The outline lives in `book_sections` (chapter/section indexes) rather than a separate `book_outlines` table.
 - **When:** after every knowledge change (source ready, removed, rebuilt), as the user chose; "Write the book" / "Try again" exist for the empty and failed cases. Jobs interrupted by a restart are marked failed at startup.
 - **Changes:** each version records new concepts and added / revised / removed sections; a reader's first edition is not reported as a change.
+
+### D29. Support check: rewrite once, then keep with a mark (user's decision)
+- **How:** after a section is written, one fast call judges every paragraph *only* against the passages it cites: supported / partial / unsupported, with a reason. If any paragraph is unsupported, the section is rewritten once with the reasons as feedback, and the better-supported draft is kept. A paragraph still unsupported stays in the book with a warning mark and its reason; it is never hidden.
+- **Why keep it:** hiding text would silently change the book. A visible mark is honest and lets the student decide.
+- **Caveat:** the checker is the same model family as the writer, so the support rate is a self-check that catches drift from the cited passages. It isn't a human judgement, and it can't catch a passage that is itself wrong.
+- **Cost controls:** calls counted per job (`knowledge_jobs.llm_calls`); at most 60 section writes per notebook per day (sections over the cap stay stale); a per-source "Retry this source" instead of a full rebuild, because a rebuild rewrites most sections (D28).

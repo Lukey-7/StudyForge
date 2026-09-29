@@ -310,7 +310,16 @@ function SectionView({ notebookId, section, version, onVersion, concepts, neighb
         )}
       </header>
 
-      {detail.isError && <p className="error-text small">Couldn't load this section: {detail.error.message}</p>}
+      {detail.isError && version ? (
+        <p className="book-old-version small" role="status">
+          The text of version {version} was not kept (sections are saved from the version the support check arrived).{' '}
+          <button className="btn-link" onClick={() => onVersion(null)}>
+            Read the current text
+          </button>
+        </p>
+      ) : (
+        detail.isError && <p className="error-text small">Couldn't load this section: {detail.error.message}</p>
+      )}
       {!d && !detail.isError && <p className="muted small">Loading…</p>}
       {d && paragraphs.length === 0 && (
         <p className="muted">
