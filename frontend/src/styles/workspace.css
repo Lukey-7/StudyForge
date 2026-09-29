@@ -911,3 +911,286 @@ button.cite-mark:hover:not(:disabled),
     grid-template-columns: 1fr;
   }
 }
+
+/* ---------------------------------------------------------------- the Book: reader (phase 2) */
+.book-views {
+  display: flex;
+  gap: var(--space-1);
+}
+.book-view {
+  padding: var(--space-1) var(--space-3);
+  border: 1px solid transparent;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--chalk-dim);
+  font-weight: 600;
+}
+.book-view[aria-selected='true'] {
+  border-color: var(--line-strong);
+  color: var(--chalk);
+}
+.btn-link {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--chalk);
+  text-decoration: underline 1px var(--line-strong);
+  text-underline-offset: 3px;
+}
+.btn-link:hover {
+  text-decoration-color: var(--chalk);
+}
+
+/* Container queries: the reader sits in a column whose width depends on the screen and on
+   whether Sources and Chat are beside it, so it lays itself out by its own width. */
+.book-reader {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.book-changes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line-strong);
+  border-left: 3px solid var(--highlighter);
+  border-radius: var(--radius-panel);
+  background: var(--slate-raised);
+  font-size: var(--text-sm);
+}
+.book-changes p {
+  margin: 0;
+}
+.book-changes-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+.book-layout {
+  display: grid;
+  gap: var(--space-5);
+}
+@container (min-width: 760px) {
+  .book-layout {
+    grid-template-columns: 200px minmax(0, 1fr);
+  }
+  .book-toc {
+    position: sticky;
+    top: var(--space-3);
+    align-self: start;
+    max-height: calc(100vh - var(--topbar-height) - var(--space-6));
+    overflow-y: auto;
+  }
+}
+
+/* Contents */
+.book-toc {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  font-size: var(--text-sm);
+}
+.toc-chapter-title {
+  margin: 0 0 var(--space-1);
+  font-weight: 700;
+}
+.toc-number {
+  color: var(--chalk-dim);
+  font-variant-numeric: tabular-nums;
+}
+.book-toc ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.toc-section {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-1) var(--space-2);
+  border: none;
+  border-radius: var(--radius-control);
+  background: none;
+  color: var(--chalk-dim);
+  text-align: left;
+}
+.toc-section:hover {
+  background: var(--slate-high);
+  color: var(--chalk);
+}
+.toc-section[aria-current='page'] {
+  background: var(--slate-raised);
+  color: var(--chalk);
+  box-shadow: inset 2px 0 0 var(--violet);
+}
+/* "Revised since you last read": the highlighter points at what changed */
+.toc-revised {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--highlighter);
+}
+.toc-status {
+  margin-left: auto;
+  color: var(--chalk-dim);
+  font-size: var(--text-xs);
+  font-style: italic;
+}
+
+/* A section */
+.book-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  min-width: 0;
+}
+.book-section-header {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.book-section-header h3 {
+  margin: 0;
+  font-size: var(--text-xl);
+}
+.book-chapter-name {
+  margin: 0;
+  color: var(--chalk-dim);
+  font-size: var(--text-sm);
+}
+
+/* A paragraph and its evidence rail: side by side when there is room, rail underneath otherwise */
+.book-para {
+  display: grid;
+  gap: var(--space-2);
+}
+.book-para .reading {
+  margin: 0;
+  max-width: var(--measure);
+  font-family: var(--font-read);
+  line-height: var(--leading-read);
+}
+@container (min-width: 620px) {
+  .book-para {
+    grid-template-columns: minmax(0, 1fr) 150px;
+    gap: var(--space-4);
+  }
+  .book-rail {
+    padding-left: var(--space-3);
+    border-left: 1px solid var(--line);
+  }
+}
+.book-rail {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: var(--space-1);
+  opacity: 0.7;
+  transition: opacity 0.15s var(--ease);
+}
+.book-rail .evidence-chip {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: left;
+}
+.book-para.is-active .book-rail,
+.book-rail:focus-within {
+  opacity: 1;
+}
+.book-para.is-active .book-rail {
+  border-left-color: var(--highlighter);
+}
+.book-rail-none {
+  color: var(--chalk-dim);
+  font-size: var(--text-xs);
+  font-style: italic;
+}
+
+/* Glossary terms: a quiet dotted underline; pointing at one highlights it and shows the definition */
+.term-wrap {
+  position: relative;
+}
+.term {
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline dotted 1px var(--chalk-dim);
+  text-underline-offset: 4px;
+  cursor: pointer;
+}
+.term:hover,
+.term:focus-visible {
+  color: var(--highlighter);
+  text-decoration: underline solid var(--mark-underline) var(--highlighter);
+}
+.term-tip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  z-index: 5;
+  width: max-content;
+  max-width: 280px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--slate-deep);
+  box-shadow: var(--shadow-float);
+  color: var(--chalk);
+  font-family: var(--font-ui);
+  font-size: var(--text-sm);
+  line-height: var(--leading-ui);
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.12s var(--ease);
+  pointer-events: none;
+}
+.term-wrap:hover .term-tip,
+.term:focus-visible + .term-tip {
+  visibility: visible;
+  opacity: 1;
+}
+.book-see-also {
+  margin: 0;
+  font-size: var(--text-sm);
+}
+.book-pager {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--line);
+}
+.toc-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--slate-raised);
+  color: var(--chalk);
+  font-weight: 600;
+  text-align: left;
+}
+.toc-toggle::after {
+  content: '▾';
+  margin-left: auto;
+  color: var(--chalk-dim);
+}
+.toc-toggle[aria-expanded='true']::after {
+  content: '▴';
+}
+.book-toc[hidden] {
+  display: none;
+}

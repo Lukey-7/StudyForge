@@ -2,19 +2,25 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { api } from '../lib/api'
 import { plural } from '../lib/format'
+import BookReader from './BookReader'
 import { isProcessing } from './SourceProgress'
 
-// The Book tab, phase 1: the knowledge map. Every concept StudyForge found across the
-// notebook's sources, with how many sources support it and where the sources disagree.
-// Opening a concept shows its claims, each with evidence chips that open the exact passage.
+// The Book tab. "Reader" is the book written from the sources (BookReader); "Concepts" is the
+// knowledge map it is written from: every concept StudyForge found across the notebook's sources,
+// with how many sources support it and where the sources disagree. Opening a concept (from either
+// view) shows its claims, each with evidence chips that open the exact passage.
 export default function BookPanel({ notebookId, onOpenEvidence }) {
   const queryClient = useQueryClient()
+  const [view, setView] = useState('reader')
   const [filter, setFilter] = useState('')
   const [onlyConflicts, setOnlyConflicts] = useState(false)
   const [openId, setOpenId] = useState(null)
 
   // Same key as the Sources panel, so both share one request and one polling loop.
-  const sources = useQuery({ queryKey: ['sources', notebookId], queryFn: () => api(`/notebooks/${notebookId}/sources`) })
+  const sources = useQuery({
+    queryKey: ['sources', notebookId],
+    queryFn: () => api(`/notebooks/${notebookId}/sources`),
+  })
   const stillReading = sources.data?.some((s) => isProcessing(s.status))
   const map = useQuery({
     queryKey: ['knowledge', notebookId],
@@ -32,7 +38,14 @@ export default function BookPanel({ notebookId, onOpenEvidence }) {
 
   const rebuild = useMutation({
     mutationFn: () => api(`/notebooks/${notebookId}/knowledge/rebuild`, { method: 'POST' }),
-    onSuccess: () => setTimeout(() => queryClient.invalidateQueries({ queryKey: ['knowledge', notebookId] }), 1500),
+    onSuccess: () =>
+      setTimeout(
+        () =>
+          queryClient.invalidateQueries({
+            queryKey: ['knowledge', notebookId],
+          }),
+        1500,
+      ),
   })
 
   const data = map.data
@@ -50,65 +63,95 @@ export default function BookPanel({ notebookId, onOpenEvidence }) {
   return (
     <div className="panel book">
       <div className="panel-header book-header">
-        <div>
-          <h2>Book</h2>
+        <div className="book-views" role="tablist" aria-label="Book views">
+          {VIEWS.map((v) => (
+            <button key={v.id} role="tab" aria-selected={view === v.id} className="book-view" onClick={() => setView(v.id)}>
+              {v.label}
+            </button>
+          ))}
+        </div>
+        {view === 'concepts' && (
+          <button
+            className="btn btn-quiet btn-sm"
+            onClick={() => rebuild.mutate()}
+            disabled={rebuild.isPending || job?.status === 'running'}
+          >
+            Rebuild knowledge map
+          </button>
+        )}
+      </div>
+
+      {view === 'reader' && (
+        <>
+          {job?.status === 'running' && (
+            <p className="muted small" role="status">
+              Reading new sources ({job.progress}%). The book updates when that finishes.
+            </p>
+          )}
+          <BookReader
+            notebookId={notebookId}
+            concepts={data?.concepts || []}
+            busy={Boolean(stillReading) || job?.status === 'running'}
+            onOpenConcept={setOpenId}
+            onOpenEvidence={onOpenEvidence}
+          />
+        </>
+      )}
+
+      {view === 'concepts' && (
+        <ConceptsView>
           {data && data.concepts.length > 0 && (
             <p className="muted small">
               {plural(data.concepts.filter((c) => c.kind === 'term').length, 'concept')} and{' '}
-              {plural(data.concepts.filter((c) => c.kind === 'example').length, 'named example')} found across your
-              sources.
+              {plural(data.concepts.filter((c) => c.kind === 'example').length, 'named example')} found across your sources.
             </p>
           )}
-        </div>
-        <button className="btn btn-quiet btn-sm" onClick={() => rebuild.mutate()} disabled={rebuild.isPending || job?.status === 'running'}>
-          Rebuild knowledge map
-        </button>
-      </div>
+          {map.isError && <p className="error-text small">Couldn't load the knowledge map: {map.error.message}</p>}
+          {job?.status === 'running' && (
+            <div className="book-progress" role="status">
+              <span>Reading your sources and mapping concepts… {job.progress}%</span>
+              <span className="book-progress-bar" style={{ '--p': `${job.progress}%` }} />
+            </div>
+          )}
+          {job?.queued?.length > 0 && <p className="muted small">{job.queued[0]}</p>}
+          {job?.failed?.length > 0 && (
+            <p className="error-text small">Part of the map could not be built: {job.failed[0]}. Try Rebuild knowledge map.</p>
+          )}
 
-      {map.isError && <p className="error-text small">Couldn't load the knowledge map: {map.error.message}</p>}
-      {job?.status === 'running' && (
-        <div className="book-progress" role="status">
-          <span>Reading your sources and mapping concepts… {job.progress}%</span>
-          <span className="book-progress-bar" style={{ '--p': `${job.progress}%` }} />
-        </div>
-      )}
-      {job?.queued?.length > 0 && <p className="muted small">{job.queued[0]}</p>}
-      {job?.failed?.length > 0 && (
-        <p className="error-text small">Part of the map could not be built: {job.failed[0]}. Try Rebuild knowledge map.</p>
-      )}
+          {data && data.concepts.length === 0 && job?.status !== 'running' && (
+            <div className="book-empty">
+              <h3>Your book starts here</h3>
+              <p className="muted">
+                Add documents in Sources. StudyForge reads them and maps every concept and named example, with the sources that support each
+                one and the places where your sources disagree. The more you add, the more complete it gets.
+              </p>
+            </div>
+          )}
 
-      {data && data.concepts.length === 0 && job?.status !== 'running' && (
-        <div className="book-empty">
-          <h3>Your book starts here</h3>
-          <p className="muted">
-            Add documents in Sources. StudyForge reads them and maps every concept and named example, with the sources
-            that support each one and the places where your sources disagree. The more you add, the more complete it gets.
-          </p>
-        </div>
-      )}
-
-      {data && data.concepts.length > 0 && (
-        <>
-          <div className="book-filters">
-            <input
-              className="input"
-              type="search"
-              placeholder="Find a concept"
-              aria-label="Find a concept"
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-            />
-            {data.conflict_count > 0 && (
-              <label className="book-toggle">
-                <input type="checkbox" checked={onlyConflicts} onChange={(e) => setOnlyConflicts(e.target.checked)} />
-                Only where sources disagree ({data.conflict_count})
-              </label>
-            )}
-          </div>
-          <ConceptList title="Concepts" concepts={terms} conflicted={conflicted} onOpen={setOpenId} />
-          <ConceptList title="Named examples" concepts={examples} conflicted={conflicted} onOpen={setOpenId} />
-          {shown.length === 0 && <p className="muted small">Nothing matches “{filter}”.</p>}
-        </>
+          {data && data.concepts.length > 0 && (
+            <>
+              <div className="book-filters">
+                <input
+                  className="input"
+                  type="search"
+                  placeholder="Find a concept"
+                  aria-label="Find a concept"
+                  value={filter}
+                  onChange={(e) => setFilter(e.target.value)}
+                />
+                {data.conflict_count > 0 && (
+                  <label className="book-toggle">
+                    <input type="checkbox" checked={onlyConflicts} onChange={(e) => setOnlyConflicts(e.target.checked)} />
+                    Only where sources disagree ({data.conflict_count})
+                  </label>
+                )}
+              </div>
+              <ConceptList title="Concepts" concepts={terms} conflicted={conflicted} onOpen={setOpenId} />
+              <ConceptList title="Named examples" concepts={examples} conflicted={conflicted} onOpen={setOpenId} />
+              {shown.length === 0 && <p className="muted small">Nothing matches “{filter}”.</p>}
+            </>
+          )}
+        </ConceptsView>
       )}
 
       {openId && (
@@ -122,6 +165,15 @@ export default function BookPanel({ notebookId, onOpenEvidence }) {
       )}
     </div>
   )
+}
+
+const VIEWS = [
+  { id: 'reader', label: 'Reader' },
+  { id: 'concepts', label: 'Concepts' },
+]
+
+function ConceptsView({ children }) {
+  return <div className="concepts-view">{children}</div>
 }
 
 function ConceptList({ title, concepts, conflicted, onOpen }) {

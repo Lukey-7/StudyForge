@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 
 from supabase import Client, create_client
 
+from app.db.local_repo import TIMESTAMPED
 from app.db.repository import Row
 
 CHUNK_INSERT_BATCH = 500
@@ -38,12 +39,12 @@ class SupabaseRepository:
         return self._t(table).insert(row).execute().data[0]
 
     def select(self, table: str, **equals) -> list[Row]:
-        query = self._t(table).select("*")
-        for column, value in equals.items():
-            query = query.eq(column, value)
         rows: list[Row] = []
         offset = 0
         while True:  # PostgREST returns at most 1000 rows per request
+            query = self._t(table).select("*")  # a fresh builder per page: filters accumulate otherwise
+            for column, value in equals.items():
+                query = query.eq(column, value)
             batch = query.order("created_at").range(offset, offset + 999).execute().data
             rows.extend(batch)
             if len(batch) < 1000:
@@ -51,7 +52,7 @@ class SupabaseRepository:
             offset += 1000
 
     def update(self, table: str, row_id: str, fields: Row) -> Row:
-        extra = {"updated_at": _now()} if table in ("concepts", "knowledge_jobs") else {}
+        extra = {"updated_at": _now()} if table in TIMESTAMPED else {}
         return self._t(table).update({**fields, **extra}).eq("id", row_id).execute().data[0]
 
     def delete(self, table: str, **equals) -> None:

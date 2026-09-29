@@ -8,6 +8,7 @@ from collections.abc import Iterator
 
 from pydantic import BaseModel
 
+from app.book.schemas import Outline, Placement, SectionDraft
 from app.generation import schemas as s
 from app.knowledge.schemas import Extraction, Verdicts
 from app.llm.base import LLMJson, LLMText
@@ -81,6 +82,8 @@ class FakeLLM:
             return LLMJson(fake_extraction(prompt), self.model_name)
         if schema is Verdicts:
             return LLMJson(fake_verdicts(prompt), self.model_name)
+        if schema in BOOK_FAKES:
+            return LLMJson(BOOK_FAKES[schema](prompt), self.model_name)
         if schema not in SAMPLE_OUTPUTS:  # e.g. the LLM rerank: keep the given order
             return LLMJson(schema.model_validate({"ranked_ids": []}), self.model_name)
         return LLMJson(schema.model_validate(SAMPLE_OUTPUTS[schema]), self.model_name)
@@ -164,3 +167,32 @@ def fake_verdicts(prompt: str) -> Verdicts:
             verdict = "unrelated"
         verdicts.append({"pair": int(number), "verdict": verdict})
     return Verdicts.model_validate({"verdicts": verdicts})
+
+
+# ---------------------------------------------------------------- book fakes
+CONCEPT_LINE = re.compile(r"^\[C(\d+)\] (.+?) \((?:term|example)\)", re.M)
+BOOK_PASSAGE = re.compile(r"^\[P(\d+)\] \(.*\)\n(.+)$", re.M)
+
+
+def fake_outline(prompt: str) -> Outline:
+    """One chapter; a section per concept, titled by it, in the order given."""
+    sections = [{"title": name, "concepts": [int(i)]} for i, name in CONCEPT_LINE.findall(prompt)]
+    return Outline.model_validate({"chapters": [{"title": "Basics", "sections": sections}]})
+
+
+def fake_placement(prompt: str) -> Placement:
+    """Every new concept gets a new section of its own in the first chapter."""
+    placements = [
+        {"concept": int(i), "section": -1, "chapter": 0, "new_section_title": name, "new_chapter_title": ""}
+        for i, name in CONCEPT_LINE.findall(prompt.split("NEW CONCEPTS:")[1])
+    ]
+    return Placement.model_validate({"placements": placements})
+
+
+def fake_section(prompt: str) -> SectionDraft:
+    """A paragraph per passage, quoting its first line, citing it."""
+    paragraphs = [{"text": text.strip(), "passages": [int(i)]} for i, text in BOOK_PASSAGE.findall(prompt)]
+    return SectionDraft.model_validate({"paragraphs": paragraphs or [{"text": "Nothing yet.", "passages": []}], "see_also": []})
+
+
+BOOK_FAKES = {Outline: fake_outline, Placement: fake_placement, SectionDraft: fake_section}

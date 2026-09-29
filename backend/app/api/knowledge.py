@@ -5,6 +5,7 @@ from collections import defaultdict
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 
 from app.api.deps import get_services, owned_notebook
+from app.book.sync import after_knowledge_change
 from app.db.repository import Row
 from app.knowledge.build import build_for_source
 from app.services import Services
@@ -23,7 +24,7 @@ def _load(services: Services, notebook_id: str) -> dict:
         "evidence": repo.select("claim_evidence", notebook_id=notebook_id),
         "conflicts": repo.select("conflicts", notebook_id=notebook_id),
         "links": repo.select("concept_links", notebook_id=notebook_id),
-        "jobs": repo.select("knowledge_jobs", notebook_id=notebook_id),
+        "jobs": [j for j in repo.select("knowledge_jobs", notebook_id=notebook_id) if j.get("kind", "extract") == "extract"],
     }
 
 
@@ -144,6 +145,7 @@ def _rebuild(services: Services, notebook_id: str) -> None:
     for source in services.repo.list_sources(notebook_id):
         if source["status"] == "ready":
             build_for_source(services, source["id"])
+    after_knowledge_change(services, notebook_id)
 
 
 @router.post("/notebooks/{notebook_id}/knowledge/rebuild", status_code=status.HTTP_202_ACCEPTED)

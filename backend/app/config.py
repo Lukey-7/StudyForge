@@ -86,6 +86,8 @@ class Settings(BaseSettings):
     concept_merge_similarity: float = 0.88  # at least this close: the LLM judges if it is the same concept
     claim_compare_similarity: float = 0.80  # below this, a claim is new without asking the LLM
     knowledge_max_passages_per_hour: int = 150  # free-tier budget for background extraction
+    book_enabled: bool = True  # write the book from the knowledge model after every change
+    book_max_passages_per_section: int = 12  # evidence passages given to the writer per section
 
     # --- Chat / generation guardrails --------------------------------------------
     chat_max_history_turns: int = 6

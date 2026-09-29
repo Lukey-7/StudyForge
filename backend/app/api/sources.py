@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from app.api.deps import get_services, get_user, owned_notebook, owned_source
 from app.auth import User
+from app.book.sync import after_knowledge_change
 from app.db.repository import Row
 from app.ingest.extract import UnsupportedFileType
 from app.ingest.pipeline import UploadTooLarge, create_source, delete_source, run_ingestion
@@ -92,5 +93,8 @@ def retry_source(
 
 
 @router.delete("/sources/{source_id}", status_code=status.HTTP_204_NO_CONTENT)
-def remove_source(source: Row = Depends(owned_source), services: Services = Depends(get_services)) -> None:
+def remove_source(
+    background: BackgroundTasks, source: Row = Depends(owned_source), services: Services = Depends(get_services)
+) -> None:
     delete_source(services, source)
+    background.add_task(after_knowledge_change, services, source["notebook_id"])  # sections it supported are rewritten

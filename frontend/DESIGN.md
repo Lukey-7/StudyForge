@@ -46,6 +46,10 @@ How it is drawn depends on the surface:
   is not used there;
 - **citation marks**: a small solid yellow block with `--ink` text.
 
+In the book reader it also marks: a glossary term being pointed at (hover or focus; at rest a term
+has only a quiet dotted chalk underline), the evidence rail of the paragraph under the pointer, the
+dot beside a section revised since the last read, and the edge of the "since you last read" banner.
+
 It is never a button colour or a divider.
 
 ### The violet rule

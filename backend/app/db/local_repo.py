@@ -17,6 +17,10 @@ from app.db.repository import Row
 TABLES = ("profiles", "notebooks", "sources", "chunks", "generations", "chat_sessions", "chat_messages")
 # The knowledge model (migrations/002_knowledge.sql). Accessed through the generic table methods.
 KNOWLEDGE_TABLES = ("concepts", "concept_links", "claims", "claim_evidence", "conflicts", "knowledge_jobs")
+# The book rendered from it (migrations/003_book.sql).
+BOOK_TABLES = ("books", "book_sections", "book_changes", "book_reads")
+# Tables with an updated_at column (set on insert and update).
+TIMESTAMPED = ("concepts", "knowledge_jobs", "books", "book_sections", "book_reads")
 
 
 def now_iso() -> str:
@@ -27,10 +31,10 @@ class LocalRepository:
     def __init__(self, path: str | None = None) -> None:
         self.path = Path(path) if path else None
         self._lock = threading.RLock()
-        self.t: dict[str, dict[str, Row]] = {name: {} for name in TABLES + KNOWLEDGE_TABLES}
+        self.t: dict[str, dict[str, Row]] = {name: {} for name in TABLES + KNOWLEDGE_TABLES + BOOK_TABLES}
         if self.path and self.path.exists():
             loaded = json.loads(self.path.read_text(encoding="utf-8"))
-            for name in TABLES + KNOWLEDGE_TABLES:
+            for name in TABLES + KNOWLEDGE_TABLES + BOOK_TABLES:
                 self.t[name] = loaded.get(name, {})
 
     # ---------------------------------------------------------------- helpers
@@ -61,7 +65,7 @@ class LocalRepository:
     # ------------------------------------------------ generic table access (knowledge model)
     def insert(self, table: str, row: Row) -> Row:
         with self._lock:
-            created = self._insert(table, {**row, "updated_at": now_iso()} if table in ("concepts", "knowledge_jobs") else row)
+            created = self._insert(table, {**row, "updated_at": now_iso()} if table in TIMESTAMPED else row)
             self._save()
             return created
 

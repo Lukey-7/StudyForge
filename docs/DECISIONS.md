@@ -91,3 +91,12 @@ Short records of each non-obvious choice: **decision → why → trade-off**.
 
 ### D20. React without TypeScript or a UI kit
 - **Why:** less to explain in an interview. Plain CSS variables carry the v1 design system over. React Query handles server state (caching, polling, refetch) and `useState` handles UI state.
+
+### D27. Concept merges are judged by the LLM, not by embeddings alone
+- **Why:** on real notes, "Deadlock prevention" embedded within 0.90 of "Coffman conditions" and was merged into it. Embeddings now only shortlist (similarity >= 0.88); one batched "same / unrelated" call per extraction batch decides. A concept the extractor names without claims keeps its definition as a claim with evidence, so every concept shows a source and survives rebuilds.
+
+### D28. The book: stale by fingerprint, written section by section, automatically
+- **Stale:** each section stores a hash of its concepts' definitions, claims and evidence. No LLM decides what is stale; adding a source changes the hash only of the sections whose concepts it touched, and only those are rewritten.
+- **Outline:** planned once from concept names and links (prerequisites first, a stable topological sort with the planner's order as tie-break); later only new concepts are placed. The outline lives in `book_sections` (chapter/section indexes) rather than a separate `book_outlines` table.
+- **When:** after every knowledge change (source ready, removed, rebuilt), as the user chose; "Write the book" / "Try again" exist for the empty and failed cases. Jobs interrupted by a restart are marked failed at startup.
+- **Changes:** each version records new concepts and added / revised / removed sections; a reader's first edition is not reported as a change.

@@ -1,7 +1,11 @@
 # The living textbook: plan
 
 *StudyForge's real idea, as described in the blackbook (objective 4, research gap 2.4, future scope 7.3.1
-"chunked textbook generation"), taken to its conclusion. This document is the plan; nothing here is built yet.*
+"chunked textbook generation"), taken to its conclusion. This document is the plan.*
+
+**Status:** phase 1 (knowledge map) and phase 2 (the book: outline, sections, stale-per-section,
+reader with evidence rail, glossary hover, "since you last read") are built; see `backend/app/knowledge`,
+`backend/app/book`, `migrations/002`–`003`, DECISIONS D27–D28. Phases 3–5 are not started.
 
 ## 1. What we are building, in one paragraph
 

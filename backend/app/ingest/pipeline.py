@@ -130,6 +130,9 @@ def run_ingestion(services: Services, source_id: str) -> None:
                 build_for_source(services, source_id)
             except Exception:  # noqa: BLE001
                 logger.exception("knowledge build could not start for %s", source_id)
+            from app.book.sync import after_knowledge_change
+
+            after_knowledge_change(services, source["notebook_id"])  # the book grows with its sources
         logger.info(
             "ingested %s: %d pages, %d chunks, model=%s in %.1fs",
             source["file_name"],
