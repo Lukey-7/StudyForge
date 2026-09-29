@@ -118,7 +118,9 @@ def _make_chunk(index: int, units: list[Unit]) -> Chunk:
         text=text,
         page=pages[0] if pages else None,
         page_end=pages[-1] if pages else None,
-        heading=units[-1].heading or units[0].heading,
+        # The heading where the chunk STARTS: a chunk spanning sections 4 and 5 is cited as
+        # "section 4", which is where a reader will look for the fact.
+        heading=units[0].heading or units[-1].heading,
         token_count=count_tokens(text),
     )
 
