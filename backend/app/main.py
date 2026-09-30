@@ -54,6 +54,9 @@ def create_app(settings: Settings | None = None, services: Services | None = Non
         app.include_router(module.router)
 
     _fail_interrupted_jobs(app.state.services)
+    from app.reindex import reindex_on_start
+
+    reindex_on_start(app.state.services)
     logging.getLogger(__name__).info(
         "StudyForge API ready (db=%s, auth=%s, chroma=%s)", settings.db_backend, settings.auth_mode, settings.chroma_mode
     )

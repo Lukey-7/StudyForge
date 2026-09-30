@@ -61,6 +61,7 @@ class Settings(BaseSettings):
     chroma_path: str = str(BACKEND_DIR / "data" / "chroma")
     chroma_host: str = "localhost"
     chroma_port: int = 8000
+    reindex_on_start: bool = False  # rebuild an empty Chroma from Postgres at startup (hosts without a persistent disk)
 
     # --- Ingestion -------------------------------------------------------------
     chunk_target_tokens: int = 600

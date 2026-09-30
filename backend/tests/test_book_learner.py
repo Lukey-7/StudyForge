@@ -198,3 +198,14 @@ def test_long_figure_labels_are_cut_at_a_word():
     text = "Oracle released the first commercial relational database that used SQL in its product line"
     assert _label(text, 60) == "Oracle released the first commercial relational database…"
     assert _label("short") == "short"
+
+
+def test_an_empty_index_is_rebuilt_from_postgres(client, services):
+    from app.reindex import rebuild_notebook
+
+    notebook = make_notebook(client)
+    upload(client, notebook["id"], name="lecture.md", data=LECTURE)
+    services.vectors.items.clear()  # a fresh container: the index is gone, Postgres is not
+    counts = rebuild_notebook(services, notebook["id"])
+    assert counts["chunks"] >= 1 and counts["concepts"] >= 2 and counts["claims"] >= 2 and counts["sections"] >= 2
+    assert client.get("/search?q=index").json()  # search works again
