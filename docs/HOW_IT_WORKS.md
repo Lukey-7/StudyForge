@@ -58,7 +58,7 @@ What the book gives you:
 | | Supabase Auth | – | accounts and JWT access tokens |
 | | Supabase Storage | – | original uploaded files (bucket `sources`) |
 | Parsing | pymupdf / pymupdf4llm, python-docx | 1.28 / 1.2 | PDF → Markdown per page, DOCX |
-| Quality | pytest, ruff | – | 138 backend tests (no API key needed), lint/format |
+| Quality | pytest, ruff | – | 140 backend tests (no API key needed), lint/format |
 | CI | GitHub Actions | – | lint, test and build on every push |
 
 **No Docker is needed locally.** Chroma runs embedded inside the API process. A multi-stage `Dockerfile` exists for deployment ([DEPLOY_GCP.md](DEPLOY_GCP.md)).
@@ -239,7 +239,7 @@ Chroma collections, one set per embedding model:
 # frontend (from frontend/)
 npm run dev          # http://localhost:5173
 # tests
-cd backend && .venv/Scripts/python -m pytest      # 138 tests, no API key
+cd backend && .venv/Scripts/python -m pytest      # 140 tests, no API key
 cd frontend && npm test                            # 30 tests
 # evaluation
 cd backend && .venv/Scripts/python eval/run_eval.py                    # retrieval quality -> eval/results.md

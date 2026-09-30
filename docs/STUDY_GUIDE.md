@@ -322,7 +322,7 @@ Why ranks and not scores: cosine (0–1) and BM25 (0–∞) aren't comparable. R
 
 ## 8. Shipping
 
-- **Tests (`backend/tests/`, 138 tests, no API key needed; plus 30 frontend tests with vitest):** chunker, RRF (exact values), MMR, BM25 (including the negative-IDF regression), scope, context assembly, all 16 schemas, the validation-repair loop, retries/rate limiter, JWT verification, and full API flows (upload → ready → idempotent re-upload, search layers, every pipeline + cache, chat SSE + citations + query rewrite) using `FakeLLM`/`FakeEmbedder` (`tests/fakes.py`).
+- **Tests (`backend/tests/`, 140 tests, no API key needed; plus 30 frontend tests with vitest):** chunker, RRF (exact values), MMR, BM25 (including the negative-IDF regression), scope, context assembly, all 16 schemas, the validation-repair loop, retries/rate limiter, JWT verification, and full API flows (upload → ready → idempotent re-upload, search layers, every pipeline + cache, chat SSE + citations + query rewrite) using `FakeLLM`/`FakeEmbedder` (`tests/fakes.py`).
 - **CI (`.github/workflows/ci.yml`):** on every push, `ruff check` + `pytest` for the backend and `npm ci && npm run build` for the frontend.
 - **Docker:** `backend/Dockerfile` is multi-stage (build wheels in stage 1, copy into a slim non-root runtime in stage 2). Local development doesn't need Docker (Chroma is embedded).
 - **Deploy:** [`DEPLOY_GCP.md`](DEPLOY_GCP.md) covers Cloud Build → Artifact Registry → Cloud Run, Secret Manager for keys, and three options for Chroma on an ephemeral filesystem.
@@ -385,10 +385,11 @@ source ready ─► EXTRACT (Gemini JSON per 6 passages: concepts, claims, links
 - **History starts at phase 3:** section snapshots exist only from the version the support check arrived; older versions show their change record but not their text.
 
 ### What real testing found (worth telling in an interview)
-All three were invisible to the fake-LLM tests:
+None of these showed up in the fake-LLM tests:
 - **Dropped connections:** Supabase drops idle keep-alive connections, and a build died with "Server disconnected". Fix: an httpx transport that resends once (`db/supabase_repo.py::RetryStaleConnection`).
 - **Sections with no evidence:** the half-finished build left concepts without claims, and the book wrote four sections from definitions alone. Fix: only concepts with evidence enter the book, and a section with no passages is never written.
 - **Rebuild changed concept ids:** a rebuild re-created concepts with new ids, which would have torn down the outline. Fix: concepts are kept while a source is re-read and pruned afterwards.
+- **Sources that finish together raced each other.** Three sources pasted at once built the knowledge map in parallel, each from its own snapshot. One build's clean-up deleted another's brand-new concepts before their claims were saved (21 concepts created, 17 survived). Fix: one knowledge change at a time per notebook (a per-notebook lock), with a regression test that runs six builds at once.
 - **Placement into an existing section was never saved.** The outline code compared each section with itself after editing it in place, so the concept was "new" again on every sync. Found because "Waits-for graph" appeared in every change list. Fix: compare with the stored rows; a regression test fails without the fix.
 
 ### 5 interview questions
@@ -460,7 +461,7 @@ Interview story for the embedding change: "The project started on text-embedding
 
 **The living textbook (45 s).** "On top of that, each notebook gets one book that grows with its sources. Every source is read into a knowledge map: concepts, atomic claims, and the passages behind each claim. It's merged across sources, so a term three sources define is one entry with three pieces of evidence, and a contradiction is recorded, not overwritten. The book's outline is planned from concept names only, and each section is written only from its own evidence. Every paragraph points at its passages. Each section stores a hash of what it was written from, so adding a source rewrites only what changed. On my own notes, adding a second source rewrote one of seven sections and added a new chapter. A second model call checks every paragraph against its cited passages: 95% were supported, and the rest are marked in the book, not hidden."
 
-**Engineering (20 s).** "Every Gemini call goes through a rate limiter and backoff. There are 138 backend and 30 frontend tests that run without API keys, CI on every push, and Cloud Run deployment notes."
+**Engineering (20 s).** "Every Gemini call goes through a rate limiter and backoff. There are 140 backend and 30 frontend tests that run without API keys, CI on every push, and Cloud Run deployment notes."
 
 **History (15 s).** "The version I defended at my viva was Go with LangChainGo and keyword retrieval. v2 is the re-architecture with real embeddings and hybrid search. Both are in the repo."
 

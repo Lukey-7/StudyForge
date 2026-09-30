@@ -147,10 +147,11 @@ def run_ingestion(services: Services, source_id: str) -> None:
 
 
 def delete_source(services: Services, source: Row) -> None:
-    from app.knowledge.build import remove_source_knowledge
+    from app.knowledge.build import notebook_lock, remove_source_knowledge
 
     try:
-        remove_source_knowledge(services, source)
+        with notebook_lock(source["notebook_id"]):  # never while a build of this notebook runs
+            remove_source_knowledge(services, source)
     except Exception:  # noqa: BLE001 - deleting a source must work even without the knowledge tables
         logger.exception("could not clean up knowledge for %s", source["id"])
     services.vectors.delete_source(source["id"])

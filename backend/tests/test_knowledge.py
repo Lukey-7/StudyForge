@@ -164,3 +164,22 @@ def test_a_concept_without_claims_keeps_its_definition_as_evidence(client, servi
     assert paging["evidence_count"] == 1 and paging["source_count"] == 1
     client.post(f"/notebooks/{notebook['id']}/knowledge/rebuild")
     assert concept_named(knowledge(client, notebook["id"]), "Paging")["evidence_count"] == 1
+
+
+def test_sources_that_finish_together_do_not_lose_each_others_concepts(client, services):
+    import threading
+
+    from app.knowledge.build import build_for_source
+
+    notebook = make_notebook(client)
+    lecture = upload(client, notebook["id"], name="lecture.md", data=LECTURE)["source"]
+    textbook = upload(client, notebook["id"], name="textbook.md", data=TEXTBOOK)["source"]
+    threads = [threading.Thread(target=build_for_source, args=(services, s["id"])) for s in (lecture, textbook) * 3]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    body = knowledge(client, notebook["id"])
+    assert {c["name"] for c in body["concepts"]} >= {"Index", "B-tree", "Transaction"}
+    assert all(c["evidence_count"] > 0 for c in body["concepts"])
+    assert len({c["name"].lower() for c in body["concepts"]}) == len(body["concepts"])  # no duplicates

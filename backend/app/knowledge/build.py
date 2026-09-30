@@ -133,9 +133,29 @@ def verify_prompt(pairs: list[tuple[str, str]]) -> str:
 
 
 # --------------------------------------------------------------------------- entry points
+_notebook_locks: dict[str, threading.Lock] = {}
+_notebook_locks_guard = threading.Lock()
+
+
+def notebook_lock(notebook_id: str) -> threading.Lock:
+    """One knowledge change at a time per notebook. Sources that finish together would otherwise
+    build in parallel from stale snapshots: one build's clean-up could delete another's brand-new
+    concepts (not yet given claims), and two builds could create the same concept twice."""
+    with _notebook_locks_guard:
+        return _notebook_locks.setdefault(notebook_id, threading.Lock())
+
+
 def build_for_source(services: Services, source_id: str) -> None:
+    source = services.repo.get_source(source_id)
+    if source is None or source["status"] != "ready":
+        return
+    with notebook_lock(source["notebook_id"]):
+        _build_for_source(services, source_id)
+
+
+def _build_for_source(services: Services, source_id: str) -> None:
     repo = services.repo
-    source = repo.get_source(source_id)
+    source = repo.get_source(source_id)  # re-read: it may have changed while waiting for the lock
     if source is None or source["status"] != "ready":
         return
     notebook_id = source["notebook_id"]
