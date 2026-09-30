@@ -1,0 +1,29 @@
+# One-click deploy of the backend to Render (https://render.com): New -> Blueprint -> this repo.
+# Render asks for the values marked sync: false (from backend/.env) when the blueprint is created.
+# The free plan's disk is not persistent, so REINDEX_ON_START rebuilds Chroma from Supabase on start.
+services:
+  - type: web
+    name: studyforge-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    region: singapore
+    healthCheckPath: /health
+    envVars:
+      - key: DB_BACKEND
+        value: supabase
+      - key: AUTH_MODE
+        value: supabase
+      - key: REINDEX_ON_START
+        value: "true"
+      - key: CORS_ORIGINS
+        value: https://lukey-7.github.io
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false

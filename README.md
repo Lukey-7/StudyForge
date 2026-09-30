@@ -98,6 +98,7 @@ Tests (no API key needed): `cd backend && pytest` · `cd frontend && npm test`
 | [docs/DECISIONS.md](docs/DECISIONS.md) | Why each technology/design was chosen |
 | [docs/API.md](docs/API.md) | REST + SSE contract |
 | [docs/LIVING_TEXTBOOK_PLAN.md](docs/LIVING_TEXTBOOK_PLAN.md) | The knowledge map and book: design, phases, decisions |
+| [docs/DEPLOY.md](docs/DEPLOY.md) | Deploying: backend on Render / Cloud Run / any Docker host, frontend on GitHub Pages |
 | [docs/DEPLOY_GCP.md](docs/DEPLOY_GCP.md) | Cloud Run deployment notes |
 | [docs/V1_AUDIT.md](docs/V1_AUDIT.md) | What v1 did and what v2 changed |
 

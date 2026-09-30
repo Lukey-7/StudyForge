@@ -4,10 +4,11 @@
     python -m scripts.deploy_space            # create/update the Space: code + public settings
     python -m scripts.deploy_space --secrets  # copy the API keys from backend/.env into the Space's secrets
 
-Needs `hf auth login` (a token with write access) first. Only backend code is uploaded (never
-.env, .venv, data or tests). Chroma starts empty in the container and is rebuilt from Supabase
-(REINDEX_ON_START). The Space is public so the browser can call it; every route still checks the
-Supabase login.
+Needs `hf auth login` (a token with write access) first, and a PRO account: Hugging Face only
+hosts Docker Spaces for PRO subscribers (a free account gets 402 Payment Required).
+Only backend code is uploaded (never .env, .venv, data or tests). Chroma starts empty in the
+container and is rebuilt from Supabase (REINDEX_ON_START). The Space is public so the browser can
+call it; every route still checks the Supabase login.
 """
 
 import argparse

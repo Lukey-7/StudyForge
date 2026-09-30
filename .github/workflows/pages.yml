@@ -20,6 +20,9 @@ concurrency:
 
 jobs:
   build:
+    # Publishes only once the backend has a public URL (repository variable VITE_API_URL);
+    # without it the site would call http://localhost:8080.
+    if: vars.VITE_API_URL != ''
     runs-on: ubuntu-latest
     defaults:
       run:

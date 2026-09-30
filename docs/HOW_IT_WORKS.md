@@ -248,6 +248,7 @@ cd backend && .venv/Scripts/python eval/book_support.py <notebook_id>  # book su
 
 Configuration lives in `backend/.env` and `frontend/.env` (git-ignored; names in the `.env.example` files).
 New Supabase projects run `backend/migrations/001` to `006` in order.
+Deploying (backend Docker image, frontend on GitHub Pages, the index rebuilt from Supabase on hosts without a persistent disk): [DEPLOY.md](DEPLOY.md).
 
 ---
 

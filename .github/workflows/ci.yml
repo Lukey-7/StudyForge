@@ -37,3 +37,20 @@ jobs:
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
       - run: npm run build
+
+  # Proves the backend is deployable: the production image builds and the API starts and answers.
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the backend image
+        run: docker build -t studyforge-api backend
+      - name: Start it (demo mode, no keys) and check /health
+        run: |
+          docker run -d --name api -p 8080:8080 -e DB_BACKEND=memory -e AUTH_MODE=dev studyforge-api
+          for i in $(seq 1 30); do
+            if curl -fs http://localhost:8080/health; then echo; exit 0; fi
+            sleep 2
+          done
+          docker logs api
+          exit 1
