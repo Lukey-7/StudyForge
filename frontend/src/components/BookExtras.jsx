@@ -276,3 +276,48 @@ export function ChartFigure({ chart, onOpenEvidence }) {
     </figure>
   )
 }
+
+// ---------------------------------------------------------------- process steps and code
+// Ordered steps the sources describe, drawn as a flowchart by code (with the list as a fallback).
+export function StepsFigure({ steps }) {
+  return (
+    <figure className="book-figure book-steps">
+      <figcaption className="small">
+        <strong>{steps.title || 'Steps'}</strong>
+      </figcaption>
+      <ChapterMap code={steps.diagram} />
+      <details className="disclosure">
+        <summary>Show as a list</summary>
+        <ol>
+          {steps.items.map((step, i) => (
+            <li key={i}>{step}</li>
+          ))}
+        </ol>
+      </details>
+    </figure>
+  )
+}
+
+// A code example: from the sources (with its passage) or clearly labelled as illustrative.
+export function CodeExample({ example, onOpenEvidence }) {
+  return (
+    <figure className="book-figure book-code">
+      <figcaption className="small">
+        <strong>{example.caption}</strong>{' '}
+        {example.from_sources ? (
+          example.evidence.map((e) => (
+            <button key={e.chunk_id} className="evidence-chip" onClick={() => onOpenEvidence(e, example.caption)}>
+              {e.source_name}
+              {e.page ? `, p. ${e.page}` : ''}
+            </button>
+          ))
+        ) : (
+          <span className="book-code-illustrative">Illustrative example, not from your sources</span>
+        )}
+      </figcaption>
+      <pre className="code-block">
+        <code data-language={example.language}>{example.code}</code>
+      </pre>
+    </figure>
+  )
+}

@@ -114,7 +114,7 @@ Continues from (a) step 6, after `status=ready`. Plan and decisions: [LIVING_TEX
    1. `Model`: loads concepts, claims and evidence, keeping only concepts that have evidence.
    2. **Outline:** sections lose concepts that are gone (empty sections are deleted). First time: `outline.py::plan_prompt` (names, kinds, links only) → `Outline` → `order_outline` (prerequisites first, stable topological order). Later: `place_prompt` → `Placement` → `apply_placement` puts only the new concepts into existing or new sections. `_save_outline` numbers chapters and sections in `book_sections`.
    3. **Stale:** `Model.fingerprint` hashes each section's concept definitions, claim texts and evidence passage ids. A section whose hash differs (or that isn't `current`) is stale; no LLM call is involved.
-   4. **Write:** at most `book_max_sections_per_day` (60) per notebook; sections over the cap stay stale. For each stale section:
+   4. **Write:** at most `book_max_sections_per_day` (150) per notebook; sections over the cap stay stale and are finished by the background resumer once the day allows. For each stale section:
       - `section_passages` (up to 12 passages, best-supported claims first) → `write_prompt` → `generate_json(…, SectionDraft)` → paragraphs, each with the passage ids it relied on. A section with no passages is not written.
       - `check_support` (one fast call, `SupportVerdicts`) judges each paragraph against its own passages.
       - If any paragraph is unsupported: one rewrite with the reasons, re-checked, and the better-supported draft is kept. Paragraphs still unsupported stay, marked.

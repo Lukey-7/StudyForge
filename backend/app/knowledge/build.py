@@ -65,6 +65,13 @@ class PassageBudget:
         self._used: deque[tuple[float, int]] = deque()
         self._lock = threading.Lock()
 
+    def can_take(self, passages: int) -> bool:
+        """Whether take(passages) would succeed now (without taking)."""
+        with self._lock:
+            now = time.monotonic()
+            used = sum(n for t, n in self._used if now - t <= 3600)
+            return not used or used + passages <= self.per_hour
+
     def take(self, passages: int) -> bool:
         with self._lock:
             now = time.monotonic()
@@ -409,3 +416,56 @@ def add_events_and_tables(services: Services, source: Row, passages: list[Row], 
         if cid and 0 <= t.passage < len(passages) and len(t.columns) >= 2 and len(rows) >= 2:
             where = {"notebook_id": source["notebook_id"], "source_id": source["id"], "chunk_id": passages[t.passage]["id"]}
             repo.insert("data_tables", {**where, "concept_id": cid, "title": t.title.strip(), "columns": t.columns, "rows": rows})
+
+
+# --------------------------------------------------------------------------- queued builds resume
+def resume_queued(services: Services) -> int:
+    """Re-runs the knowledge builds that are waiting for the hourly budget (a long document, or many
+    sources at once), then updates their books. Returns how many builds it started."""
+    from app.book.sync import after_knowledge_change
+
+    latest: dict[str, Row] = {}
+    for job in services.repo.select("knowledge_jobs", status="queued"):
+        if job.get("source_id") and job.get("kind", "extract") == "extract":
+            latest[job["source_id"]] = job
+    started = 0
+    for source_id, job in latest.items():
+        passages = len(services.repo.list_chunks(job["notebook_id"], [source_id]))
+        if not budget_for(services).can_take(passages):
+            continue
+        build_for_source(services, source_id)
+        after_knowledge_change(services, job["notebook_id"])
+        started += 1
+    return started
+
+
+def resume_waiting_sections(services: Services) -> int:
+    """Finishes books whose sections were left stale (waiting for the daily writing cap)."""
+    from app.book.sync import after_knowledge_change
+
+    try:
+        notebooks = {row["notebook_id"] for row in services.repo.select("book_sections", status="stale")}
+    except Exception:  # noqa: BLE001 - book tables not migrated yet
+        return 0
+    for notebook_id in notebooks:
+        after_knowledge_change(services, notebook_id)
+    return len(notebooks)
+
+
+def start_resumer(services: Services, every_seconds: int = 300) -> None:
+    """A daemon thread that calls resume_queued every few minutes (not in tests)."""
+    if not services.settings.resume_queued_builds or services.settings.app_env == "test" or services.embedder is None:
+        return
+
+    def loop() -> None:
+        while True:
+            time.sleep(every_seconds)
+            try:
+                if resume_queued(services):
+                    logger.info("resumed queued knowledge builds")
+                if resume_waiting_sections(services):
+                    logger.info("resumed books with sections waiting to be written")
+            except Exception:  # noqa: BLE001 - try again next round
+                logger.exception("resuming queued knowledge builds failed")
+
+    threading.Thread(target=loop, name="knowledge-resumer", daemon=True).start()

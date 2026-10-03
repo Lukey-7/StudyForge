@@ -27,7 +27,7 @@ KNOWLEDGE_TABLES = (
     "data_tables",
 )
 # The book rendered from it (migrations/003_book.sql).
-BOOK_TABLES = ("books", "book_sections", "book_changes", "book_reads", "book_section_versions")
+BOOK_TABLES = ("books", "book_sections", "book_changes", "book_reads", "book_section_versions", "book_snapshots")
 # Tables with an updated_at column (set on insert and update).
 TIMESTAMPED = ("concepts", "knowledge_jobs", "books", "book_sections", "book_reads")
 

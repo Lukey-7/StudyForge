@@ -10,9 +10,10 @@ from pydantic import BaseModel, Field
 from app.api.deps import get_services, get_user, owned_notebook
 from app.auth import User
 from app.book import export as book_export
-from app.book.figures import chapter_map, chapter_timeline, chart_data, comparisons
+from app.book.figures import chapter_map, chapter_timeline, chart_data, comparisons, steps_diagram
+from app.book.index import book_index, section_numbers
 from app.book.learner import STYLES, explain_section, search
-from app.book.sync import after_knowledge_change
+from app.book.sync import DEFAULT_SETTINGS, after_knowledge_change, book_settings, revert_book
 from app.db.repository import Row
 from app.services import Services
 
@@ -77,6 +78,7 @@ def book(notebook: Row = Depends(owned_notebook), services: Services = Depends(g
     disputed = _disputed_concepts(services, notebook["id"])
     concepts = {c["id"]: c for c in services.repo.select("concepts", notebook_id=notebook["id"])}
     links = services.repo.select("concept_links", notebook_id=notebook["id"])
+    numbers = section_numbers(sections)
     chapters: list[dict] = []
     for s in sections:
         if not chapters or chapters[-1]["index"] != s["chapter_index"]:
@@ -85,6 +87,7 @@ def book(notebook: Row = Depends(owned_notebook), services: Services = Depends(g
         chapters[-1]["sections"].append(
             {
                 "id": s["id"],
+                "number": numbers[s["id"]],
                 "title": s["title"],
                 "status": s["status"],
                 "version": s["version"],
@@ -116,6 +119,7 @@ def book(notebook: Row = Depends(owned_notebook), services: Services = Depends(g
         "changes": _changes_since(services, notebook["id"], seen),
         "job": _job(services, notebook["id"]),
         "support": _support_summary(sections),
+        "settings": book_settings(services.repo, notebook["id"]),
     }
 
 
@@ -158,7 +162,8 @@ def section(
             "version": version,
             "support_rate": snapshot["support_rate"],
         }
-    chunk_ids = list(dict.fromkeys(cid for p in s["paragraphs"] for cid in p.get("chunk_ids", [])))
+    code_chunks = [cid for c in (s.get("extras") or {}).get("code_examples") or [] for cid in c.get("chunk_ids", [])]
+    chunk_ids = list(dict.fromkeys([*(cid for p in s["paragraphs"] for cid in p.get("chunk_ids", [])), *code_chunks]))
     chunks = {c["id"]: c for c in repo.get_chunks(chunk_ids)}
     sources = {src["id"]: src for src in repo.list_sources(notebook["id"])}
     concepts = {c["id"]: c for c in repo.select("concepts", notebook_id=notebook["id"])}
@@ -174,12 +179,29 @@ def section(
             "page": chunk.get("page"),
         }
 
+    extras = s.get("extras") or {}
+    every = sorted(
+        repo.select("book_sections", notebook_id=notebook["id"]), key=lambda r: (r["chapter_index"], r["section_index"])
+    )
     return {
         "id": s["id"],
+        "number": section_numbers(every).get(s["id"], ""),
         "chapter_title": s["chapter_title"],
         "title": s["title"],
         "status": s["status"],
         "version": s["version"],
+        "code_examples": [
+            {
+                **{k: v for k, v in c.items() if k != "chunk_ids"},
+                "evidence": [e for e in map(evidence, c.get("chunk_ids", [])) if e],
+            }
+            for c in extras.get("code_examples") or []
+        ],
+        "steps": {
+            "title": extras.get("steps_title", ""),
+            "items": extras.get("steps") or [],
+            "diagram": steps_diagram(extras.get("steps") or []),
+        },  # fmt: skip
         "concepts": [{"id": cid, "name": concepts[cid]["name"]} for cid in s["concept_ids"] if cid in concepts],
         "current_version": found[0]["version"],
         "comparisons": _comparisons(services, notebook["id"], s["concept_ids"], concepts),
@@ -231,7 +253,17 @@ def seen(notebook: Row = Depends(owned_notebook), services: Services = Depends(g
 def history(notebook: Row = Depends(owned_notebook), services: Services = Depends(get_services)) -> list[dict]:
     """Every version of the book and what it changed, newest first."""
     rows = services.repo.select("book_changes", notebook_id=notebook["id"])
-    return [{"version": r["version"], "created_at": r["created_at"], "changes": r["changes"]} for r in reversed(rows)]
+    kept = {r["version"] for r in _optional(services, "book_snapshots", notebook["id"])}
+    current = _version(services, notebook["id"])
+    return [
+        {
+            "version": r["version"],
+            "created_at": r["created_at"],
+            "changes": r["changes"],
+            "can_revert": r["version"] in kept and r["version"] != current,
+        }  # fmt: skip
+        for r in reversed(rows)
+    ]
 
 
 @router.get("/notebooks/{notebook_id}/conflicts")
@@ -367,3 +399,66 @@ def _optional(services: Services, table: str, notebook_id: str) -> list[Row]:
         return services.repo.select(table, notebook_id=notebook_id)
     except Exception:  # noqa: BLE001
         return []
+
+
+# ---------------------------------------------------------------- the index, settings, editions
+@router.get("/notebooks/{notebook_id}/book/index")
+def index(notebook: Row = Depends(owned_notebook), services: Services = Depends(get_services)) -> list[dict]:
+    """The back-of-book index: every concept and alias, A-Z, with the numbered sections that teach
+    it (main entries) or mention it."""
+    repo = services.repo
+    return book_index(
+        repo.select("book_sections", notebook_id=notebook["id"]), repo.select("concepts", notebook_id=notebook["id"])
+    )
+
+
+class BookSettings(BaseModel):
+    audience: Literal["beginner", "intermediate", "advanced"] = "intermediate"
+    depth: Literal["concise", "standard", "detailed"] = "standard"
+    examples: bool = True
+    code: bool = True
+
+
+@router.get("/notebooks/{notebook_id}/book/settings")
+def get_settings_(notebook: Row = Depends(owned_notebook), services: Services = Depends(get_services)) -> dict:
+    return book_settings(services.repo, notebook["id"])
+
+
+@router.put("/notebooks/{notebook_id}/book/settings")
+def put_settings(
+    body: BookSettings,
+    background: BackgroundTasks,
+    notebook: Row = Depends(owned_notebook),
+    services: Services = Depends(get_services),
+) -> dict:
+    """Saves how the reader wants the book written. A change rewrites the book in the background
+    (every section's fingerprint includes the settings)."""
+    repo, new = services.repo, body.model_dump()
+    rows = repo.select("books", notebook_id=notebook["id"])
+    book = rows[0] if rows else repo.insert("books", {"notebook_id": notebook["id"], "version": 0})
+    if new == book_settings(repo, notebook["id"]):
+        return {**new, "rewriting": False}
+    try:
+        repo.update("books", book["id"], {"settings": new})
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status.HTTP_409_CONFLICT, "run migration 007_book_reader.sql to enable book settings") from exc
+    if services.embedder is not None:
+        background.add_task(after_knowledge_change, services, notebook["id"])
+    return {**new, "rewriting": True}
+
+
+class Revert(BaseModel):
+    version: int
+
+
+@router.post("/notebooks/{notebook_id}/book/revert")
+def revert(body: Revert, notebook: Row = Depends(owned_notebook), services: Services = Depends(get_services)) -> dict:
+    """Makes the book read as it did at one of the last kept versions (as a new version)."""
+    try:
+        new_version = revert_book(services, notebook["id"], body.version)
+    except LookupError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+    return {"version": new_version, "reverted_to": body.version}
+
+
+assert set(BookSettings().model_dump()) == set(DEFAULT_SETTINGS)  # the API and the writer agree on the settings

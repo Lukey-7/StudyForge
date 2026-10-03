@@ -105,7 +105,7 @@ Short records of each non-obvious choice: **decision → why → trade-off**.
 - **How:** after a section is written, one fast call judges every paragraph *only* against the passages it cites: supported / partial / unsupported, with a reason. If any paragraph is unsupported, the section is rewritten once with the reasons as feedback, and the better-supported draft is kept. A paragraph still unsupported stays in the book with a warning mark and its reason; it is never hidden.
 - **Why keep it:** hiding text would silently change the book. A visible mark is honest and lets the student decide.
 - **Caveat:** the checker is the same model family as the writer, so the support rate is a self-check that catches drift from the cited passages. It isn't a human judgement, and it can't catch a passage that is itself wrong.
-- **Cost controls:** calls counted per job (`knowledge_jobs.llm_calls`); at most 60 section writes per notebook per day (sections over the cap stay stale); a per-source "Retry this source" instead of a full rebuild, because a rebuild rewrites most sections (D28).
+- **Cost controls:** calls counted per job (`knowledge_jobs.llm_calls`); at most 150 section writes per notebook per day (sections over the cap stay stale); a per-source "Retry this source" instead of a full rebuild, because a rebuild rewrites most sections (D28).
 
 
 ### D30. Figures by code, export without a PDF library, simple retrieval for the book
@@ -127,3 +127,18 @@ Short records of each non-obvious choice: **decision → why → trade-off**.
   - A table whose column is all numbers gets a single-series bar chart (colour validated for the dark surface), with its table one click away. Nothing is drawn from numbers the sources don't state.
 - **Tests without Chroma:** unit tests use an exact in-memory `FakeVectorStore`. A shared in-memory Chroma 1.5 client failed now and then with internal errors ("Error finding id", "Nothing found on disk"). In the app, `ChromaVectorStore.query` falls back to an exact search if Chroma raises one.
 - **Quiz → weak spots:** "Quiz me on this chapter" reuses the existing quiz pipeline with a chapter focus. Only the first full attempt counts, and under 70% marks the chapter as a weak spot. Stored in `book_reads.quiz_scores`, with no new table.
+
+### D31. The book adapts to the reader, removes repetition, and keeps 5 editions
+- **Reader settings** (level, depth, worked examples, code) are part of every section's fingerprint, so changing them rewrites the book. The defaults add nothing to the fingerprint, so books written before settings existed are not rewritten.
+- **Repetition is handled in three places:**
+  - Merging: one concept per term, and a repeated claim becomes extra evidence.
+  - Writing: concepts other sections teach are listed as "taught elsewhere", to be named but not explained again.
+  - Checking: a paragraph whose word 3-shingles overlap another section's paragraph by 50% or more is removed. No LLM calls; a section always keeps one paragraph.
+- **Code and diagrams stay grounded:**
+  - Code examples come from the sources with their passage, or are labelled "illustrative" (only when the reader allows examples).
+  - Ordered steps the sources state are drawn as a flowchart by code. The model never draws.
+- **Editions:**
+  - The whole book is snapshotted at every version, and the last 5 are kept (`book_snapshots`).
+  - "Revert" restores one as a new version. Sections whose concepts no longer exist are left out.
+  - The reverted text stays until the sources or settings change again.
+- **Long documents:** builds that wait for the hourly free-tier budget now resume by themselves every 5 minutes (`resume_queued`), instead of waiting for a manual rebuild.

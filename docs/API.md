@@ -81,6 +81,12 @@ Written automatically from the knowledge map after every change. Sections are re
 | POST | `/notebooks/{id}/book/sections/{sid}/read` | `{read: bool}` | `{read_sections[]}` |
 | POST | `/notebooks/{id}/book/quiz-result` | `{chapter, score, total}` | `{quiz_scores}`; under 70% the chapter becomes a weak spot |
 | POST | `/notebooks/{id}/book/sections/{sid}/explain` | `{style: simpler\|steps}` | `{style, text}`, explained again from the section's own passages |
+| GET | `/notebooks/{id}/book/index` | – | the back-of-book index A–Z: `[{term, concept_id, kind, sections[{id, number, title, main}]}]`, aliases as `{term, see}` |
+| GET | `/notebooks/{id}/book/settings` | – | `{audience beginner\|intermediate\|advanced, depth concise\|standard\|detailed, examples, code}` |
+| PUT | `/notebooks/{id}/book/settings` | same shape | `{..., rewriting}`; a change rewrites every section in the background |
+| POST | `/notebooks/{id}/book/revert` | `{version}` | `{version, reverted_to}`: the book reads as it did at one of the last 5 kept versions (404 if not kept) |
+
+`GET /book` sections also carry `number` ("2.3") and the book its `settings`; `GET /book/history` entries carry `can_revert` (and `changes.reverted_to` for a revert). A section carries `number`, `code_examples[{language, caption, code, from_sources, evidence[]}]` and `steps{title, items[], diagram}` (Mermaid, drawn by code).
 
 ## Search
 

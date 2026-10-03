@@ -1421,3 +1421,75 @@ button.cite-mark:hover:not(:disabled),
   color: var(--chalk);
   font-variant-numeric: tabular-nums;
 }
+
+/* ---------------------------------------------------------------- book: numbers, index, settings, code */
+.toc-number-s,
+.book-section-number {
+  color: var(--chalk-dim);
+  font-variant-numeric: tabular-nums;
+}
+.toc-number-s {
+  flex: none;
+  min-width: 2.2em;
+  font-size: var(--text-xs);
+}
+.book-index-letter h3 {
+  margin: var(--space-3) 0 var(--space-1);
+  color: var(--chalk-dim);
+  font-size: var(--text-sm);
+}
+.book-index-letter ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.book-index-letter li {
+  padding: 2px 0;
+  font-size: var(--text-sm);
+}
+.book-index-refs {
+  margin-left: var(--space-2);
+}
+.book-index-ref {
+  margin-right: var(--space-1);
+  padding: 0 4px;
+  border: none;
+  background: none;
+  color: var(--chalk-dim);
+  font-variant-numeric: tabular-nums;
+  text-decoration: underline dotted 1px;
+  text-underline-offset: 3px;
+}
+.book-index-ref.is-main {
+  color: var(--chalk);
+  font-weight: 700;
+}
+.book-settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0 0 var(--space-4);
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+.book-settings-group legend {
+  padding: 0 var(--space-1);
+  font-weight: 700;
+}
+.book-settings-option {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+}
+.book-code pre {
+  margin: var(--space-2) 0 0;
+  overflow-x: auto;
+}
+.book-code-illustrative {
+  color: var(--chalk-dim);
+  font-style: italic;
+}
+.book-steps ol {
+  margin: var(--space-2) 0 0;
+}

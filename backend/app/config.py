@@ -89,8 +89,11 @@ class Settings(BaseSettings):
     knowledge_max_passages_per_hour: int = 150  # free-tier budget for background extraction
     book_enabled: bool = True  # write the book from the knowledge model after every change
     book_max_passages_per_section: int = 12  # evidence passages given to the writer per section
-    book_max_sections_per_day: int = 60  # free-tier cap on section writes per notebook (each is 2-4 calls)
+    book_max_sections_per_day: int = 150  # cap on section writes per notebook a day (each is 2-4 calls)
     book_search_min_similarity: float = 0.6  # below this, a section/concept matches only by words
+    book_max_versions: int = 5  # whole-book snapshots kept for "revert to this version"
+    book_repeat_threshold: float = 0.5  # word-shingle overlap above which a paragraph repeats another section
+    resume_queued_builds: bool = True  # retry knowledge builds that waited for the hourly budget
 
     # --- Chat / generation guardrails --------------------------------------------
     chat_max_history_turns: int = 6

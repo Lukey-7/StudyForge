@@ -23,6 +23,10 @@ def settings(tmp_path) -> Settings:
         openai_api_key="",
         chunk_target_tokens=120,
         chunk_max_tokens=160,
+        # The fake writer copies passage sentences verbatim, so sections sharing a passage look like
+        # repeats; the repetition check has its own tests (test_book_reader.py).
+        book_repeat_threshold=1.01,
+        resume_queued_builds=False,
     )
 
 

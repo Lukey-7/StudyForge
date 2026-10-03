@@ -3,8 +3,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { api } from '../lib/api'
 import { buildMatcher, linkTerms } from '../lib/glossary'
 import { changeSummary } from '../lib/bookChanges'
-import { ConflictsDrawer, HistoryDrawer } from './BookDrawers'
-import { ChapterMap, ChapterQuiz, ChartFigure, ComparisonTables, ExplainBox, ExportMenu } from './BookExtras'
+import { ConflictsDrawer, HistoryDrawer, IndexDrawer, SettingsDrawer } from './BookDrawers'
+import { ChapterMap, ChapterQuiz, ChartFigure, CodeExample, ComparisonTables, ExplainBox, ExportMenu, StepsFigure } from './BookExtras'
 
 // The book itself (living textbook): contents on the left, one section at a time in the middle,
 // and beside every paragraph the passages it was written from (the evidence rail). Glossary terms
@@ -14,7 +14,7 @@ export default function BookReader({ notebookId, concepts, busy, requestedSectio
   const queryClient = useQueryClient()
   const [openSection, setOpenSection] = useState(null)
   const [openVersion, setOpenVersion] = useState(null) // an older version of the open section
-  const [drawer, setDrawer] = useState(null) // 'conflicts' | 'history'
+  const [drawer, setDrawer] = useState(null) // 'conflicts' | 'history' | 'index' | 'settings'
   const [quizChapter, setQuizChapter] = useState(null)
   // Another part of the app (a chat [B#] citation, a search result) asked for a section.
   useEffect(() => {
@@ -108,8 +108,14 @@ export default function BookReader({ notebookId, concepts, busy, requestedSectio
               Where sources disagree ({conflicts.data.length})
             </button>
           )}
+          <button className="btn btn-quiet btn-sm" onClick={() => setDrawer('index')}>
+            Index
+          </button>
           <button className="btn btn-quiet btn-sm" onClick={() => setDrawer('history')}>
             History
+          </button>
+          <button className="btn btn-quiet btn-sm" onClick={() => setDrawer('settings')}>
+            Book settings
           </button>
           <ExportMenu notebookId={notebookId} />
         </div>
@@ -163,6 +169,7 @@ export default function BookReader({ notebookId, concepts, busy, requestedSectio
                         setTocOpen(false)
                       }}
                     >
+                      <span className="toc-number-s">{s.number}</span>
                       <span>{s.title}</span>
                       {s.read && (
                         <span className="toc-read" aria-label="read">
@@ -215,6 +222,12 @@ export default function BookReader({ notebookId, concepts, busy, requestedSectio
           conceptNames={chapterConcepts(sections, quizChapter, concepts)}
           onClose={() => setQuizChapter(null)}
         />
+      )}
+      {drawer === 'index' && (
+        <IndexDrawer notebookId={notebookId} onClose={() => setDrawer(null)} onOpenSection={open} onOpenConcept={onOpenConcept} />
+      )}
+      {drawer === 'settings' && data.settings && (
+        <SettingsDrawer notebookId={notebookId} settings={data.settings} onClose={() => setDrawer(null)} />
       )}
       {drawer === 'history' && <HistoryDrawer notebookId={notebookId} onClose={() => setDrawer(null)} onOpenSection={open} />}
     </div>
@@ -338,7 +351,9 @@ function SectionView({
     <article className="book-section" aria-label={section.title}>
       <header className="book-section-header">
         <p className="book-chapter-name">{section.chapter}</p>
-        <h3>{d?.title || section.title}</h3>
+        <h3>
+          <span className="book-section-number">{d?.number || section.number}</span> {d?.title || section.title}
+        </h3>
         {d && (d.versions.length > 1 || d.support_rate != null) && (
           <div className="book-section-meta small">
             {d.support_rate != null && (
@@ -438,6 +453,8 @@ function SectionView({
         </div>
       ))}
 
+      {d && !old && d.steps?.diagram && <StepsFigure steps={d.steps} />}
+      {d && !old && d.code_examples?.map((c, i) => <CodeExample key={i} example={c} onOpenEvidence={onOpenEvidence} />)}
       {d && !old && <ComparisonTables tables={d.comparisons} onOpenConcept={onOpenConcept} />}
       {d && !old && d.charts?.map((c) => <ChartFigure key={c.id} chart={c} onOpenEvidence={onOpenEvidence} />)}
       {chapterTimeline && (

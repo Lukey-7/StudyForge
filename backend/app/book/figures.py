@@ -107,3 +107,13 @@ def chart_data(table: Row) -> dict:
         "chunk_id": table["chunk_id"],
         "series": series,
     }
+
+
+def steps_diagram(steps: list[str]) -> str | None:
+    """A top-down flowchart of a process the section describes (3+ ordered steps), drawn by code."""
+    if len(steps) < 3:
+        return None
+    lines = ["flowchart TD"]
+    lines += [f'  s{i}["{i + 1}. {_label(step, 70)}"]' for i, step in enumerate(steps)]
+    lines += [f"  s{i} --> s{i + 1}" for i in range(len(steps) - 1)]
+    return "\n".join(lines)

@@ -10,12 +10,14 @@ import re
 import zipfile
 from datetime import UTC, datetime
 
+from app.book.index import book_index
 from app.db.repository import Row
 from app.services import Services
 
 
 def assemble(services: Services, notebook: Row) -> dict:
-    """Chapters -> sections -> paragraphs with numbered citations, plus the glossary."""
+    """Chapters -> sections -> paragraphs with numbered citations, code and steps, plus the
+    glossary and the index (numbered like the export: written sections only)."""
     repo, notebook_id = services.repo, notebook["id"]
     sections = sorted(
         repo.select("book_sections", notebook_id=notebook_id), key=lambda s: (s["chapter_index"], s["section_index"])
@@ -35,7 +37,16 @@ def assemble(services: Services, notebook: Row) -> dict:
         for p in s["paragraphs"]:
             refs = [notes.setdefault(c, len(notes) + 1) for c in p.get("chunk_ids", []) if c in chunks]
             paragraphs.append({"text": p["text"], "refs": refs, "support": p.get("support", "unchecked")})
-        chapters[-1]["sections"].append({"title": s["title"], "paragraphs": paragraphs})
+        extras = s.get("extras") or {}
+        chapters[-1]["sections"].append(
+            {
+                "title": s["title"],
+                "paragraphs": paragraphs,
+                "steps_title": extras.get("steps_title", ""),
+                "steps": extras.get("steps") or [],
+                "code": extras.get("code_examples") or [],
+            }
+        )
 
     footnotes = []
     for chunk_id, number in notes.items():
@@ -44,7 +55,16 @@ def assemble(services: Services, notebook: Row) -> dict:
         footnotes.append({"number": number, "where": where})
     concepts = sorted(repo.select("concepts", notebook_id=notebook_id), key=lambda c: (c["kind"] != "term", c["name"].lower()))
     glossary = [{"name": c["name"], "definition": c["definition"], "kind": c["kind"]} for c in concepts]
-    return {"title": notebook["title"], "chapters": chapters, "footnotes": footnotes, "glossary": glossary}
+    written = [s for s in sections if s.get("paragraphs")]
+    index = book_index(written, repo.select("concepts", notebook_id=notebook_id))
+    return {"title": notebook["title"], "chapters": chapters, "footnotes": footnotes, "glossary": glossary, "index": index}
+
+
+def _index_line(entry: dict) -> str:
+    if entry.get("see"):
+        return f"{entry['term']}, see {entry['see']}"
+    refs = ", ".join(f"**{r['number']}**" if r["main"] else r["number"] for r in entry["sections"])
+    return f"{entry['term']}: {refs}"
 
 
 def to_markdown(book: dict) -> str:
@@ -57,9 +77,20 @@ def to_markdown(book: dict) -> str:
                 marks = "".join(f"[^{n}]" for n in p["refs"])
                 warn = " *(not fully backed by its passages)*" if p["support"] in ("partial", "unsupported") else ""
                 lines += [f"{p['text']}{marks}{warn}", ""]
+            if section.get("steps"):
+                lines += [f"**{section['steps_title'] or 'Steps'}**", ""]
+                lines += [f"{i}. {step}" for i, step in enumerate(section["steps"], start=1)]
+                lines.append("")
+            for code in section.get("code") or []:
+                label = "From your sources" if code["from_sources"] else "Illustrative example (not from your sources)"
+                lines += [f"*{code['caption']}* ({label})", "", f"```{code['language']}", code["code"], "```", ""]
     if book["glossary"]:
         lines += ["## Glossary", ""]
         lines += [f"- **{g['name']}**: {g['definition']}" for g in book["glossary"]]
+        lines.append("")
+    if book.get("index"):
+        lines += ["## Index", "", "*Section numbers; bold = where the term is taught.*", ""]
+        lines += [f"- {_index_line(e)}" for e in book["index"]]
         lines.append("")
     lines += [f"[^{f['number']}]: {f['where']}" for f in book["footnotes"]]
     return "\n".join(lines).rstrip() + "\n"
@@ -103,12 +134,21 @@ def to_epub(book: dict, book_id: str) -> bytes:
                 for p in section["paragraphs"]:
                     refs = "".join(f'<sup><a href="notes.xhtml#n{n}">{n}</a></sup>' for n in p["refs"])
                     body.append(f"<p>{_x(p['text'])}{refs}</p>")
+                if section.get("steps"):
+                    items = "".join(f"<li>{_x(step)}</li>" for step in section["steps"])
+                    body.append(f"<p><b>{_x(section['steps_title'] or 'Steps')}</b></p><ol>{items}</ol>")
+                for code in section.get("code") or []:
+                    label = "From your sources" if code["from_sources"] else "Illustrative example"
+                    body.append(f"<p><i>{_x(code['caption'])}</i> ({label})</p><pre><code>{_x(code['code'])}</code></pre>")
             href = f"chapter{ci}.xhtml"
             z.writestr(f"OEBPS/{href}", _xhtml(chapter["title"], "".join(body)))
             files.append((href, f"{ci}. {chapter['title']}"))
         glossary = "".join(f"<dt>{_x(g['name'])}</dt><dd>{_x(g['definition'])}</dd>" for g in book["glossary"])
         z.writestr("OEBPS/glossary.xhtml", _xhtml("Glossary", f"<h1>Glossary</h1><dl>{glossary}</dl>"))
         files.append(("glossary.xhtml", "Glossary"))
+        index = "".join(f"<li>{_x(_index_line(e)).replace('**', '')}</li>" for e in book.get("index") or [])
+        z.writestr("OEBPS/index.xhtml", _xhtml("Index", f"<h1>Index</h1><ul>{index}</ul>"))
+        files.append(("index.xhtml", "Index"))
         notes = "".join(f'<li id="n{f["number"]}">{_x(f["where"])}</li>' for f in book["footnotes"])
         z.writestr("OEBPS/notes.xhtml", _xhtml("Sources", f"<h1>Sources</h1><ol>{notes}</ol>"))
         files.append(("notes.xhtml", "Sources"))

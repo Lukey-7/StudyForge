@@ -6,7 +6,7 @@ StudyForge is two deployable parts plus Supabase:
 |---|---|---|
 | **Backend** | FastAPI + embedded Chroma, one Docker image (`backend/Dockerfile`) | Render, Google Cloud Run, a Hugging Face Space (PRO), any Docker host |
 | **Frontend** | static files from `npm run build` | GitHub Pages (workflow included), or any static host |
-| **Supabase** | Postgres + Auth + Storage | already hosted; run `backend/migrations/001`–`006` once in the SQL editor |
+| **Supabase** | Postgres + Auth + Storage | already hosted; run `backend/migrations/001`–`007` once in the SQL editor |
 
 **Proof that it deploys:** on every push, CI builds the production image, starts it in demo mode, and checks that `GET /health` answers (the `docker` job in `.github/workflows/ci.yml`).
 

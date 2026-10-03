@@ -58,7 +58,7 @@ What the book gives you:
 | | Supabase Auth | – | accounts and JWT access tokens |
 | | Supabase Storage | – | original uploaded files (bucket `sources`) |
 | Parsing | pymupdf / pymupdf4llm, python-docx | 1.28 / 1.2 | PDF → Markdown per page, DOCX |
-| Quality | pytest, ruff | – | 140 backend tests (no API key needed), lint/format |
+| Quality | pytest, ruff | – | 155 backend tests (no API key needed), lint/format |
 | CI | GitHub Actions | – | lint, test and build on every push |
 
 **No Docker is needed locally.** Chroma runs embedded inside the API process. A multi-stage `Dockerfile` exists for deployment ([DEPLOY_GCP.md](DEPLOY_GCP.md)).
@@ -106,7 +106,7 @@ backend/
     book/              the book: outline, sync (stale -> write -> check), figures, export, learner tools
     llm/               Gemini + OpenAI clients, router/fallback, rate limits, JSON validation, call counting
     vector_store.py    Chroma wrapper (collections per kind and embedding model)
-  migrations/          001_init ... 006_figures_search (run in order in the Supabase SQL editor)
+  migrations/          001_init ... 007_book_reader (run in order in the Supabase SQL editor)
   tests/               pytest; FakeLLM / FakeEmbedder / FakeVectorStore (no network, deterministic)
   eval/                retrieval evaluation (results.md) and the book support rate (book_support.md)
 frontend/
@@ -144,6 +144,7 @@ frontend/
 | `book_section_versions` | saved text of a section per version | for version browsing |
 | `book_changes` | book version | new concepts, added / revised / removed sections |
 | `book_reads` | reader × notebook | last seen version, read sections, chapter quiz scores |
+| `book_snapshots` | whole book at one version (last 5 kept) | for reverting the book |
 
 Chroma collections, one set per embedding model:
 - `chunks__…`: passages;
@@ -175,17 +176,25 @@ Chroma collections, one set per embedding model:
    - **Stale sections:** each section's fingerprint hashes its concepts' definitions, claim texts and evidence. Only sections whose hash changed are rewritten.
    - **Write:** one Gemini call per stale section, from that section's own passages; every paragraph lists the passages it used.
    - **Support check:** one more call judges each paragraph against its passages. Unsupported paragraphs get one rewrite, then are kept with a mark.
-   - **Save:** a snapshot of the text, a new book version, and a change record. Written sections are embedded for search.
-   - At most 60 section writes per notebook per day.
+   - **Reader settings:** the writer follows the book's settings (level: beginner, intermediate or advanced; depth: concise, standard or detailed; worked examples; code). Changing them rewrites the book.
+   - **No repetition:** concepts that other sections teach are passed as "taught elsewhere", to be named but not explained again. Afterwards, a paragraph that overlaps another section's paragraph by 50% or more (word 3-shingles) is removed.
+   - **Code and steps:** code blocks found in the section's passages are offered to the writer and kept with their passage. Code that isn't from the sources is labelled "illustrative". Ordered steps the passages describe become a flowchart, drawn by code.
+   - **Save:** a snapshot of the text, a new book version, and a change record. The whole book is also snapshotted, and the last 5 snapshots are kept for "revert to this version". Written sections are embedded for search.
+   - At most 150 section writes per notebook per day; sections over the cap are finished automatically when the day allows.
 
 ### …you open the Book tab
 - `GET /book` returns everything the reader needs in one request:
+  - numbered sections (2.3) and the book's settings;
   - contents with revised, read, disputed and support marks;
   - changes since your last visit;
   - concept map and timeline per chapter;
   - progress and weak spots.
 - `GET /book/sections/{id}` returns the paragraphs with their evidence, comparison tables and charts.
 - Glossary terms are linked in the browser (`lib/glossary.js`): longest name first, once per section.
+- The toolbar opens:
+  - the **Index** (`GET /book/index`): every term A–Z with its section numbers, bold where it is taught;
+  - **History**, with "Revert to this version" for the last 5 editions (`POST /book/revert`);
+  - **Book settings** (`PUT /book/settings`).
 - Clicking an evidence chip opens the source reader at that passage, with the matching sentence highlighted.
 
 ### …you ask the chat
@@ -220,7 +229,7 @@ Chroma collections, one set per embedding model:
 | Concern | What the app does |
 |---|---|
 | Gemini rate limits | client-side rate limiter (`gemini_rpm`), retries with backoff, optional OpenAI fallback |
-| Free-tier cost | 150 extraction passages/hour; 60 section writes/notebook/day; Gemini calls counted per job and shown |
+| Free-tier cost | 150 extraction passages/hour; 150 section writes/notebook/day (waiting sections resume by themselves); Gemini calls counted per job and shown |
 | Wasted work | cached generations; sections rewritten only when their fingerprint changes; one source can be re-read without a full rebuild |
 | Hallucination | answers and paragraphs cite passages; concepts without evidence are left out of the book; support check with visible marks (95% supported on the real test notebook, a self-check) |
 | Disagreeing sources | recorded as conflicts with both passages; never silently overwritten |
@@ -239,7 +248,7 @@ Chroma collections, one set per embedding model:
 # frontend (from frontend/)
 npm run dev          # http://localhost:5173
 # tests
-cd backend && .venv/Scripts/python -m pytest      # 140 tests, no API key
+cd backend && .venv/Scripts/python -m pytest      # 155 tests, no API key
 cd frontend && npm test                            # 30 tests
 # evaluation
 cd backend && .venv/Scripts/python eval/run_eval.py                    # retrieval quality -> eval/results.md
@@ -247,7 +256,7 @@ cd backend && .venv/Scripts/python eval/book_support.py <notebook_id>  # book su
 ```
 
 Configuration lives in `backend/.env` and `frontend/.env` (git-ignored; names in the `.env.example` files).
-New Supabase projects run `backend/migrations/001` to `006` in order.
+New Supabase projects run `backend/migrations/001` to `007` in order.
 Deploying (backend Docker image, frontend on GitHub Pages, the index rebuilt from Supabase on hosts without a persistent disk): [DEPLOY.md](DEPLOY.md).
 
 ---

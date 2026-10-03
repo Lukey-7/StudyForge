@@ -9,7 +9,7 @@
   <img src="https://img.shields.io/badge/Gemini-3.8%20Flash-4285F4?logo=googlegemini&logoColor=white" alt="Gemini">
   <img src="https://img.shields.io/badge/ChromaDB-vectors-FF6446" alt="ChromaDB">
   <img src="https://img.shields.io/badge/Supabase-Postgres%20%C2%B7%20Auth%20%C2%B7%20Storage-3FCF8E?logo=supabase&logoColor=white" alt="Supabase">
-  <img src="https://img.shields.io/badge/tests-140%20backend%20%C2%B7%2030%20frontend-4C9BE8" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-155%20backend%20%C2%B7%2030%20frontend-4C9BE8" alt="Tests">
 </p>
 
 **StudyForge turns a pile of course material into one living textbook.** Drop in lecture notes, PDFs, Word files, slide photos or recordings. It reads all of them into a **knowledge map** (concepts, claims and the passages behind each claim) and writes **one book per notebook**. Every paragraph points at the page it came from. Add a source and the book **grows**: only the sections it touches are rewritten. Around the book you get a chat that answers only from your sources, and 16 study tools.
@@ -30,7 +30,10 @@
 | 💬 **Chat with citations** | Six-layer hybrid retrieval, streamed answers, `[S#]` for source passages and `[B#]` for book sections. If your sources don't say it, it says so. |
 | 🧩 **16 study tools** | Summary, quiz, flashcards, mind map, exam notes, study guide and more. Each is personalised by difficulty, length and focus, and schema-validated. |
 | 🎯 **Learning loop** | Reading progress, "Quiz me on this chapter" feeding weak spots, "Explain this section" more simply or step by step, and search by meaning across every notebook. |
-| 📤 **Export** | Markdown with footnote citations, EPUB, or print / save as PDF. |
+| 🔁 **No repetition** | A topic your new notes repeat ("supervised learning" again) merges into what the book already says: one concept with evidence from both sources, no second section. Paragraphs and code that repeat another section are removed. |
+| 🗂️ **Index, numbering, versions** | Numbered sections (2.3) and a back-of-book index, A–Z. The last **5 editions** are kept, and you can revert to any of them. |
+| 🎚️ **Written for you** | Book settings: level (beginner, intermediate or advanced), depth, worked examples, code. Code comes from your sources, or is labelled illustrative. |
+| 📤 **Export** | Markdown with footnote citations and the index, EPUB, or print / save as PDF. |
 
 <table>
   <tr>
@@ -72,6 +75,7 @@ Measured on a real notebook:
 - Adding a second source left **6 of 7 sections untouched**, revised 1 and added a 4-section chapter.
 - A third source left **all 11 untouched** and added 5.
 - A fourth, with dates and a table, added a timeline and a chart.
+- A **13-page PDF course reader** became 8 chapters and 33 numbered sections, with a 141-term index, step diagrams and code from the PDF. A second ML lecture repeating "supervised learning" merged into the same concept (now with 2 sources), rewrote 3 sections and left 30 untouched.
 
 ## Architecture
 
@@ -135,7 +139,7 @@ npm install
 npm run dev                                            # http://localhost:5173
 ```
 
-Tests need no API key: `cd backend && pytest` (140 tests) · `cd frontend && npm test` (30 tests).
+Tests need no API key: `cd backend && pytest` (155 tests) · `cd frontend && npm test` (30 tests).
 
 **Deployable as is.** On every push, CI builds the production Docker image, starts it and checks `/health`. The deploy options (Render blueprint, Cloud Run, any Docker host, frontend on GitHub Pages) are in [docs/DEPLOY.md](docs/DEPLOY.md).
 
